@@ -1,0 +1,19 @@
+# Embedding client config. See docs/llm.md.
+#
+# Same shape as configs/llm.yaml. endpoint references entries in
+# configs/endpoints.yaml. The defaults below use DeepInfra's hosting of
+# intfloat/multilingual-e5-large — a strong open-weights multilingual embedder.
+
+endpoint: deepinfra
+model: intfloat/multilingual-e5-large
+encoding_format: float
+
+# Batching / concurrency
+max_batch_size: 1024
+concurrent_requests: 30
+
+# Timeouts / retries
+request_timeout: 180.0
+max_retries: 10
+max_retry_wait: 10.0
+sleep_on_rate_limit: 30.0

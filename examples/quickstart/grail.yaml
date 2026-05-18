@@ -1,0 +1,32 @@
+# GRAIL project config.
+# Endpoints (base_url + api_key_env per name) come from configs/endpoints.yaml in
+# the repo by default — every built-in (openai, anthropic, deepinfra, together,
+# groq, openrouter, ollama, vllm, sglang, lmstudio, local) is available out of
+# the box. To override or add your own, drop an `endpoints.yaml` next to this
+# file with just the entries you need:
+#
+#   endpoints:
+#     my-vllm:
+#       base_url: http://my-vllm:8000/v1
+#       api_key_env: MY_VLLM_KEY
+#       requires_key: false
+
+project_name: quickstart
+root_dir: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/examples/quickstart
+
+llm:
+  endpoint: openai
+  model: gpt-4o-mini
+
+embeddings:
+  endpoint: deepinfra
+  model: intfloat/multilingual-e5-large
+
+indexing:
+  entity_types:
+    - person
+    - organization
+
+storage:
+  backend: local
+  root: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/examples/quickstart

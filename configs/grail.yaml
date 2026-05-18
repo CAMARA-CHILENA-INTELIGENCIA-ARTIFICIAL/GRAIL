@@ -1,0 +1,24 @@
+# GRAIL master config.
+# Loaded by `grail.config.load_config(path)`. Sibling per-module YAMLs in this
+# directory are auto-merged into the matching section, so you can split overrides
+# by concern. Documentation for every key lives in docs/<module>.md.
+
+project_name: example
+# Resolves with ~ expansion. All on-disk artefacts (parquets, lancedb, cache) live here.
+root_dir: ~/.grail/projects/example
+
+# Each block below mirrors a Pydantic submodel in grail/config.py. Anything you omit
+# falls back to the default in code. To split this file by module, leave the section
+# empty here and drop e.g. configs/llm.yaml next to this one — both load and merge.
+
+llm: {}
+embeddings: {}
+indexing: {}
+community: {}
+search: {}
+storage:
+  backend: local
+  # If unset, defaults to {root_dir}.
+  root: ~/.grail/projects/example
+prompts: {}
+vectorstore: {}

@@ -1,0 +1,55 @@
+# --- Legacy/proprietary import baseline ---
+# The _legacy_source/ tree is a verbatim copy of the proprietary `nirvana_agents/utilities/graphrag`
+# snapshot used as the starting point for the GRAIL migration. It is intentionally kept in-tree
+# so Claude Code sessions are self-contained (no path dependency on the proprietary monorepo).
+# It must NEVER be committed to the public GRAIL repo. Delete the directory once migration is complete.
+_legacy_source/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+build/
+dist/
+.eggs/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- GRAIL runtime artifacts (default working dir) ---
+# Outputs of indexing pipelines (parquet, lancedb, graphml). User overrides via config.
+output/
+cache/
+lancedb/
+*.parquet
+*.graphml
+mapping.json
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key

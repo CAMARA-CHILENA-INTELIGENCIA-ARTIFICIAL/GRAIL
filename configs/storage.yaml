@@ -1,0 +1,14 @@
+# Storage backend config. See docs/storage.md.
+
+# "local" (default) writes everything under `root` on the filesystem.
+# "s3"    writes objects under `s3_bucket/s3_prefix` (requires the [s3] extra).
+backend: local
+
+# Local backend
+root: ~/.grail/projects/default
+
+# S3 backend (only used when backend=s3)
+s3_bucket: null
+s3_prefix: null
+s3_region: null
+s3_endpoint_url: null  # set for MinIO / S3-compatible stores

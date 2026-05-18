@@ -1,0 +1,76 @@
+# Endpoint definitions. See docs/llm.md.
+#
+# Every entry here is a deployment of the OpenAI Chat Completions / Embeddings
+# protocol. GRAIL is endpoint-agnostic by design — there are no vendor-specific
+# code paths. To use a different vLLM cluster, sglang server, regional OpenAI
+# proxy, or anything else, add an entry below and reference it by name in
+# llm.yaml / embeddings.yaml / per-stage overrides.
+#
+# These defaults match the built-in registry in grail/llm/providers.py. User
+# edits MERGE with the defaults (per-endpoint deep merge), so you only need to
+# include entries you actually want to override.
+
+openai:
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+
+anthropic:
+  base_url: https://api.anthropic.com/v1
+  api_key_env: ANTHROPIC_API_KEY
+  notes: Anthropic exposes /v1/messages over the OpenAI-compatible protocol.
+
+deepinfra:
+  base_url: https://api.deepinfra.com/v1/openai
+  api_key_env: DEEPINFRA_API_KEY
+
+together:
+  base_url: https://api.together.xyz/v1
+  api_key_env: TOGETHER_API_KEY
+
+groq:
+  base_url: https://api.groq.com/openai/v1
+  api_key_env: GROQ_API_KEY
+
+openrouter:
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY
+
+# --- Self-hosted endpoints (no key by default) ---
+
+ollama:
+  base_url: http://localhost:11434/v1
+  api_key_env: OLLAMA_API_KEY
+  requires_key: false
+  notes: Local Ollama server.
+
+vllm:
+  base_url: http://localhost:8000/v1
+  api_key_env: VLLM_API_KEY
+  requires_key: false
+  notes: Self-hosted vLLM server speaking OpenAI's protocol.
+
+sglang:
+  base_url: http://localhost:30000/v1
+  api_key_env: SGLANG_API_KEY
+  requires_key: false
+  notes: Self-hosted SGLang server.
+
+lmstudio:
+  base_url: http://localhost:1234/v1
+  api_key_env: LMSTUDIO_API_KEY
+  requires_key: false
+  notes: LM Studio local server.
+
+local:
+  base_url: http://localhost:8000/v1
+  api_key_env: LOCAL_API_KEY
+  requires_key: false
+  notes: Catch-all entry for arbitrary local servers.
+
+# --- Add your own deployments below ---
+#
+# my-internal-vllm:
+#   base_url: https://vllm.internal.corp/v1
+#   api_key_env: INTERNAL_VLLM_KEY
+#   requires_key: true
+#   notes: Behind the corporate VPN.

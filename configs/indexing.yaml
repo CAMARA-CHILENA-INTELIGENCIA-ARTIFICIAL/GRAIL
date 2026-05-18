@@ -1,0 +1,31 @@
+# Indexing pipeline config. See docs/indexing.md.
+
+# Chunking
+chunk_size: 2000
+chunk_overlap: 50
+encoding_name: cl100k_base
+document_boundary: "\n\n---DOCUMENT_BOUNDARY---\n\n"
+
+# Layout under storage root.
+input_folder: input
+output_folder: output
+cache_folder: cache
+
+# Per-stage endpoint+model overrides. When null, inherit from configs/llm.yaml.
+# Set one or both per stage — e.g. cheap extraction on Groq, headline summarization on OpenAI.
+entity_relation_endpoint: null
+entity_relation_model: null
+summarization_endpoint: null
+summarization_model: null
+
+# Initial entity-type set used by the entity_relation prompt. May be extended at
+# runtime by `grail create-entities` (LLM-driven type discovery).
+entity_types:
+  - person
+  - organization
+
+max_summarization_tokens: 756
+
+# Gleanings: the upstream graphrag setting that re-asks the LLM to find missed
+# entities. 0 = disabled. Costs roughly N× more tokens per chunk.
+max_gleanings: 0

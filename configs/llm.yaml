@@ -1,0 +1,24 @@
+# LLM client config. See docs/llm.md.
+#
+# Endpoint and model are separate. `endpoint` is a name referenced in
+# configs/endpoints.yaml (defaults cover openai, anthropic, deepinfra, together,
+# groq, openrouter, ollama, vllm, sglang, lmstudio, local).
+
+# Which deployment of the OpenAI protocol to use by default.
+endpoint: openai
+# Model name within that endpoint. Whatever string the endpoint accepts.
+model: gpt-4o-mini
+
+# Concurrency / timeouts
+concurrent_requests: 15
+request_timeout: 180.0
+max_retries: 10
+max_retry_wait: 10.0
+sleep_on_rate_limit: 30.0
+
+debug: false
+
+# Disk cache. When enabled, identical (endpoint, model, messages, params) tuples
+# are reused. Useful during iteration.
+cache_enabled: false
+cache_dir: null  # null → {root_dir}/cache/llm

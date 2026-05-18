@@ -1,0 +1,674 @@
+"""
+GRAIL — the top-level orchestrator.
+
+Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
+
+The :class:`GRAIL` class wires Config → Storage → LLM/Embedding clients →
+Prompts → indexing stages → query stages. It exposes the user-level operations:
+
+* :meth:`index` — full pipeline: ingest → chunk → entities → communities → reports.
+* :meth:`search` — local or global search over an existing index.
+* :meth:`create_entity_types` — LLM-driven entity-type discovery from the corpus.
+* :meth:`append`, :meth:`edit`, :meth:`delete` — incremental updates (v0.1 stubs that
+  re-build the affected stages; smarter incremental paths land in later phases).
+* :meth:`status` — report which artefacts exist and when they were last touched.
+
+This is the API the CLI and Python users hit. It deliberately doesn't expose the
+internal extractor classes — those are reachable for advanced use via
+``from grail.indexing import ...`` and ``from grail.query import ...``.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Optional
+
+import networkx as nx
+import pandas as pd
+
+from grail.config import Config, load_config
+from grail.indexing import (
+    CommunityExtractor,
+    CommunityReportGenerator,
+    EntityRelationshipExtractor,
+    FileLoader,
+    IncrementalCommunityExtractor,
+    SummarizeExtractor,
+)
+from grail.llm import CostTracker, EmbeddingClient, Endpoint, EndpointRegistry, LLMCache, LLMClient
+from grail.prompts import PromptRegistry
+from grail.query import GlobalSearch, LocalSearch
+from grail.query.retrieval import SearchArtifacts, load_artifacts_for_search
+from grail.reporting import NullReporter, Reporter
+from grail.schemas import SearchResult
+from grail.storage import LocalStorage, StorageBackend, get_backend
+from grail.vectorstores import LanceDBVectorStore, VectorStoreDocument
+
+log = logging.getLogger("grail.core")
+
+
+@dataclass
+class GRAIL:
+    """Top-level orchestrator.
+
+    Build via :meth:`from_config` (recommended) or directly by passing all collaborators.
+    """
+
+    config: Config
+    storage: StorageBackend
+    llm: LLMClient
+    embeddings: EmbeddingClient
+    prompts: PromptRegistry
+    cost_tracker: CostTracker = field(default_factory=CostTracker)
+    reporter: Reporter = field(default_factory=NullReporter)
+
+    # ------------------------------------------------------------------ construction
+
+    @classmethod
+    def from_config(
+        cls,
+        config: Optional[Config | str | Path] = None,
+        *,
+        reporter: Optional[Reporter] = None,
+    ) -> "GRAIL":
+        if not isinstance(config, Config):
+            config = load_config(config)
+
+        # Storage
+        s_cfg = config.storage
+        if s_cfg.backend == "local":
+            storage = LocalStorage(root=s_cfg.root)
+        else:
+            storage = get_backend(
+                s_cfg.backend,
+                bucket=s_cfg.s3_bucket,
+                prefix=s_cfg.s3_prefix,
+                region_name=s_cfg.s3_region,
+                endpoint_url=s_cfg.s3_endpoint_url,
+            )
+
+        # Endpoint registry, populated from the config's endpoints section.
+        registry = EndpointRegistry(endpoints={})
+        for name, ep_cfg in (config.endpoints or {}).items():
+            registry.register(
+                Endpoint(
+                    name=name,
+                    base_url=ep_cfg.base_url,
+                    api_key_env=ep_cfg.api_key_env,
+                    requires_key=ep_cfg.requires_key,
+                    notes=ep_cfg.notes,
+                )
+            )
+
+        # Cache
+        cache: Optional[LLMCache] = None
+        if config.llm.cache_enabled:
+            cache_dir = config.llm.cache_dir or str(Path(config.resolved_root()) / "cache" / "llm")
+            cache = LLMCache(directory=cache_dir, enabled=True)
+
+        cost = CostTracker()
+        rep = reporter or NullReporter()
+
+        llm = LLMClient(
+            default_endpoint=config.llm.endpoint,
+            default_model=config.llm.model,
+            request_timeout=config.llm.request_timeout,
+            max_retries=config.llm.max_retries,
+            max_retry_wait=config.llm.max_retry_wait,
+            sleep_on_rate_limit=config.llm.sleep_on_rate_limit,
+            concurrent_requests=config.llm.concurrent_requests,
+            endpoint_registry=registry,
+            cache=cache,
+            cost_tracker=cost,
+            reporter=rep,
+            debug=config.llm.debug,
+        )
+        embeddings = EmbeddingClient(
+            default_endpoint=config.embeddings.endpoint,
+            default_model=config.embeddings.model,
+            encoding_format=config.embeddings.encoding_format,
+            max_batch_size=config.embeddings.max_batch_size,
+            concurrent_requests=config.embeddings.concurrent_requests,
+            request_timeout=config.embeddings.request_timeout,
+            max_retries=config.embeddings.max_retries,
+            max_retry_wait=config.embeddings.max_retry_wait,
+            sleep_on_rate_limit=config.embeddings.sleep_on_rate_limit,
+            endpoint_registry=registry,
+            reporter=rep,
+        )
+        prompts = PromptRegistry(
+            custom_paths=[Path(p) for p in config.prompts.custom_paths],
+            strict=config.prompts.strict,
+        )
+        return cls(
+            config=config,
+            storage=storage,
+            llm=llm,
+            embeddings=embeddings,
+            prompts=prompts,
+            cost_tracker=cost,
+            reporter=rep,
+        )
+
+    # ------------------------------------------------------------------ helpers
+
+    def _output_folder(self) -> str:
+        return self.config.indexing.output_folder
+
+    def _vector_store(self) -> Optional[LanceDBVectorStore]:
+        cfg = self.config.vectorstore
+        if cfg.backend != "lancedb":
+            return None
+        if isinstance(self.storage, LocalStorage):
+            base = self.storage.path_for(cfg.uri or "lancedb") if cfg.uri else self.storage.path_for("lancedb")
+            uri = str(base)
+        else:
+            uri = cfg.uri or "./lancedb"  # cloud → user must supply a usable URI
+        store = LanceDBVectorStore(collection_name=cfg.collection_name)
+        store.connect(db_uri=uri)
+        if self.storage.exists(uri + "/" + cfg.collection_name + ".lance") or (
+            isinstance(self.storage, LocalStorage)
+            and Path(uri, cfg.collection_name + ".lance").exists()
+        ):
+            try:
+                store.document_collection = store.db_connection.open_table(cfg.collection_name)
+            except Exception:  # pragma: no cover
+                store.document_collection = None
+        return store
+
+    # ------------------------------------------------------------------ INDEX
+
+    async def index(self) -> dict[str, Any]:
+        """Run the full indexing pipeline against the configured input folder."""
+        started = time.perf_counter()
+        loader = self._make_loader()
+
+        self.reporter.info("Step 1/4 — chunking source files")
+        docs_df, text_units_df, mapping = loader.build_text_units()
+        if docs_df.empty:
+            self.reporter.warning("No input files found; aborting.")
+            return {"ok": False, "reason": "no input files"}
+        loader.write_artifacts(docs_df, text_units_df, mapping)
+
+        self.reporter.info("Step 2/4 — extracting entities & relationships")
+        extractor = self._make_extractor()
+        entities_df, relationships_df, text_units_df, graph = await extractor.process_text_units()
+        if entities_df.empty:
+            self.reporter.warning("Extraction produced no entities; aborting.")
+            return {"ok": False, "reason": "no entities"}
+
+        await self._update_vector_store(entities_df)
+
+        self.reporter.info("Step 3/4 — community detection (Leiden)")
+        community_extractor = self._make_community_extractor()
+        graph, communities, nodes_df, comm_df = community_extractor.extract_communities(graph)
+
+        self.reporter.info("Step 4/4 — generating community reports")
+        reports_df = await self._generate_community_reports(
+            nodes_df, comm_df, entities_df, relationships_df
+        )
+
+        return {
+            "ok": True,
+            "operation": "index",
+            "duration_s": time.perf_counter() - started,
+            "documents": len(docs_df),
+            "text_units": len(text_units_df),
+            "entities": len(entities_df),
+            "relationships": len(relationships_df),
+            "communities": int(comm_df["community"].nunique()) if not comm_df.empty else 0,
+            "reports": len(reports_df),
+            "llm_summary": self.cost_tracker.summary(by="tag"),
+            "total_cost_usd": self.cost_tracker.total_cost_usd(),
+        }
+
+    # ------------------------------------------------------------------ SEARCH
+
+    async def search(
+        self,
+        query: str,
+        *,
+        mode: str = "local",
+        conversation_history: Optional[list[dict[str, Any]]] = None,
+        artifact_instructions: str = "",
+    ) -> SearchResult:
+        artifacts = load_artifacts_for_search(self.storage, self._output_folder())
+        if mode == "local":
+            search = LocalSearch(
+                storage=self.storage,
+                llm=self.llm,
+                embeddings=self.embeddings,
+                prompts=self.prompts,
+                artifacts=artifacts,
+                vector_store=self._vector_store(),
+                output_folder=self._output_folder(),
+                top_k_entities=self.config.search.local_top_k_entities,
+                top_k_relationships=self.config.search.local_top_k_relationships,
+                max_tokens=self.config.search.local_max_tokens,
+                response_max_tokens=self.config.search.local_max_tokens,
+                endpoint=self.config.search.local_search_endpoint,
+                model=self.config.search.local_search_model,
+                reporter=self.reporter,
+            )
+            return await search.asearch(
+                query,
+                conversation_history=conversation_history,
+                artifact_instructions=artifact_instructions,
+            )
+        elif mode == "global":
+            search = GlobalSearch(
+                storage=self.storage,
+                llm=self.llm,
+                prompts=self.prompts,
+                artifacts=artifacts,
+                output_folder=self._output_folder(),
+                chunk_size=self.config.search.global_chunk_size,
+                concurrency=self.config.search.global_concurrency,
+                map_max_tokens=self.config.search.global_map_max_tokens,
+                reduce_max_tokens=self.config.search.global_reduce_max_tokens,
+                endpoint=self.config.search.global_search_endpoint,
+                model=self.config.search.global_search_model,
+                reporter=self.reporter,
+            )
+            return await search.asearch(
+                query,
+                conversation_history=conversation_history,
+                artifact_instructions=artifact_instructions,
+            )
+        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local' or 'global'.")
+
+    # ------------------------------------------------------------------ CUSTOM ENTITIES
+
+    async def create_entity_types(
+        self,
+        *,
+        sample_chars: int = 8000,
+        endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> list[str]:
+        """LLM-driven entity-type discovery: read a small slice of the corpus and
+        propose a YAML list of types to use in subsequent extractions.
+
+        Returns the proposed types. Caller is responsible for persisting them into
+        ``config.indexing.entity_types`` for the next run.
+        """
+        loader = FileLoader(
+            storage=self.storage,
+            input_folder=self.config.indexing.input_folder,
+            output_folder=self._output_folder(),
+            chunk_size=self.config.indexing.chunk_size,
+            chunk_overlap=self.config.indexing.chunk_overlap,
+            encoding_name=self.config.indexing.encoding_name,
+            reporter=self.reporter,
+        )
+        keys = loader.find()
+        if not keys:
+            return list(self.config.indexing.entity_types)
+        sample_texts: list[str] = []
+        budget = sample_chars
+        for key in keys:
+            text = loader._read_one(key)
+            slice_ = text[: budget // max(1, len(keys))]
+            sample_texts.append(slice_)
+            if sum(len(s) for s in sample_texts) >= sample_chars:
+                break
+
+        messages = self.prompts.build("create_custom_entities", texts=sample_texts)
+        response = await self.llm.execute_safe(
+            messages=messages,
+            endpoint=endpoint,
+            model=model,
+            max_tokens=512,
+            temperature=0.0,
+            tag="create_custom_entities",
+        )
+        return _parse_entity_types(response, default=self.config.indexing.entity_types)
+
+    # ------------------------------------------------------------------ helpers (shared)
+
+    def _make_loader(self) -> FileLoader:
+        return FileLoader(
+            storage=self.storage,
+            input_folder=self.config.indexing.input_folder,
+            output_folder=self._output_folder(),
+            chunk_size=self.config.indexing.chunk_size,
+            chunk_overlap=self.config.indexing.chunk_overlap,
+            encoding_name=self.config.indexing.encoding_name,
+            document_boundary=self.config.indexing.document_boundary,
+            reporter=self.reporter,
+        )
+
+    def _make_extractor(self) -> EntityRelationshipExtractor:
+        return EntityRelationshipExtractor(
+            storage=self.storage,
+            llm=self.llm,
+            embeddings=self.embeddings,
+            prompts=self.prompts,
+            entity_types=self.config.indexing.entity_types,
+            extraction_endpoint=self.config.indexing.entity_relation_endpoint,
+            extraction_model=self.config.indexing.entity_relation_model,
+            summarization_endpoint=self.config.indexing.summarization_endpoint,
+            summarization_model=self.config.indexing.summarization_model,
+            output_folder=self._output_folder(),
+            reporter=self.reporter,
+        )
+
+    def _make_community_extractor(self) -> CommunityExtractor:
+        return CommunityExtractor(
+            storage=self.storage,
+            output_folder=self._output_folder(),
+            max_cluster_size=self.config.community.max_cluster_size,
+            use_lcc=self.config.community.use_lcc,
+            min_community_size=self.config.community.min_community_size,
+            seed=self.config.community.seed,
+            embedding_merge_eps=self.config.community.embedding_merge_eps,
+            reporter=self.reporter,
+        )
+
+    def _make_incremental_community(self) -> IncrementalCommunityExtractor:
+        return IncrementalCommunityExtractor(
+            storage=self.storage,
+            base_extractor=self._make_community_extractor(),
+            change_threshold=self.config.community.incremental_change_threshold,
+            output_folder=self._output_folder(),
+            reporter=self.reporter,
+        )
+
+    async def _update_vector_store(self, entities_df: pd.DataFrame) -> None:
+        store = self._vector_store()
+        if store is not None and not entities_df.empty:
+            docs = [
+                VectorStoreDocument(
+                    id=row["id"],
+                    text=row["description"],
+                    vector=row["description_embedding"],
+                    attributes={
+                        "name": row["name"],
+                        "type": row.get("type"),
+                        "human_readable_id": int(row.get("human_readable_id", 0)),
+                    },
+                )
+                for _, row in entities_df.iterrows()
+                if row["description_embedding"] is not None
+            ]
+            store.load_documents(docs, overwrite=True)
+
+    async def _generate_community_reports(
+        self,
+        nodes_df: pd.DataFrame,
+        comm_df: pd.DataFrame,
+        entities_df: pd.DataFrame,
+        relationships_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        report_gen = CommunityReportGenerator(
+            storage=self.storage,
+            llm=self.llm,
+            prompts=self.prompts,
+            output_folder=self._output_folder(),
+            report_endpoint=self.config.community.community_report_endpoint,
+            report_model=self.config.community.community_report_model,
+            json_corrector_endpoint=self.config.community.json_corrector_endpoint,
+            json_corrector_model=self.config.community.json_corrector_model,
+            max_output_tokens=self.config.community.max_report_length,
+            reporter=self.reporter,
+        )
+        return await report_gen.generate_reports(
+            nodes_df=nodes_df,
+            communities_df=comm_df,
+            entities_df=entities_df,
+            relationships_df=relationships_df,
+        )
+
+    # ------------------------------------------------------------------ APPEND / EDIT / DELETE
+
+    async def append(self, new_files: list[str]) -> dict[str, Any]:
+        """Incrementally add new files to the knowledge graph.
+
+        Only the new files go through LLM extraction. Existing entities and
+        relationships are preserved and merged with the new extractions.
+        """
+        started = time.perf_counter()
+        loader = self._make_loader()
+
+        # Copy files into input folder.
+        new_keys: list[str] = []
+        for path in new_files:
+            dest = self.storage.join(self.config.indexing.input_folder, Path(path).name)
+            self.storage.copy_in(path, dest)
+            new_keys.append(dest)
+
+        # Layer 1: chunk new files, merge with existing.
+        self.reporter.info("Step 1/4 — chunking new files")
+        docs_df, text_units_df, mapping, new_tu_ids = loader.append_files(new_keys)
+        if not new_tu_ids:
+            return {"ok": False, "reason": "no new text units from appended files"}
+        loader.write_artifacts(docs_df, text_units_df, mapping)
+
+        # Layer 2: extract entities/relationships from new TUs only, merge.
+        self.reporter.info("Step 2/4 — extracting entities from new text units")
+        extractor = self._make_extractor()
+        (entities_df, rels_df, text_units_df, graph,
+         new_entity_names, updated_entity_names) = await extractor.append_extract(
+            text_units_df, new_tu_ids
+        )
+
+        await self._update_vector_store(entities_df)
+
+        # Layer 3: update communities.
+        self.reporter.info("Step 3/4 — updating communities")
+        inc = self._make_incremental_community()
+        graph, communities, nodes_df, comm_df = inc.update(
+            graph,
+            new_entity_names=new_entity_names,
+            updated_entity_names=updated_entity_names,
+        )
+
+        # Layer 4: community reports.
+        self.reporter.info("Step 4/4 — generating community reports")
+        reports_df = await self._generate_community_reports(
+            nodes_df, comm_df, entities_df, rels_df
+        )
+
+        return {
+            "ok": True,
+            "operation": "append",
+            "duration_s": time.perf_counter() - started,
+            "new_files": len(new_files),
+            "new_text_units": len(new_tu_ids),
+            "new_entities": len(new_entity_names),
+            "updated_entities": len(updated_entity_names),
+            "total_entities": len(entities_df),
+            "total_relationships": len(rels_df),
+            "communities": int(comm_df["community"].nunique()) if not comm_df.empty else 0,
+            "reports": len(reports_df),
+            "llm_summary": self.cost_tracker.summary(by="tag"),
+        }
+
+    async def edit(self, replacements: dict[str, str]) -> dict[str, Any]:
+        """Edit existing files in the knowledge graph.
+
+        ``replacements`` maps input-folder filename → local path with new content.
+        Only the affected text units are re-extracted. Entities that lose all
+        references are pruned automatically.
+        """
+        started = time.perf_counter()
+        loader = self._make_loader()
+
+        # Identify doc IDs for the files being replaced.
+        doc_ids = loader.get_doc_ids_by_path(list(replacements.keys()))
+        if not doc_ids:
+            return {"ok": False, "reason": "no matching documents found for the given filenames"}
+
+        # Replace files on disk.
+        for name, local_path in replacements.items():
+            dest = self.storage.join(self.config.indexing.input_folder, name)
+            if self.storage.exists(dest):
+                self.storage.delete(dest)
+            self.storage.copy_in(local_path, dest)
+
+        # Layer 1: re-chunk edited documents.
+        self.reporter.info("Step 1/4 — re-chunking edited documents")
+        edits = []
+        for doc_id in doc_ids:
+            docs_df_tmp, _, _ = loader.load_artifacts()
+            doc_row = docs_df_tmp[docs_df_tmp["id"] == doc_id]
+            if doc_row.empty:
+                continue
+            file_path = doc_row.iloc[0]["path"]
+            new_content = self.storage.read_text(
+                self.storage.join(self.config.indexing.input_folder, file_path)
+            )
+            edits.append({"doc_id": doc_id, "new_content": new_content})
+
+        docs_df, text_units_df, mapping, edited_tu_ids = loader.batch_edit_documents(edits)
+        loader.write_artifacts(docs_df, text_units_df, mapping)
+
+        # Layer 2: re-extract from edited TUs, merge, prune orphans.
+        self.reporter.info("Step 2/4 — re-extracting entities from edited text units")
+        extractor = self._make_extractor()
+        (entities_df, rels_df, text_units_df, graph,
+         new_entity_names, updated_entity_names,
+         deleted_entity_names) = await extractor.edit_extract(
+            text_units_df, edited_tu_ids
+        )
+
+        await self._update_vector_store(entities_df)
+
+        # Layer 3: update communities with edit awareness.
+        self.reporter.info("Step 3/4 — updating communities")
+        inc = self._make_incremental_community()
+        graph, communities, nodes_df, comm_df = inc.incremental_edit(
+            graph,
+            new_entity_names=new_entity_names,
+            updated_entity_names=updated_entity_names,
+            deleted_entity_names=deleted_entity_names,
+        )
+
+        # Layer 4: community reports.
+        self.reporter.info("Step 4/4 — generating community reports")
+        reports_df = await self._generate_community_reports(
+            nodes_df, comm_df, entities_df, rels_df
+        )
+
+        return {
+            "ok": True,
+            "operation": "edit",
+            "duration_s": time.perf_counter() - started,
+            "edited_files": len(replacements),
+            "edited_text_units": len(edited_tu_ids),
+            "new_entities": len(new_entity_names),
+            "updated_entities": len(updated_entity_names),
+            "deleted_entities": len(deleted_entity_names),
+            "total_entities": len(entities_df),
+            "total_relationships": len(rels_df),
+            "communities": int(comm_df["community"].nunique()) if not comm_df.empty else 0,
+            "reports": len(reports_df),
+            "llm_summary": self.cost_tracker.summary(by="tag"),
+        }
+
+    async def delete(self, file_names: list[str]) -> dict[str, Any]:
+        """Delete files from the knowledge graph.
+
+        Entities and relationships that lose all text-unit references are pruned.
+        Communities are updated to reflect the smaller graph.
+        """
+        started = time.perf_counter()
+        loader = self._make_loader()
+
+        doc_ids = loader.get_doc_ids_by_path(file_names)
+        if not doc_ids:
+            return {"ok": False, "reason": "no matching documents found for the given filenames"}
+
+        # Layer 1: delete docs and text units.
+        self.reporter.info("Step 1/4 — deleting documents and text units")
+        docs_df, text_units_df, mapping, deleted_tu_ids = loader.batch_delete_documents(doc_ids)
+        loader.write_artifacts(docs_df, text_units_df, mapping)
+
+        # Layer 2: strip TU refs, prune orphaned entities/rels.
+        self.reporter.info("Step 2/4 — pruning orphaned entities and relationships")
+        extractor = self._make_extractor()
+        (entities_df, rels_df, text_units_df, graph,
+         updated_entity_names, deleted_entity_names) = await extractor.delete_extract(
+            text_units_df, deleted_tu_ids
+        )
+
+        await self._update_vector_store(entities_df)
+
+        # Layer 3: update communities after deletion.
+        self.reporter.info("Step 3/4 — updating communities")
+        inc = self._make_incremental_community()
+        graph, communities, nodes_df, comm_df = inc.incremental_delete(
+            graph, deleted_entity_names=deleted_entity_names,
+        )
+
+        # Layer 4: community reports.
+        self.reporter.info("Step 4/4 — generating community reports")
+        reports_df = await self._generate_community_reports(
+            nodes_df, comm_df, entities_df, rels_df
+        )
+
+        return {
+            "ok": True,
+            "operation": "delete",
+            "duration_s": time.perf_counter() - started,
+            "deleted_files": len(file_names),
+            "deleted_text_units": len(deleted_tu_ids),
+            "updated_entities": len(updated_entity_names),
+            "deleted_entities": len(deleted_entity_names),
+            "total_entities": len(entities_df),
+            "total_relationships": len(rels_df),
+            "communities": int(comm_df["community"].nunique()) if not comm_df.empty else 0,
+            "reports": len(reports_df),
+            "llm_summary": self.cost_tracker.summary(by="tag"),
+        }
+
+    # ------------------------------------------------------------------ STATUS
+
+    def status(self) -> dict[str, Any]:
+        out_folder = self._output_folder()
+        artefacts = {
+            "documents": f"{out_folder}/final_docs.parquet",
+            "text_units": f"{out_folder}/final_text_units.parquet",
+            "entities": f"{out_folder}/final_entities.parquet",
+            "relationships": f"{out_folder}/final_relationships.parquet",
+            "nodes": f"{out_folder}/final_nodes.parquet",
+            "communities": f"{out_folder}/final_communities.parquet",
+            "reports": f"{out_folder}/final_community_reports.parquet",
+            "graph": f"{out_folder}/entity_relationship_graph.graphml",
+            "mapping": "mapping.json",
+        }
+        return {
+            "project_name": self.config.project_name,
+            "storage": repr(self.storage),
+            "artefacts": {name: self.storage.exists(key) for name, key in artefacts.items()},
+        }
+
+
+def _parse_entity_types(response: Optional[str], *, default: list[str]) -> list[str]:
+    if not response:
+        return list(default)
+    import re
+
+    match = re.search(r"<entities>(.*?)</entities>", response, flags=re.S)
+    blob = match.group(1) if match else response
+    blob = blob.strip().strip("`")
+    try:
+        # Most prompts respond with a JSON-style list.
+        parsed = json.loads(blob)
+    except json.JSONDecodeError:
+        try:
+            import yaml
+
+            parsed = yaml.safe_load(blob)
+        except Exception:
+            return list(default)
+    if isinstance(parsed, dict):
+        # Sometimes the model wraps it as {"entities": [...]}.
+        parsed = parsed.get("entities", parsed.get("types", []))
+    if not isinstance(parsed, list):
+        return list(default)
+    cleaned = [str(x).lower().strip() for x in parsed if str(x).strip()]
+    return cleaned or list(default)

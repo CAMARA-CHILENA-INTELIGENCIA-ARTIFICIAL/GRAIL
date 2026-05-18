@@ -1,0 +1,28 @@
+# Community detection + reporting config. See docs/community.md.
+
+# Hierarchical Leiden (graspologic).
+max_cluster_size: 50
+use_lcc: false
+strategy: leiden
+seed: null  # set an int for reproducible clustering
+
+# Per-stage endpoint+model overrides. When null, inherit from configs/llm.yaml.
+community_report_endpoint: null
+community_report_model: null
+json_corrector_endpoint: null
+json_corrector_model: null
+
+# JSON community report ceiling.
+max_report_length: 4000
+
+# If true, include claims (covariates) in the report context.
+include_covariates: false
+
+# Incremental updates — change ratio threshold above which we re-cluster
+# the affected subgraph instead of label-propagating new nodes.
+incremental_change_threshold: 0.3
+
+# After Leiden, small communities below this size get merged with their nearest
+# centroid via DBSCAN over the entity embeddings.
+min_community_size: 10
+embedding_merge_eps: 0.5

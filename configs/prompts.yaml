@@ -1,0 +1,10 @@
+# Prompts config. See docs/prompts.md.
+
+# Extra directories searched (in order) before grail/prompts/builtin/. Each file
+# in these directories must expose NAME, REQUIRED_PARAMS, build_messages(**params).
+custom_paths: []
+
+# strict=true requires that the custom directory provide every built-in prompt
+# (entity_relation, summarize_description, community_report, json_correction,
+#  create_custom_entities, local_search, global_map, global_reduce, claim_extraction).
+strict: false

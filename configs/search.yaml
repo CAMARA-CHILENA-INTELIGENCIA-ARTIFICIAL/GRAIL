@@ -1,0 +1,28 @@
+# Search config. See docs/query.md.
+
+# Per-stage endpoint+model overrides. When null, inherit from configs/llm.yaml.
+local_search_endpoint: null
+local_search_model: null
+global_search_endpoint: null
+global_search_model: null
+
+# --- Local search budgeting ---
+local_max_tokens: 8192
+local_text_unit_prop: 0.5
+local_community_prop: 0.1
+local_conversation_history_max_turns: 5
+local_top_k_entities: 10
+local_top_k_relationships: 10
+
+# --- Global search budgeting ---
+global_max_tokens: 6000
+global_map_max_tokens: 2000
+global_reduce_max_tokens: 6000
+# When the assembled community-report context exceeds this token budget, GRAIL
+# falls back to a map-reduce path. Otherwise it does a single reduce pass.
+global_chunk_size: 100000
+global_concurrency: 5
+
+# Description of the desired response style — injected into the global reduce
+# prompt's artifact_instructions block.
+response_type: "Multiple Paragraphs"

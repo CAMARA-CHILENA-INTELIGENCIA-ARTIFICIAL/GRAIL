@@ -1,0 +1,10 @@
+# Vector store config. See docs/vectorstores.md.
+
+# Supported backends today: "lancedb". More to land in Phase 7+.
+backend: lancedb
+
+# Collection / table name (entity description embeddings).
+collection_name: entity_descriptions
+
+# When null, GRAIL writes to {root_dir}/lancedb. Override for shared mounts.
+uri: null
