@@ -18,13 +18,44 @@ entity_relation_model: null
 summarization_endpoint: null
 summarization_model: null
 
-# Initial entity-type set used by the entity_relation prompt. May be extended at
-# runtime by `grail create-entities` (LLM-driven type discovery).
+# Entity types normalized to UPPER_SNAKE_CASE. Minimum 5 required.
+# Always include PERSON and ORGANIZATION as baseline types.
+# Add domain-specific types, or use discover_entity_types to let the LLM propose them.
 entity_types:
   - person
   - organization
+  - location
+  - event
+  - concept
 
+# When true, the LLM reads a corpus sample before extraction and proposes
+# additional entity types (merged with the list above, capped at max_entity_types).
+# Also available as CLI flag: grail index --discover-entities
+# discover_entity_types: false
+# max_entity_types: 15
+
+# Extraction delimiters — the entity/relationship parser is contract-bound to
+# these tokens. Change them only if you have a custom entity_relation prompt
+# that uses different delimiters. When absent, the built-in defaults apply.
+# tuple_delimiter: "<|>"
+# record_delimiter: "##"
+# completion_delimiter: "<|COMPLETE|>"
+# start_delimiter: "<|START_OUTPUT|>"
+
+# --- Token budgets per LLM call ---
+# extraction_max_tokens: max output tokens for each entity/relationship extraction call.
+# entity_discovery_max_tokens: max output tokens for the create-entities discovery call.
+# max_summarization_tokens: max tokens for entity description summarization.
+extraction_max_tokens: 8192
+entity_discovery_max_tokens: 2048
 max_summarization_tokens: 756
+
+# --- Per-stage concurrency ---
+# Override the global llm.concurrent_requests for specific stages.
+# null = use the global limit. Useful to run more extraction calls in parallel
+# (cheap, fast) while throttling heavier community-report generation.
+# extraction_concurrency: null
+# summarization_concurrency: null
 
 # Gleanings: the upstream graphrag setting that re-asks the LLM to find missed
 # entities. 0 = disabled. Costs roughly N× more tokens per chunk.

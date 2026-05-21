@@ -1,32 +1,70 @@
-# GRAIL project config.
-# Endpoints (base_url + api_key_env per name) come from configs/endpoints.yaml in
-# the repo by default — every built-in (openai, anthropic, deepinfra, together,
-# groq, openrouter, ollama, vllm, sglang, lmstudio, local) is available out of
-# the box. To override or add your own, drop an `endpoints.yaml` next to this
-# file with just the entries you need:
+# GRAIL project config — quickstart.
 #
-#   endpoints:
-#     my-vllm:
-#       base_url: http://my-vllm:8000/v1
-#       api_key_env: MY_VLLM_KEY
-#       requires_key: false
+# Built-in endpoint definitions (base_url + api_key_env per name) come from
+# configs/endpoints.yaml. To override or add your own, drop an `endpoints.yaml`
+# next to this file. See docs/glossary.md for every key.
 
 project_name: quickstart
 root_dir: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/examples/quickstart
 
+# --- Chat completions ---
+# DeepInfra hosts Google's Gemma 4 26B-A4B (MoE, 4B active params), picked per
+# docs/model_selection/report.md for a good balance of IFBench (format
+# compliance) + cost on the indexing path.
 llm:
-  endpoint: openai
-  model: gpt-4o-mini
+  endpoint: deepinfra
+  #model: google/gemma-4-26B-A4B-it
+  model: Qwen/Qwen3.6-35B-A3B
 
+  request_timeout: 360.0
+
+  # DeepInfra publishes pricing via a non-OpenAI metadata extension, so it's not
+  # in GRAIL's built-in price book. Supply rates here so the cost ledger resolves
+  # instead of reporting "Undefined". USD per 1M tokens, [prompt, completion].
+  # Pulled from https://deepinfra.com/google/gemma-4-26B-A4B-it on 2026-05-19.
+  extra_pricing:
+    "deepinfra|google/gemma-4-26B-A4B-it": [0.07, 0.34]
+    "deepinfra|Qwen/Qwen3-Embedding-0.6B": [0.005, 0.0]
+    "deepinfra|Qwen/Qwen3.6-35B-A3B": [0.15, 0.95]
+
+# --- Embeddings ---
+# Qwen3-Embedding-0.6B is a small but strong multilingual embedding model.
+# Critical rule: indexing and querying must use the same embedding model.
 embeddings:
   endpoint: deepinfra
-  model: intfloat/multilingual-e5-large
+  model: Qwen/Qwen3-Embedding-0.6B
 
+# --- Indexing ---
 indexing:
+  # Entity types normalized to UPPER_SNAKE_CASE. Minimum 5 required.
+  # Always include PERSON and ORGANIZATION as baseline types.
+  # Domain-specific types below are tuned for SEOM 2023 clinical oncology PDFs.
   entity_types:
-    - person
-    - organization
+    - PERSON
+    - ORGANIZATION
+    - DISEASE
+    - SYMPTOM
+    - TREATMENT
+    - DRUG
+    - CLINICAL_STUDY
+    - GUIDELINE
+    - BIOMARKER
+    - PATIENT_POPULATION
+  chunk_size: 1500
+  chunk_overlap: 100
+  # Thinking models burn tokens on internal reasoning — set higher to avoid truncation.
+  extraction_max_tokens: 16384
+  extraction_concurrency: 10
+  summarization_concurrency: 10
 
+# --- Community ---
+# Thinking models (Qwen3.6, etc.) use tokens for internal reasoning that count
+# against max_report_length. Set it high enough so the visible output isn't truncated.
+community:
+  max_report_length: 16384
+  report_concurrency: 3
+
+# --- Storage ---
 storage:
   backend: local
   root: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/examples/quickstart

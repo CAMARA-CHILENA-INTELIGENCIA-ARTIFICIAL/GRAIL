@@ -47,6 +47,10 @@ lancedb/
 *.graphml
 mapping.json
 
+# --- Notebook generated output ---
+notebooks/_pyvis_graph.html
+notebooks/.ipynb_checkpoints/
+
 # --- Secrets / env ---
 .env
 .env.*

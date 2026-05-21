@@ -40,10 +40,14 @@ encoding_name: cl100k_base
 document_boundary: "\n\n---DOCUMENT_BOUNDARY---\n\n"
 ```
 
-v0.1 supports ``text``, ``code``, and ``data`` file types per
-:func:`grail.utils.detect_data_type`. PDF / Office / image extraction is a
-later-phase hook — slot a pre-processing step into ``FileLoader._read_one``
-that returns plain text per file.
+Source-file format support — text / code / data are read directly; PDFs and
+DOCX files are converted to markdown by :mod:`grail.indexing.preprocess`
+(``pypdf`` + ``python-docx``, both core deps) before chunking. The processed
+markdown is cached under ``input/_processed/`` and only re-generated when the
+source mtime is newer than the cache. See [preprocessing.md](preprocessing.md)
+for the full table of supported extensions and the schema of the converted
+output. Images / audio / video are silently skipped; vision-based extraction
+is a future ``[vision]`` extra.
 
 ## EntityRelationshipExtractor
 

@@ -1,0 +1,26 @@
+- docker
+- Standard visualization
+- Neo4j integration
+- agent skills
+- benchmark evaluation -> easy with judge opus 4.7
+- readme.md
+    - GRAIL intro, image and what is it -> CCHIA -> NIRVAI BGG
+    - Overview
+    - command lines and what they do and their outputs
+    - Trademarks -> nirvai
+    - Nirvai and BGG
+    - Thanks to graphrag MS
+- docusaurus
+  - make logo
+  - what is grail
+  - grail explained -> workflow, inputs, outputs, etc
+  - grail library
+  - grail visualization -> sigma js and neo4j
+  - benchmarks
+  - agent skills
+  - personalization
+    - storage
+    - models
+    - vector database
+    - methods
+    - reranking

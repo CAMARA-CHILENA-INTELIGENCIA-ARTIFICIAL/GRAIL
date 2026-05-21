@@ -63,19 +63,39 @@ def test_endpoint_registry_register_and_override():
     assert reg.get("custom").base_url == "https://y"
 
 
-class _FakeChoice:
-    def __init__(self, content: str) -> None:
-        self.message = SimpleNamespace(content=content)
+class _FakeStreamChunk:
+    def __init__(self, content: str | None = None, usage: Any = None) -> None:
+        if content is not None:
+            self.choices = [SimpleNamespace(delta=SimpleNamespace(content=content))]
+        else:
+            self.choices = []
+        self.usage = usage
 
 
-class _FakeResponse:
+class _FakeStream:
+    """Async iterator that yields one content chunk then a usage-only chunk."""
+
     def __init__(self, content: str, prompt_tokens: int = 12, completion_tokens: int = 7) -> None:
-        self.choices = [_FakeChoice(content)]
-        self.usage = SimpleNamespace(
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=prompt_tokens + completion_tokens,
-        )
+        self._chunks = [
+            _FakeStreamChunk(content=content),
+            _FakeStreamChunk(
+                usage=SimpleNamespace(
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                )
+            ),
+        ]
+
+    def __aiter__(self) -> "_FakeStream":
+        self._idx = 0
+        return self
+
+    async def __anext__(self) -> _FakeStreamChunk:
+        if self._idx >= len(self._chunks):
+            raise StopAsyncIteration
+        chunk = self._chunks[self._idx]
+        self._idx += 1
+        return chunk
 
 
 class _FakeChatCompletions:
@@ -83,9 +103,9 @@ class _FakeChatCompletions:
         self._content = content
         self.calls: list[dict[str, Any]] = []
 
-    async def create(self, **kwargs: Any) -> _FakeResponse:
+    async def create(self, **kwargs: Any) -> _FakeStream:
         self.calls.append(kwargs)
-        return _FakeResponse(self._content)
+        return _FakeStream(self._content)
 
 
 class _FakeClient:

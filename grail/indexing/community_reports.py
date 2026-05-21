@@ -41,7 +41,38 @@ class CommunityReportGenerator:
     max_input_tokens: int = 8000
     max_output_tokens: int = 2048
     temperature: float = 0.0
+    # Which Leiden hierarchy level to summarise. "coarsest" / "finest" / "all" / int.
+    community_level: str | int = "coarsest"
+    # Minimum entities per community to qualify for a report. Filters out
+    # singletons + tiny dust clusters; 0 disables.
+    min_report_size: int = 3
+    report_concurrency: Optional[int] = None
     reporter: Reporter = field(default_factory=NullReporter)
+
+    # ------------------------------------------------------------------ level resolution
+
+    def _resolve_levels(self, available: list[int]) -> list[int]:
+        """Translate ``community_level`` into the concrete list of levels to report on."""
+        if not available:
+            return []
+        if isinstance(self.community_level, int):
+            return [self.community_level] if self.community_level in available else []
+        token = str(self.community_level).strip().lower()
+        if token == "coarsest":
+            return [min(available)]
+        if token == "finest":
+            return [max(available)]
+        if token == "all":
+            return list(available)
+        # Numeric strings like "1".
+        try:
+            level = int(token)
+            return [level] if level in available else []
+        except ValueError:
+            self.reporter.warning(
+                f"Unknown community_level {self.community_level!r}; defaulting to 'coarsest'."
+            )
+            return [min(available)]
 
     # ------------------------------------------------------------------ run
 
@@ -51,7 +82,15 @@ class CommunityReportGenerator:
         communities_df: Optional[pd.DataFrame] = None,
         entities_df: Optional[pd.DataFrame] = None,
         relationships_df: Optional[pd.DataFrame] = None,
+        *,
+        affected_community_ids: Optional[set[str]] = None,
     ) -> pd.DataFrame:
+        """Generate community reports.
+
+        When ``affected_community_ids`` is provided, only those communities are
+        sent to the LLM. Existing reports for unaffected communities are preserved.
+        Communities that no longer exist in ``communities_df`` are removed.
+        """
         nodes_df = self._coalesce(nodes_df, "final_nodes.parquet")
         communities_df = self._coalesce(communities_df, "final_communities.parquet")
         entities_df = self._coalesce(entities_df, "final_entities.parquet")
@@ -61,12 +100,50 @@ class CommunityReportGenerator:
             self.reporter.warning("Missing community / entity tables; skipping report generation.")
             return pd.DataFrame()
 
-        # Use the highest community level — it represents the most coarse-grained groupings.
-        top_level = int(communities_df["level"].max())
-        top_communities = communities_df[communities_df["level"] == top_level]
+        # Pick which Leiden hierarchy level(s) to summarise.
+        all_levels = sorted({int(lv) for lv in communities_df["level"].unique()})
+        selected_levels = self._resolve_levels(all_levels)
+        top_communities = communities_df[
+            communities_df["level"].astype(int).isin(selected_levels)
+        ]
+
+        # Filter out tiny communities (singletons + dust clusters from isolated
+        # entities) before we generate reports for them.
+        if self.min_report_size > 0:
+            before = len(top_communities)
+            top_communities = top_communities[top_communities["size"] >= self.min_report_size]
+            skipped = before - len(top_communities)
+            if skipped:
+                self.reporter.info(
+                    f"Skipped {skipped} community(ies) below min_report_size={self.min_report_size}."
+                )
+
+        if top_communities.empty:
+            self.reporter.warning(
+                "No communities qualified for reports after level + size filtering."
+            )
+            return pd.DataFrame()
+        current_community_ids = set(top_communities["community"].astype(str))
+
+        # Load existing reports for the selective path.
+        existing_reports: dict[str, dict[str, Any]] = {}
+        if affected_community_ids is not None:
+            existing_reports = self._load_existing_reports()
+
+        # Decide which communities need (re-)generation.
+        if affected_community_ids is not None:
+            communities_to_generate = top_communities[
+                top_communities["community"].astype(str).isin(affected_community_ids)
+            ]
+            self.reporter.info(
+                f"Selective report generation: {len(communities_to_generate)} of "
+                f"{len(top_communities)} communities affected."
+            )
+        else:
+            communities_to_generate = top_communities
 
         rep_rows = []
-        for _, row in top_communities.iterrows():
+        for _, row in communities_to_generate.iterrows():
             context = self._build_context(row["entity_ids"], entities_df, relationships_df)
             rep_rows.append((row, context))
 
@@ -79,28 +156,141 @@ class CommunityReportGenerator:
                 max_tokens=self.max_output_tokens,
                 temperature=self.temperature,
                 tag="community_report",
-                response_format={"type": "json_object"},
             )
             parsed = await self._parse_with_repair(response)
+            if not parsed.get("title") and not parsed.get("summary"):
+                _dump_debug(
+                    community_id=str(row["community"]),
+                    messages=messages,
+                    raw_response=response,
+                    parsed=parsed,
+                )
             return {
                 "id": row["id"],
                 "community": row["community"],
                 "level": row["level"],
                 "title": parsed.get("title", row["title"]),
                 "summary": parsed.get("summary", ""),
-                "full_content": json.dumps(parsed),
+                "full_content": _render_markdown(parsed),
+                "full_content_json": json.dumps(parsed),
                 "rank": float(parsed.get("rating", 5.0)),
                 "rank_explanation": parsed.get("rating_explanation", ""),
                 "findings": parsed.get("findings", []),
             }
 
-        reports = await asyncio.gather(*(_one(r, c) for r, c in rep_rows))
-        reports_df = pd.DataFrame(reports)
-        with self.storage.open_for_write(
-            f"{self.output_folder}/final_community_reports.parquet"
-        ) as path:
-            reports_df.to_parquet(path, index=False)
+        if self.report_concurrency is not None:
+            sem = asyncio.Semaphore(self.report_concurrency)
+
+            async def _throttled(row: Any, ctx: str) -> dict[str, Any]:
+                async with sem:
+                    return await _one(row, ctx)
+
+            new_reports = await asyncio.gather(*(_throttled(r, c) for r, c in rep_rows))
+        else:
+            new_reports = await asyncio.gather(*(_one(r, c) for r, c in rep_rows))
+
+        if affected_community_ids is not None:
+            # Merge: start from existing, update affected, remove deleted.
+            merged: dict[str, dict[str, Any]] = {}
+            for cid, report in existing_reports.items():
+                if str(cid) in current_community_ids:
+                    merged[str(cid)] = report
+            for report in new_reports:
+                merged[str(report["community"])] = report
+            reports_df = pd.DataFrame(list(merged.values()))
+        else:
+            reports_df = pd.DataFrame(new_reports)
+
+        if not reports_df.empty:
+            with self.storage.open_for_write(
+                f"{self.output_folder}/final_community_reports.parquet"
+            ) as path:
+                reports_df.to_parquet(path, index=False)
+
+            self._enrich_communities(reports_df, nodes_df, relationships_df)
         return reports_df
+
+    def _load_existing_reports(self) -> dict[str, dict[str, Any]]:
+        key = f"{self.output_folder}/final_community_reports.parquet"
+        if not self.storage.exists(key):
+            return {}
+        with self.storage.open_for_read(key) as path:
+            df = pd.read_parquet(path)
+        return {str(row["community"]): row.to_dict() for _, row in df.iterrows()}
+
+    # ------------------------------------------------------------------ community enrichment
+
+    def _enrich_communities(
+        self,
+        reports_df: pd.DataFrame,
+        nodes_df: Optional[pd.DataFrame],
+        relationships_df: Optional[pd.DataFrame],
+    ) -> None:
+        """Update ``final_communities.parquet`` with legacy-standard columns.
+
+        Adds ``raw_community`` (JSON list of entity names),
+        ``relationship_ids`` (JSON list), ``text_unit_ids`` (JSON list),
+        and overrides ``title`` with the LLM-generated report title.
+        """
+        comm_key = f"{self.output_folder}/final_communities.parquet"
+        if not self.storage.exists(comm_key):
+            return
+        with self.storage.open_for_read(comm_key) as path:
+            comm_df = pd.read_parquet(path)
+
+        entities_df = self._coalesce(None, "final_entities.parquet")
+        relationships_df = self._coalesce(relationships_df, "final_relationships.parquet")
+
+        report_title_map = {
+            str(row["community"]): row["title"]
+            for _, row in reports_df.iterrows()
+            if row.get("title")
+        }
+
+        raw_communities = []
+        rel_ids_list = []
+        tu_ids_list = []
+        titles = []
+
+        for _, row in comm_df.iterrows():
+            entity_names = row.get("entity_ids", [])
+            if entity_names is None:
+                entity_names = []
+
+            raw_communities.append(json.dumps(list(entity_names)))
+
+            names_set = set(entity_names)
+
+            if not relationships_df.empty:
+                rels = relationships_df[
+                    relationships_df["source"].isin(names_set)
+                    & relationships_df["target"].isin(names_set)
+                ]
+                rel_ids_list.append(json.dumps(rels["id"].tolist()))
+            else:
+                rel_ids_list.append(json.dumps([]))
+
+            if not entities_df.empty and "text_unit_ids" in entities_df.columns:
+                tu_ids: set[str] = set()
+                matching = entities_df[entities_df["name"].isin(names_set)]
+                for _, e in matching.iterrows():
+                    tids = e.get("text_unit_ids")
+                    if tids is not None and hasattr(tids, "__iter__") and not isinstance(tids, str):
+                        tu_ids.update(tids)
+                tu_ids_list.append(json.dumps(sorted(tu_ids)))
+            else:
+                tu_ids_list.append(json.dumps([]))
+
+            cid = str(row["community"])
+            titles.append(report_title_map.get(cid, row.get("title", "")))
+
+        comm_df["raw_community"] = raw_communities
+        comm_df["relationship_ids"] = rel_ids_list
+        comm_df["text_unit_ids"] = tu_ids_list
+        comm_df["title"] = titles
+
+        with self.storage.open_for_write(comm_key) as path:
+            comm_df.to_parquet(path, index=False)
 
     # ------------------------------------------------------------------ context
 
@@ -166,7 +356,6 @@ class CommunityReportGenerator:
             max_tokens=self.max_output_tokens,
             temperature=0.0,
             tag="json_correction",
-            response_format={"type": "json_object"},
         )
         if not fixed:
             return _EMPTY_REPORT
@@ -197,6 +386,19 @@ _EMPTY_REPORT: dict[str, Any] = {
 }
 
 
+def _render_markdown(parsed: dict[str, Any]) -> str:
+    """Render a parsed report dict as a markdown document (legacy ``full_content`` format)."""
+    title = parsed.get("title", "Report")
+    summary = parsed.get("summary", "")
+    findings = parsed.get("findings", [])
+    sections = "\n\n".join(
+        f"## {f.get('summary', '')}\n\n{f.get('explanation', '')}"
+        for f in findings
+        if isinstance(f, dict)
+    )
+    return f"# {title}\n\n{summary}\n\n{sections}" if sections else f"# {title}\n\n{summary}"
+
+
 def _strip_to_json(text: str) -> str:
     """Strip ``<report_json>``, ``<correct_json>``, markdown fences, and trim to outer braces."""
     text = re.sub(r"^.*?(?:<report_json>|<correct_json>|```json|```)", "", text, count=1, flags=re.S)
@@ -216,6 +418,17 @@ def _strip_to_json(text: str) -> str:
 def _coerce_report(data: Any) -> dict[str, Any]:
     if not isinstance(data, dict):
         return _EMPTY_REPORT
+    # Unwrap {"report_json": "..."} or {"report": "..."} patterns where the
+    # model stringified the real JSON inside a wrapper key.
+    for wrapper_key in ("report_json", "report", "result", "output"):
+        if wrapper_key in data and isinstance(data[wrapper_key], str) and "title" not in data:
+            try:
+                inner = json.loads(data[wrapper_key])
+                if isinstance(inner, dict):
+                    data = inner
+                    break
+            except (json.JSONDecodeError, TypeError):
+                pass
     out = {
         "title": str(data.get("title", "")),
         "summary": str(data.get("summary", "")),
@@ -231,3 +444,34 @@ def _coerce_report(data: Any) -> dict[str, Any]:
                     {"summary": str(f.get("summary", "")), "explanation": str(f.get("explanation", ""))}
                 )
     return out
+
+
+def _dump_debug(
+    *,
+    community_id: str,
+    messages: list[dict[str, Any]],
+    raw_response: Optional[str],
+    parsed: dict[str, Any],
+) -> None:
+    """Write the prompt + raw LLM response to /tmp/debug_grail/ for inspection."""
+    from pathlib import Path
+    import datetime
+
+    debug_dir = Path("/tmp/debug_grail")
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    stem = f"community_{community_id}_{ts}"
+
+    prompt_path = debug_dir / f"{stem}_prompt.json"
+    prompt_path.write_text(json.dumps(messages, indent=2, ensure_ascii=False))
+
+    response_path = debug_dir / f"{stem}_response.txt"
+    response_path.write_text(raw_response or "<EMPTY / None>")
+
+    parsed_path = debug_dir / f"{stem}_parsed.json"
+    parsed_path.write_text(json.dumps(parsed, indent=2, ensure_ascii=False))
+
+    log.warning(
+        "Empty community report for community %s — debug files written to %s",
+        community_id, debug_dir,
+    )

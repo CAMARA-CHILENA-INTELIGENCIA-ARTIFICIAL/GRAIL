@@ -29,6 +29,7 @@ from typing import Any, Optional
 import networkx as nx
 import pandas as pd
 
+from grail._version import __version__ as _GRAIL_VERSION
 from grail.config import Config, load_config
 from grail.indexing import (
     CommunityExtractor,
@@ -38,9 +39,19 @@ from grail.indexing import (
     IncrementalCommunityExtractor,
     SummarizeExtractor,
 )
+from grail.indexing.run_manifest import (
+    RunContext,
+    generate_run_id,
+    resolve_active_run_folder,
+    run_folder,
+    write_current_run,
+    write_llm_calls_log,
+    write_manifest,
+    write_summary,
+)
 from grail.llm import CostTracker, EmbeddingClient, Endpoint, EndpointRegistry, LLMCache, LLMClient
 from grail.prompts import PromptRegistry
-from grail.query import GlobalSearch, LocalSearch
+from grail.query import AgentSearch, DocumentSearch, GlobalSearch, LocalSearch
 from grail.query.retrieval import SearchArtifacts, load_artifacts_for_search
 from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
@@ -110,6 +121,15 @@ class GRAIL:
             cache = LLMCache(directory=cache_dir, enabled=True)
 
         cost = CostTracker()
+        # Merge user-supplied pricing on top of DEFAULT_PRICING.
+        for key, rate in (config.llm.extra_pricing or {}).items():
+            if not isinstance(rate, (list, tuple)) or len(rate) != 2:
+                log.warning(
+                    "Skipping extra_pricing entry %r — expected [prompt_per_1M, completion_per_1M].",
+                    key,
+                )
+                continue
+            cost.pricing[key] = (float(rate[0]), float(rate[1]))
         rep = reporter or NullReporter()
 
         llm = LLMClient(
@@ -132,6 +152,7 @@ class GRAIL:
             encoding_format=config.embeddings.encoding_format,
             max_batch_size=config.embeddings.max_batch_size,
             concurrent_requests=config.embeddings.concurrent_requests,
+            cost_tracker=cost,  # shared with LLMClient — single unified ledger
             request_timeout=config.embeddings.request_timeout,
             max_retries=config.embeddings.max_retries,
             max_retry_wait=config.embeddings.max_retry_wait,
@@ -155,8 +176,67 @@ class GRAIL:
 
     # ------------------------------------------------------------------ helpers
 
-    def _output_folder(self) -> str:
+    # Active run state. Set when index() / append() / edit() / delete() runs;
+    # falls back to the current.json pointer when ad-hoc operations (e.g. search
+    # from a fresh process) need to read artefacts.
+    _active_run: Optional[RunContext] = None
+
+    def _base_output_folder(self) -> str:
+        """The top-level output dir as declared in config (default ``"output"``)."""
         return self.config.indexing.output_folder
+
+    def _output_folder(self) -> str:
+        """Where stages read from / write to right now.
+
+        * If a run is in progress, return its folder.
+        * Else resolve via ``current.json`` (search / standalone operations).
+        * Else fall back to the legacy flat path (so projects that pre-date
+          the run-folder layout still work read-only).
+        """
+        if self._active_run is not None:
+            return self._active_run.run_dir
+        return resolve_active_run_folder(self.storage, self._base_output_folder())
+
+    def _start_run(self, *, operation: str) -> RunContext:
+        """Create a new run folder, snapshot the config, and stash the context."""
+        base = self._base_output_folder()
+        run_id = generate_run_id()
+        run_dir = run_folder(base, run_id)
+        self.storage.ensure_prefix(run_dir)
+        ctx = RunContext(
+            run_id=run_id,
+            run_dir=run_dir,
+            base_output_folder=base,
+            config_snapshot=self.config.model_dump(mode="python"),
+            grail_version=_GRAIL_VERSION,
+        )
+        self._active_run = ctx
+        return ctx
+
+    def _persist_run(
+        self,
+        ctx: RunContext,
+        *,
+        operation: str,
+        files_processed: Optional[list[dict[str, Any]]] = None,
+        counts: Optional[dict[str, Any]] = None,
+    ) -> dict[str, str]:
+        """Write manifest / summary / llm_calls.jsonl + update current.json.
+
+        Returns the storage keys of the three written files so the CLI can
+        surface them to the user.
+        """
+        manifest_key = write_manifest(
+            self.storage, ctx, self.cost_tracker, files_processed=files_processed
+        )
+        calls_key = write_llm_calls_log(self.storage, ctx, self.cost_tracker)
+        summary_key = write_summary(
+            self.storage, ctx, self.cost_tracker, counts=counts or {}
+        )
+        write_current_run(
+            self.storage, self._base_output_folder(), run_id=ctx.run_id, operation=operation
+        )
+        return {"manifest": manifest_key, "llm_calls": calls_key, "summary": summary_key}
 
     def _vector_store(self) -> Optional[LanceDBVectorStore]:
         cfg = self.config.vectorstore
@@ -183,46 +263,85 @@ class GRAIL:
 
     async def index(self) -> dict[str, Any]:
         """Run the full indexing pipeline against the configured input folder."""
+        ctx = self._start_run(operation="index")
+        op = ctx.begin_operation("index")
         started = time.perf_counter()
+        self.reporter.info(f"Starting run {ctx.run_id}")
+
         loader = self._make_loader()
 
         self.reporter.info("Step 1/4 — chunking source files")
         docs_df, text_units_df, mapping = loader.build_text_units()
         if docs_df.empty:
+            ctx.finish_operation(op, ok=False, reason="no input files")
+            self._persist_run(ctx, operation="index")
             self.reporter.warning("No input files found; aborting.")
-            return {"ok": False, "reason": "no input files"}
+            return {"ok": False, "reason": "no input files", "run_id": ctx.run_id, "run_dir": ctx.run_dir}
         loader.write_artifacts(docs_df, text_units_df, mapping)
+
+        if self.config.indexing.discover_entity_types:
+            self.reporter.info("Discovering entity types from corpus…")
+            self.config.indexing.entity_types = await self._discover_and_merge_entity_types()
 
         self.reporter.info("Step 2/4 — extracting entities & relationships")
         extractor = self._make_extractor()
         entities_df, relationships_df, text_units_df, graph = await extractor.process_text_units()
         if entities_df.empty:
+            ctx.finish_operation(op, ok=False, reason="no entities")
+            self._persist_run(ctx, operation="index")
             self.reporter.warning("Extraction produced no entities; aborting.")
-            return {"ok": False, "reason": "no entities"}
+            return {"ok": False, "reason": "no entities", "run_id": ctx.run_id, "run_dir": ctx.run_dir}
 
         await self._update_vector_store(entities_df)
 
         self.reporter.info("Step 3/4 — community detection (Leiden)")
         community_extractor = self._make_community_extractor()
-        graph, communities, nodes_df, comm_df = community_extractor.extract_communities(graph)
+        graph, communities, nodes_df, comm_df = community_extractor.extract_communities(
+            graph, entities_df=entities_df
+        )
 
         self.reporter.info("Step 4/4 — generating community reports")
         reports_df = await self._generate_community_reports(
             nodes_df, comm_df, entities_df, relationships_df
         )
 
-        return {
-            "ok": True,
-            "operation": "index",
-            "duration_s": time.perf_counter() - started,
+        counts = {
             "documents": len(docs_df),
             "text_units": len(text_units_df),
             "entities": len(entities_df),
             "relationships": len(relationships_df),
             "communities": int(comm_df["community"].nunique()) if not comm_df.empty else 0,
             "reports": len(reports_df),
+        }
+        ctx.finish_operation(op, ok=True, stats=counts)
+
+        files_processed = [
+            {
+                "path": d["path"],
+                "title": d["title"],
+                "size_chars": int(mapping.get(d["id"], {}).get("size_chars", 0) or 0),
+                "n_text_units": len(d["text_unit_ids"]) if isinstance(d["text_unit_ids"], list) else 0,
+                "processed_path": mapping.get(d["id"], {}).get("processed_path"),
+            }
+            for _, d in docs_df.iterrows()
+        ]
+        artefacts = self._persist_run(
+            ctx, operation="index", files_processed=files_processed, counts=counts
+        )
+
+        duration_s = time.perf_counter() - started
+        return {
+            "ok": True,
+            "operation": "index",
+            "run_id": ctx.run_id,
+            "run_dir": ctx.run_dir,
+            "duration_s": duration_s,
+            **counts,
             "llm_summary": self.cost_tracker.summary(by="tag"),
             "total_cost_usd": self.cost_tracker.total_cost_usd(),
+            "total_cost_display": self.cost_tracker.render_total_cost(),
+            "pricing_status": self.cost_tracker.pricing_status(),
+            "artefacts": artefacts,
         }
 
     # ------------------------------------------------------------------ SEARCH
@@ -234,10 +353,19 @@ class GRAIL:
         mode: str = "local",
         conversation_history: Optional[list[dict[str, Any]]] = None,
         artifact_instructions: str = "",
+        document: Optional[str] = None,
+        include_entity_names: Optional[list[str]] = None,
+        exclude_entity_names: Optional[list[str]] = None,
     ) -> SearchResult:
+        """Run a single search.
+
+        ``mode`` is one of ``"local"``, ``"global"``, or ``"document"``.
+        For ``"document"`` mode, pass ``document`` (filename, path, or doc ID).
+        """
         artifacts = load_artifacts_for_search(self.storage, self._output_folder())
+        resp_max = self.config.search.response_max_tokens
         if mode == "local":
-            search = LocalSearch(
+            s = LocalSearch(
                 storage=self.storage,
                 llm=self.llm,
                 embeddings=self.embeddings,
@@ -248,18 +376,23 @@ class GRAIL:
                 top_k_entities=self.config.search.local_top_k_entities,
                 top_k_relationships=self.config.search.local_top_k_relationships,
                 max_tokens=self.config.search.local_max_tokens,
-                response_max_tokens=self.config.search.local_max_tokens,
+                text_unit_prop=self.config.search.local_text_unit_prop,
+                community_prop=self.config.search.local_community_prop,
+                conversation_history_max_turns=self.config.search.local_conversation_history_max_turns,
+                response_max_tokens=resp_max,
                 endpoint=self.config.search.local_search_endpoint,
                 model=self.config.search.local_search_model,
                 reporter=self.reporter,
             )
-            return await search.asearch(
+            return await s.asearch(
                 query,
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
+                include_entity_names=include_entity_names,
+                exclude_entity_names=exclude_entity_names,
             )
         elif mode == "global":
-            search = GlobalSearch(
+            s = GlobalSearch(
                 storage=self.storage,
                 llm=self.llm,
                 prompts=self.prompts,
@@ -273,12 +406,72 @@ class GRAIL:
                 model=self.config.search.global_search_model,
                 reporter=self.reporter,
             )
-            return await search.asearch(
+            return await s.asearch(
                 query,
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
             )
-        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local' or 'global'.")
+        elif mode == "document":
+            if not document:
+                raise ValueError("mode='document' requires a 'document' argument.")
+            s = DocumentSearch(
+                storage=self.storage,
+                llm=self.llm,
+                embeddings=self.embeddings,
+                prompts=self.prompts,
+                artifacts=artifacts,
+                output_folder=self._output_folder(),
+                max_tokens=self.config.search.local_max_tokens,
+                top_k_entities=self.config.search.local_top_k_entities,
+                response_max_tokens=resp_max,
+                endpoint=self.config.search.local_search_endpoint,
+                model=self.config.search.local_search_model,
+                reporter=self.reporter,
+            )
+            return await s.asearch(
+                query,
+                document=document,
+                conversation_history=conversation_history,
+                artifact_instructions=artifact_instructions,
+            )
+        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local', 'global', or 'document'.")
+
+    async def agent_search(
+        self,
+        query: str,
+        *,
+        conversation_history: Optional[list[dict[str, Any]]] = None,
+        system_prompt: Optional[str] = None,
+        max_iterations: int = 5,
+    ) -> SearchResult:
+        """Agentic search — the LLM decides which search tools to call and iterates.
+
+        The agent has access to ``local_search``, ``global_search``, and
+        ``document_search`` as tools. It can call them multiple times with
+        different parameters before synthesizing a final answer.
+        """
+        agent = AgentSearch(
+            storage=self.storage,
+            llm=self.llm,
+            embeddings=self.embeddings,
+            prompts=self.prompts,
+            vector_store=self._vector_store(),
+            output_folder=self._output_folder(),
+            max_iterations=max_iterations,
+            max_tokens=self.config.search.local_max_tokens,
+            top_k_entities=self.config.search.local_top_k_entities,
+            text_unit_prop=self.config.search.local_text_unit_prop,
+            community_prop=self.config.search.local_community_prop,
+            response_max_tokens=self.config.search.response_max_tokens,
+            endpoint=self.config.search.local_search_endpoint,
+            model=self.config.search.local_search_model,
+            reporter=self.reporter,
+        )
+        return await agent.asearch(
+            query,
+            conversation_history=conversation_history,
+            system_prompt=system_prompt,
+        )
 
     # ------------------------------------------------------------------ CUSTOM ENTITIES
 
@@ -316,16 +509,60 @@ class GRAIL:
             if sum(len(s) for s in sample_texts) >= sample_chars:
                 break
 
-        messages = self.prompts.build("create_custom_entities", texts=sample_texts)
+        existing = [
+            t for t in self.config.indexing.entity_types
+            if t not in ("PERSON", "ORGANIZATION")
+        ]
+        max_types = max(3, self.config.indexing.max_entity_types - 2)
+        messages = self.prompts.build(
+            "create_custom_entities",
+            texts=sample_texts,
+            existing_types=existing,
+            max_types=max_types,
+        )
         response = await self.llm.execute_safe(
             messages=messages,
             endpoint=endpoint,
             model=model,
-            max_tokens=512,
+            max_tokens=self.config.indexing.entity_discovery_max_tokens,
             temperature=0.0,
             tag="create_custom_entities",
         )
         return _parse_entity_types(response, default=self.config.indexing.entity_types)
+
+    async def _discover_and_merge_entity_types(self) -> list[str]:
+        """Run LLM entity-type discovery and merge with existing config types.
+
+        The mandatory types (PERSON, ORGANIZATION) are always present. User-defined
+        types are kept. LLM-proposed types fill remaining slots up to ``max_entity_types``.
+        """
+        from grail.config import MANDATORY_ENTITY_TYPES
+
+        max_total = self.config.indexing.max_entity_types
+        existing = list(self.config.indexing.entity_types)
+
+        proposed = await self.create_entity_types()
+
+        seen: set[str] = set()
+        merged: list[str] = []
+
+        for t in existing:
+            upper = t.upper().replace(" ", "_")
+            if upper not in seen:
+                seen.add(upper)
+                merged.append(upper)
+
+        for t in proposed:
+            upper = t.upper().replace(" ", "_")
+            if upper not in seen and len(merged) < max_total:
+                seen.add(upper)
+                merged.append(upper)
+
+        self.reporter.info(
+            f"Entity types: {len(existing)} existing + "
+            f"{len(merged) - len(existing)} discovered → {len(merged)} total"
+        )
+        return merged
 
     # ------------------------------------------------------------------ helpers (shared)
 
@@ -342,6 +579,18 @@ class GRAIL:
         )
 
     def _make_extractor(self) -> EntityRelationshipExtractor:
+        delimiters: dict[str, str] = {}
+        if self.config.indexing.tuple_delimiter is not None:
+            delimiters["tuple_delimiter"] = self.config.indexing.tuple_delimiter
+        if self.config.indexing.record_delimiter is not None:
+            delimiters["record_delimiter"] = self.config.indexing.record_delimiter
+        if self.config.indexing.completion_delimiter is not None:
+            delimiters["completion_delimiter"] = self.config.indexing.completion_delimiter
+        if self.config.indexing.start_delimiter is not None:
+            delimiters["start_delimiter"] = self.config.indexing.start_delimiter
+
+        from grail.prompts.builtin.entity_relation import DEFAULT_DELIMITERS
+
         return EntityRelationshipExtractor(
             storage=self.storage,
             llm=self.llm,
@@ -353,6 +602,10 @@ class GRAIL:
             summarization_endpoint=self.config.indexing.summarization_endpoint,
             summarization_model=self.config.indexing.summarization_model,
             output_folder=self._output_folder(),
+            extraction_max_tokens=self.config.indexing.extraction_max_tokens,
+            extraction_concurrency=self.config.indexing.extraction_concurrency,
+            summarization_concurrency=self.config.indexing.summarization_concurrency,
+            delimiters={**DEFAULT_DELIMITERS, **delimiters},
             reporter=self.reporter,
         )
 
@@ -402,6 +655,8 @@ class GRAIL:
         comm_df: pd.DataFrame,
         entities_df: pd.DataFrame,
         relationships_df: pd.DataFrame,
+        *,
+        affected_community_ids: set[str] | None = None,
     ) -> pd.DataFrame:
         report_gen = CommunityReportGenerator(
             storage=self.storage,
@@ -413,6 +668,9 @@ class GRAIL:
             json_corrector_endpoint=self.config.community.json_corrector_endpoint,
             json_corrector_model=self.config.community.json_corrector_model,
             max_output_tokens=self.config.community.max_report_length,
+            community_level=self.config.community.community_level,
+            min_report_size=self.config.community.min_report_size,
+            report_concurrency=self.config.community.report_concurrency,
             reporter=self.reporter,
         )
         return await report_gen.generate_reports(
@@ -420,6 +678,7 @@ class GRAIL:
             communities_df=comm_df,
             entities_df=entities_df,
             relationships_df=relationships_df,
+            affected_community_ids=affected_community_ids,
         )
 
     # ------------------------------------------------------------------ APPEND / EDIT / DELETE
@@ -460,16 +719,17 @@ class GRAIL:
         # Layer 3: update communities.
         self.reporter.info("Step 3/4 — updating communities")
         inc = self._make_incremental_community()
-        graph, communities, nodes_df, comm_df = inc.update(
+        graph, communities, nodes_df, comm_df, affected_cids = inc.update(
             graph,
             new_entity_names=new_entity_names,
             updated_entity_names=updated_entity_names,
         )
 
-        # Layer 4: community reports.
+        # Layer 4: community reports (only affected communities).
         self.reporter.info("Step 4/4 — generating community reports")
         reports_df = await self._generate_community_reports(
-            nodes_df, comm_df, entities_df, rels_df
+            nodes_df, comm_df, entities_df, rels_df,
+            affected_community_ids=affected_cids,
         )
 
         return {
@@ -540,17 +800,18 @@ class GRAIL:
         # Layer 3: update communities with edit awareness.
         self.reporter.info("Step 3/4 — updating communities")
         inc = self._make_incremental_community()
-        graph, communities, nodes_df, comm_df = inc.incremental_edit(
+        graph, communities, nodes_df, comm_df, affected_cids = inc.incremental_edit(
             graph,
             new_entity_names=new_entity_names,
             updated_entity_names=updated_entity_names,
             deleted_entity_names=deleted_entity_names,
         )
 
-        # Layer 4: community reports.
+        # Layer 4: community reports (only affected communities).
         self.reporter.info("Step 4/4 — generating community reports")
         reports_df = await self._generate_community_reports(
-            nodes_df, comm_df, entities_df, rels_df
+            nodes_df, comm_df, entities_df, rels_df,
+            affected_community_ids=affected_cids,
         )
 
         return {
@@ -600,14 +861,15 @@ class GRAIL:
         # Layer 3: update communities after deletion.
         self.reporter.info("Step 3/4 — updating communities")
         inc = self._make_incremental_community()
-        graph, communities, nodes_df, comm_df = inc.incremental_delete(
+        graph, communities, nodes_df, comm_df, affected_cids = inc.incremental_delete(
             graph, deleted_entity_names=deleted_entity_names,
         )
 
-        # Layer 4: community reports.
+        # Layer 4: community reports (only affected communities).
         self.reporter.info("Step 4/4 — generating community reports")
         reports_df = await self._generate_community_reports(
-            nodes_df, comm_df, entities_df, rels_df
+            nodes_df, comm_df, entities_df, rels_df,
+            affected_community_ids=affected_cids,
         )
 
         return {

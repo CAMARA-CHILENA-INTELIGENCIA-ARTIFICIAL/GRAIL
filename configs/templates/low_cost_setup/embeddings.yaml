@@ -1,0 +1,29 @@
+# Embedding client.
+#
+# Most providers serve chat AND embeddings under the same base_url — the OpenAI
+# SDK POSTs to {base_url}/embeddings automatically. So reusing the `inference`
+# endpoint here just works.
+#
+# If you ever need a different host for embeddings (separate server, different
+# region, …) define a second endpoint in endpoints.yaml and reference it below.
+
+endpoint: inference
+
+# The embedding model name your endpoint accepts. Qwen3-Embedding-0.6B is a
+# small, strong multilingual encoder available on DeepInfra.
+#
+# INVARIANT: this model must match between indexing and querying. Mismatched
+# dimensions silently break recall.
+model: Qwen/Qwen3-Embedding-0.6B
+
+encoding_format: float
+
+# Batching — most providers cap individual requests at a few hundred inputs.
+# 256 is safe across DeepInfra / OpenAI / Together. Raise if your provider allows.
+max_batch_size: 256
+concurrent_requests: 8
+
+request_timeout: 180.0
+max_retries: 10
+max_retry_wait: 10.0
+sleep_on_rate_limit: 30.0

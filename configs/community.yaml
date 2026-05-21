@@ -13,7 +13,12 @@ json_corrector_endpoint: null
 json_corrector_model: null
 
 # JSON community report ceiling.
-max_report_length: 4000
+max_report_length: 8192
+
+# Concurrency for community report LLM calls. null = use the global
+# llm.concurrent_requests limit. Set lower to avoid overwhelming the
+# endpoint with heavy report-generation calls.
+# report_concurrency: null
 
 # If true, include claims (covariates) in the report context.
 include_covariates: false

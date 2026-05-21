@@ -27,9 +27,20 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from grail.llm.providers import DEFAULT_ENDPOINTS
+
+
+# Entity types that are always guaranteed to be present in the extraction prompt,
+# regardless of what the user puts in ``IndexingConfig.entity_types``. PERSON and
+# ORGANIZATION are the GraphRAG canonical defaults — useful for almost any corpus
+# (the extractor still won't surface them if no people / orgs appear in the text).
+MANDATORY_ENTITY_TYPES: tuple[str, ...] = ("PERSON", "ORGANIZATION")
+
+DEFAULT_ENTITY_TYPES: tuple[str, ...] = (
+    "PERSON", "ORGANIZATION", "LOCATION", "EVENT", "CONCEPT",
+)
 
 _MODULES = (
     "endpoints",
@@ -69,6 +80,17 @@ class LLMConfig(BaseModel):
     cache_enabled: bool = False
     cache_dir: Optional[str] = None
 
+    # Extra pricing entries merged into the CostTracker at construction time.
+    # Keyed by ``"endpoint|model"`` (canonical) or bare model name. Values are
+    # ``[prompt_per_1M_usd, completion_per_1M_usd]``. See docs/glossary.md#llm.
+    #
+    # Example (DeepInfra publishes pricing via a non-OpenAI metadata extension —
+    # paste the rates you care about here):
+    #   extra_pricing:
+    #     "deepinfra|google/gemma-4-26B-A4B-it": [0.07, 0.34]
+    #     "deepinfra|Qwen/Qwen3-Embedding-0.6B": [0.005, 0.0]
+    extra_pricing: dict[str, list[float]] = Field(default_factory=dict)
+
 
 class EmbeddingsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -106,9 +128,50 @@ class IndexingConfig(BaseModel):
     summarization_endpoint: Optional[str] = None
     summarization_model: Optional[str] = None
 
-    entity_types: list[str] = Field(default_factory=lambda: ["person", "organization"])
+    entity_types: list[str] = Field(default_factory=lambda: list(DEFAULT_ENTITY_TYPES))
+    discover_entity_types: bool = False
+    max_entity_types: int = 15
+    tuple_delimiter: Optional[str] = None
+    record_delimiter: Optional[str] = None
+    completion_delimiter: Optional[str] = None
+    start_delimiter: Optional[str] = None
+    extraction_max_tokens: int = 8192
+    extraction_concurrency: Optional[int] = None
+    summarization_concurrency: Optional[int] = None
+    entity_discovery_max_tokens: int = 2048
     max_summarization_tokens: int = 756
     max_gleanings: int = 0
+
+    @field_validator("entity_types", mode="after")
+    @classmethod
+    def _normalize_entity_types(cls, value: list[str]) -> list[str]:
+        """Normalize every type to UPPER_SNAKE_CASE and guarantee MANDATORY_ENTITY_TYPES
+        are present at the head of the list. Whitespace inside type names is
+        collapsed to underscores so the prompt format stays clean.
+        """
+        seen: set[str] = set()
+        normalized: list[str] = []
+        for raw in list(MANDATORY_ENTITY_TYPES) + list(value or []):
+            if not isinstance(raw, str):
+                continue
+            token = "_".join(raw.strip().upper().split())
+            if not token or token in seen:
+                continue
+            seen.add(token)
+            normalized.append(token)
+        return normalized
+
+    MIN_ENTITY_TYPES: int = 5
+
+    @model_validator(mode="after")
+    def _check_min_entity_types(self) -> "IndexingConfig":
+        if not self.discover_entity_types and len(self.entity_types) < self.MIN_ENTITY_TYPES:
+            raise ValueError(
+                f"indexing.entity_types has only {len(self.entity_types)} types "
+                f"(minimum {self.MIN_ENTITY_TYPES}). Either add more types to the "
+                f"list or set discover_entity_types: true to let the LLM propose them."
+            )
+        return self
 
 
 class CommunityConfig(BaseModel):
@@ -123,10 +186,23 @@ class CommunityConfig(BaseModel):
     json_corrector_endpoint: Optional[str] = None
     json_corrector_model: Optional[str] = None
     max_report_length: int = 4000
+    report_concurrency: Optional[int] = None
     include_covariates: bool = False
     incremental_change_threshold: float = 0.3
     min_community_size: int = 10
     embedding_merge_eps: float = 0.5
+
+    # Which Leiden hierarchy level gets community reports generated for it.
+    # Values: "coarsest" (smallest level number — fewest, broadest communities;
+    # default and recommended), "finest" (largest level number — most granular),
+    # "all" (every level — matches the legacy + Microsoft GraphRAG behaviour),
+    # or an int (specific level after inspecting final_communities.parquet).
+    community_level: str | int = "coarsest"
+
+    # Communities with fewer than this many entities are skipped at report
+    # generation time. Defends against the long tail of singleton "communities"
+    # produced by isolated entities (no relationships). 0 disables the filter.
+    min_report_size: int = 3
 
 
 class SearchConfig(BaseModel):
@@ -147,6 +223,7 @@ class SearchConfig(BaseModel):
     global_reduce_max_tokens: int = 6000
     global_chunk_size: int = 100_000
     global_concurrency: int = 5
+    response_max_tokens: int = 8192
     response_type: str = "Multiple Paragraphs"
 
 

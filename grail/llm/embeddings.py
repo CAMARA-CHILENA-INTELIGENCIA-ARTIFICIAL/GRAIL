@@ -18,6 +18,7 @@ from openai import AsyncOpenAI, OpenAIError, RateLimitError
 from pydantic import BaseModel, ConfigDict, Field
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_fixed
 
+from grail.llm.cost import now as _perf_now
 from grail.llm.providers import EndpointRegistry, resolve_endpoint_and_model
 from grail.reporting import NullReporter, Reporter
 
@@ -51,6 +52,14 @@ class EmbeddingClient(BaseModel):
     max_retry_wait: float = Field(default=10.0)
     sleep_on_rate_limit: float = Field(default=30.0)
     endpoint_registry: EndpointRegistry = Field(default_factory=EndpointRegistry)
+    # Same CostTracker instance the LLMClient uses, so the manifest gets a
+    # unified ledger across chat completions + embeddings. ``Any`` because
+    # ``CostTracker`` holds a threading.Lock — pydantic can't introspect it.
+    cost_tracker: Optional[Any] = None
+    # Default tag stamped on each recorded embedding call. Override per-call via
+    # the ``tag=`` parameter to embed() / embed_one() / embed_safe() when you
+    # want finer-grained breakdowns (e.g. "query_embedding" vs "index_embedding").
+    default_tag: str = Field(default="embedding")
     reporter: Any = Field(default_factory=NullReporter)
 
     _semaphore: Optional[asyncio.Semaphore] = None
@@ -93,6 +102,8 @@ class EmbeddingClient(BaseModel):
         *,
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
+        tag: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> list[list[float]]:
         endpoint_name, model_name = resolve_endpoint_and_model(
             model,
@@ -101,10 +112,13 @@ class EmbeddingClient(BaseModel):
             default_model=self.default_model,
         )
         handle = self._client_for(endpoint_name)
+        canonical_model_id = f"{endpoint_name}|{model_name}"
+        record_tag = tag or self.default_tag
 
         async def _call() -> list[list[float]]:
             assert self._semaphore is not None
             async with self._semaphore:
+                start = _perf_now()
                 try:
                     response = await asyncio.wait_for(
                         handle.client.embeddings.create(
@@ -125,6 +139,22 @@ class EmbeddingClient(BaseModel):
                     if getattr(exc, "http_status", None) == 429:
                         await asyncio.sleep(self.sleep_on_rate_limit)
                     raise
+
+            # Record usage on the shared CostTracker. The OpenAI Embeddings
+            # response shape is ``{data, model, usage: {prompt_tokens, total_tokens}}``
+            # — no completion side. DeepInfra et al follow the same shape. If a
+            # provider omits ``usage`` we record zeros and the call still appears
+            # in the ledger with cost_resolved=False / unresolved tokens.
+            if self.cost_tracker is not None:
+                usage = getattr(response, "usage", None)
+                self.cost_tracker.record(
+                    model=canonical_model_id,
+                    prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                    completion_tokens=0,
+                    duration_s=_perf_now() - start,
+                    tag=record_tag,
+                    session_id=session_id,
+                )
             return [record.embedding for record in response.data]
 
         return await self._retry()(_call)()
@@ -136,8 +166,14 @@ class EmbeddingClient(BaseModel):
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         concurrent: bool = True,
+        tag: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> list[list[float]]:
-        """Embed ``texts``, batching by :attr:`max_batch_size`."""
+        """Embed ``texts``, batching by :attr:`max_batch_size`.
+
+        ``tag`` is forwarded to the cost ledger so callers can distinguish
+        indexing-time embeddings from query-time ones.
+        """
         if not texts:
             return []
         batches = [
@@ -145,16 +181,30 @@ class EmbeddingClient(BaseModel):
             for i in range(0, len(texts), self.max_batch_size)
         ]
         if concurrent:
-            tasks = [self._execute(b, endpoint=endpoint, model=model) for b in batches]
+            tasks = [
+                self._execute(b, endpoint=endpoint, model=model, tag=tag, session_id=session_id)
+                for b in batches
+            ]
             results = await asyncio.gather(*tasks)
         else:
-            results = [await self._execute(b, endpoint=endpoint, model=model) for b in batches]
+            results = [
+                await self._execute(b, endpoint=endpoint, model=model, tag=tag, session_id=session_id)
+                for b in batches
+            ]
         return [vec for batch in results for vec in batch]
 
     async def embed_one(
-        self, text: str, *, endpoint: Optional[str] = None, model: Optional[str] = None
+        self,
+        text: str,
+        *,
+        endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        tag: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> list[float]:
-        out = await self.embed([text], endpoint=endpoint, model=model)
+        out = await self.embed(
+            [text], endpoint=endpoint, model=model, tag=tag, session_id=session_id
+        )
         return out[0]
 
     async def embed_safe(
@@ -163,10 +213,16 @@ class EmbeddingClient(BaseModel):
         *,
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
+        tag: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> list[Optional[list[float]]]:
         """Like :meth:`embed` but returns ``None`` per batch on failure."""
         try:
-            return list(await self.embed(texts, endpoint=endpoint, model=model))
+            return list(
+                await self.embed(
+                    texts, endpoint=endpoint, model=model, tag=tag, session_id=session_id
+                )
+            )
         except Exception as exc:  # pragma: no cover
             log.warning("Embedding failed after retries: %s", exc)
             return [None] * len(texts)

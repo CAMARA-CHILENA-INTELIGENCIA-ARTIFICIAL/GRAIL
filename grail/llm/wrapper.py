@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -71,6 +72,13 @@ from grail.reporting import NullReporter, Reporter
 
 log = logging.getLogger("grail.llm")
 
+_THINKING_RE = re.compile(r"<think>.*?</think>\s*", flags=re.S)
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove ``<think>…</think>`` blocks emitted by reasoning models (Qwen3, etc.)."""
+    return _THINKING_RE.sub("", text)
+
 
 @dataclass
 class _ClientHandle:
@@ -91,7 +99,7 @@ class LLMClient(BaseModel):
         default="gpt-4o-mini",
         description="Model name (no endpoint prefix) to use when callers don't override.",
     )
-    request_timeout: float = Field(default=180.0, description="Per-call timeout in seconds.")
+    request_timeout: float = Field(default=360.0, description="Per-call timeout in seconds.")
     max_retries: int = Field(default=10, description="tenacity attempt count for transient errors.")
     max_retry_wait: float = Field(default=10.0, description="Seconds to wait between retries.")
     sleep_on_rate_limit: float = Field(default=30.0, description="Sleep before propagating a 429.")
@@ -224,12 +232,18 @@ class LLMClient(BaseModel):
             kwargs["extra_body"] = extra_body
 
         start = now()
+        kwargs["stream"] = True
+        kwargs["stream_options"] = {"include_usage": True}
 
         async def _call() -> str:
             assert self._semaphore is not None
+            chunks: list[str] = []
+            usage_prompt = 0
+            usage_completion = 0
+
             async with self._semaphore:
                 try:
-                    response = await asyncio.wait_for(
+                    stream = await asyncio.wait_for(
                         handle.client.chat.completions.create(**kwargs),
                         timeout=self.request_timeout,
                     )
@@ -248,13 +262,32 @@ class LLMClient(BaseModel):
                         await asyncio.sleep(self.sleep_on_rate_limit)
                     raise
 
-            content = response.choices[0].message.content or ""
-            usage = getattr(response, "usage", None)
+                try:
+                    async for chunk in stream:
+                        usage = getattr(chunk, "usage", None)
+                        if usage is not None:
+                            usage_prompt = getattr(usage, "prompt_tokens", 0) or 0
+                            usage_completion = getattr(usage, "completion_tokens", 0) or 0
+                        if chunk.choices:
+                            delta = chunk.choices[0].delta
+                            if delta and delta.content:
+                                chunks.append(delta.content)
+                except Exception:
+                    if chunks:
+                        log.warning(
+                            "Stream interrupted after %d chunks for %s/%s (tag=%s); "
+                            "returning partial response.",
+                            len(chunks), endpoint_name, model_name, tag,
+                        )
+                    else:
+                        raise
+
+            content = _strip_thinking("".join(chunks))
             if self.cost_tracker is not None:
                 self.cost_tracker.record(
                     model=canonical_model_id,
-                    prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
-                    completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                    prompt_tokens=usage_prompt,
+                    completion_tokens=usage_completion,
                     duration_s=now() - start,
                     tag=tag,
                     session_id=sid,
@@ -285,11 +318,98 @@ class LLMClient(BaseModel):
         calls: list[dict[str, Any]],
         *,
         safe: bool = True,
+        concurrency: Optional[int] = None,
     ) -> list[Optional[str]]:
-        """Run ``calls`` concurrently (subject to the global semaphore)."""
+        """Run ``calls`` concurrently.
+
+        Each call is still bounded by the global semaphore (HTTP-level throttle).
+        When ``concurrency`` is set, an additional local semaphore limits how many
+        calls from this batch are in-flight at once — useful when you want fewer
+        concurrent community-report calls than extraction calls without changing
+        the global limit.
+        """
         method = self.execute_safe if safe else self.execute
-        tasks = [method(**call) for call in calls]
-        return await asyncio.gather(*tasks)
+        if concurrency is None:
+            tasks = [method(**call) for call in calls]
+            return await asyncio.gather(*tasks)
+
+        sem = asyncio.Semaphore(concurrency)
+
+        async def _throttled(call: dict[str, Any]) -> Optional[str]:
+            async with sem:
+                return await method(**call)
+
+        return await asyncio.gather(*[_throttled(c) for c in calls])
+
+    # ------------------------------------------------------------------ tool calling
+
+    async def execute_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        tools: list[dict[str, Any]],
+        endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.0,
+        tag: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Send ``messages`` with tool definitions, return the raw assistant message.
+
+        Returns a dict with ``content`` (str | None) and ``tool_calls`` (list | None).
+        The caller is responsible for the tool-call loop.
+        """
+        endpoint_name, model_name = resolve_endpoint_and_model(
+            model,
+            endpoint=endpoint,
+            default_endpoint=self.default_endpoint,
+            default_model=self.default_model,
+        )
+        handle = self._client_for(endpoint_name)
+        canonical = f"{endpoint_name}|{model_name}"
+        start = now()
+
+        async def _call() -> dict[str, Any]:
+            assert self._semaphore is not None
+            async with self._semaphore:
+                try:
+                    response = await asyncio.wait_for(
+                        handle.client.chat.completions.create(
+                            model=model_name,
+                            messages=messages,
+                            tools=tools,
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                        ),
+                        timeout=self.request_timeout,
+                    )
+                except RateLimitError:
+                    await asyncio.sleep(self.sleep_on_rate_limit)
+                    raise
+
+            msg = response.choices[0].message
+            usage = getattr(response, "usage", None)
+            if self.cost_tracker is not None:
+                self.cost_tracker.record(
+                    model=canonical,
+                    prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                    completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                    duration_s=now() - start,
+                    tag=tag,
+                )
+            tool_calls = None
+            if msg.tool_calls:
+                tool_calls = [
+                    {
+                        "id": tc.id,
+                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                    }
+                    for tc in msg.tool_calls
+                ]
+            content = _strip_thinking(msg.content) if msg.content else msg.content
+            return {"content": content, "tool_calls": tool_calls}
+
+        return await self._retry()(_call)()
 
     # ------------------------------------------------------------------ legacy shim
 

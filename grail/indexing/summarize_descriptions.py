@@ -65,7 +65,18 @@ class SummarizeExtractor:
     async def summarize_many(
         self,
         items: list[tuple[str, list[str]]],
+        *,
+        concurrency: Optional[int] = None,
     ) -> list[str]:
         """Batch helper. Each item is ``(entity_name, [desc, desc, ...])``."""
-        tasks = [self.summarize_one(name, descs) for name, descs in items]
-        return await asyncio.gather(*tasks)
+        if concurrency is None:
+            tasks = [self.summarize_one(name, descs) for name, descs in items]
+            return await asyncio.gather(*tasks)
+
+        sem = asyncio.Semaphore(concurrency)
+
+        async def _throttled(name: str, descs: list[str]) -> str:
+            async with sem:
+                return await self.summarize_one(name, descs)
+
+        return await asyncio.gather(*[_throttled(n, d) for n, d in items])

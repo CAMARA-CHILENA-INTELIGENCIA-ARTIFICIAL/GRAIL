@@ -38,13 +38,18 @@ class CommunityExtractor:
     # ------------------------------------------------------------------ run
 
     def extract_communities(
-        self, graph: Optional[nx.Graph] = None
+        self,
+        graph: Optional[nx.Graph] = None,
+        entities_df: Optional[pd.DataFrame] = None,
     ) -> tuple[nx.Graph, dict[int, dict[str, list[str]]], pd.DataFrame, pd.DataFrame]:
         if graph is None:
             graph = self._read_graph()
         if graph is None or graph.number_of_nodes() == 0:
             self.reporter.warning("No graph available; skipping community extraction.")
             return nx.Graph(), {}, pd.DataFrame(), pd.DataFrame()
+
+        if entities_df is None:
+            entities_df = self._read_entities()
 
         communities = run_leiden(
             graph,
@@ -55,7 +60,7 @@ class CommunityExtractor:
             embedding_merge_eps=self.embedding_merge_eps,
             reporter=self.reporter,
         )
-        nodes_df = self._build_nodes_df(graph, communities)
+        nodes_df = self._build_nodes_df(graph, communities, entities_df)
         comm_df = self._build_communities_df(communities)
         self._write_artifacts(nodes_df, comm_df)
         # Tag the graph with community ids (top level wins for the per-node attribute).
@@ -76,14 +81,49 @@ class CommunityExtractor:
         with self.storage.open_for_read(key) as path:
             return nx.read_graphml(path)
 
+    def _read_entities(self) -> Optional[pd.DataFrame]:
+        key = f"{self.output_folder}/final_entities.parquet"
+        if not self.storage.exists(key):
+            return None
+        with self.storage.open_for_read(key) as path:
+            return pd.read_parquet(path)
+
     def _build_nodes_df(
-        self, graph: nx.Graph, communities: dict[int, dict[str, list[str]]]
+        self,
+        graph: nx.Graph,
+        communities: dict[int, dict[str, list[str]]],
+        entities_df: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
+        if entities_df is None:
+            entities_df = self._read_entities()
+        entity_lookup: dict[str, dict] = {}
+        if entities_df is not None and not entities_df.empty:
+            for _, e in entities_df.iterrows():
+                tids = e.get("text_unit_ids")
+                if tids is not None and hasattr(tids, "__iter__") and not isinstance(tids, str):
+                    source_id = ",".join(str(t) for t in tids)
+                else:
+                    source_id = ""
+                entity_lookup[e["name"]] = {
+                    "human_readable_id": int(e.get("human_readable_id", 0) or 0),
+                    "source_id": source_id,
+                    "graph_embedding": e.get("graph_embedding"),
+                }
+
+        top_level = max(communities.keys()) if communities else 0
+        top_level_map: dict[str, str] = {}
+        if communities and top_level in communities:
+            for cid, nodes in communities[top_level].items():
+                for n in nodes:
+                    top_level_map[n] = str(cid)
+
         rows = []
         for level, level_communities in communities.items():
             for community_id, nodes in level_communities.items():
                 for node in nodes:
                     data = graph.nodes.get(node, {})
+                    extra = entity_lookup.get(node, {})
+                    degree = int(data.get("degree", 0) or 0)
                     rows.append(
                         {
                             "level": int(level),
@@ -92,7 +132,14 @@ class CommunityExtractor:
                             "id": data.get("id", node),
                             "type": data.get("type"),
                             "description": data.get("description", ""),
-                            "degree": int(data.get("degree", 0) or 0),
+                            "degree": degree,
+                            "human_readable_id": extra.get("human_readable_id", 0),
+                            "source_id": extra.get("source_id", ""),
+                            "size": degree,
+                            "graph_embedding": extra.get("graph_embedding"),
+                            "top_level_node_id": top_level_map.get(node, ""),
+                            "x": 0,
+                            "y": 0,
                         }
                     )
         return pd.DataFrame(rows)

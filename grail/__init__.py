@@ -10,6 +10,7 @@ Public surface re-exports the most common entry points so users can do::
 """
 from grail._version import __version__
 from grail.config import Config, load_config
+from grail.core import GRAIL
 from grail.llm import EmbeddingClient, LLMClient
 from grail.prompts import PromptRegistry
 from grail.schemas import (
@@ -31,6 +32,7 @@ __all__ = [
     "Document",
     "EmbeddingClient",
     "Entity",
+    "GRAIL",
     "LLMClient",
     "PromptRegistry",
     "Relationship",

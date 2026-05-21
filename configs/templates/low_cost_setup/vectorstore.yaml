@@ -1,0 +1,12 @@
+# Vector store — where entity-description embeddings live for local search.
+
+# Only LanceDB is wired in v0.1. To add Chroma/FAISS/Qdrant, subclass
+# grail.vectorstores.base.BaseVectorStore.
+backend: lancedb
+
+# LanceDB table name.
+collection_name: entity_descriptions
+
+# When null, the LanceDB store lives at {root_dir}/lancedb. Override for shared
+# mounts or to keep multiple projects in one DB.
+uri: null

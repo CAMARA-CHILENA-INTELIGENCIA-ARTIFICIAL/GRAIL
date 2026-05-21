@@ -1,0 +1,66 @@
+# Indexing pipeline — chunking, entity/relationship extraction.
+# See docs/indexing.md for the pipeline diagram and docs/glossary.md for keys.
+
+# --- Chunking ---
+# 2000 tokens per chunk is the GraphRAG default. Smaller chunks → more (cheaper)
+# LLM calls per document; larger → fewer calls but more entities missed per chunk.
+chunk_size: 2000
+chunk_overlap: 50
+encoding_name: cl100k_base
+
+# Separator inserted between concatenated source files. Lets a single chunk span
+# documents while preserving the breadcrumb. The chunker also tracks the source
+# documents per chunk in `document_ids` for citation purposes.
+document_boundary: "\n\n---DOCUMENT_BOUNDARY---\n\n"
+
+# Layout under root_dir.
+input_folder: input
+output_folder: output
+cache_folder: cache
+
+# --- Per-stage model overrides (null = inherit from llm.yaml) ---
+# Set these only if you want a CHEAPER / FASTER model for the volume-heavy
+# extraction step than for downstream synthesis.
+entity_relation_endpoint: null
+entity_relation_model: null
+summarization_endpoint: null
+summarization_model: null
+
+# --- Extraction delimiters ---
+# The entity/relationship parser is contract-bound to these tokens.
+# Change them only if you have a custom entity_relation prompt that uses
+# different delimiters. When absent, the built-in defaults apply.
+# tuple_delimiter: "<|>"
+# record_delimiter: "##"
+# completion_delimiter: "<|COMPLETE|>"
+# start_delimiter: "<|START_OUTPUT|>"
+
+# --- Entity types ---
+# Normalized to UPPER_SNAKE_CASE. Minimum 5 required.
+# Always include PERSON and ORGANIZATION as baseline types.
+# Add domain-specific types, or use discover_entity_types to let the LLM propose them.
+entity_types:
+  - person
+  - organization
+  - location
+  - event
+  - concept
+
+# When true, the LLM reads a corpus sample before extraction and proposes
+# additional entity types (merged with the list above, capped at max_entity_types).
+# Also available as CLI flag: grail index --discover-entities
+# discover_entity_types: false
+# max_entity_types: 15
+
+# --- Token budgets per LLM call ---
+extraction_max_tokens: 8192
+entity_discovery_max_tokens: 2048
+max_summarization_tokens: 756
+
+# Per-stage concurrency. null = use global llm.concurrent_requests.
+# extraction_concurrency: null
+# summarization_concurrency: null
+
+# Number of "did you miss anything?" re-asks per chunk. 0 = single pass (cheap).
+# Raise to 1-2 if recall is critical and budget allows.
+max_gleanings: 0

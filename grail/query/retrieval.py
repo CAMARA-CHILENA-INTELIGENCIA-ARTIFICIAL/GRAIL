@@ -103,7 +103,7 @@ def map_query_to_entities(
         out["__score__"] = out["id"].map(scores)
         return out.sort_values("__score__", ascending=False).head(top_k)
 
-    embeddings = entities_df["description_embedding"].fillna(method=None)
+    embeddings = entities_df["description_embedding"]
     scores = []
     for emb in embeddings:
         if emb is None or (isinstance(emb, float) and np.isnan(emb)):
@@ -228,7 +228,9 @@ def build_text_unit_context(
     name_set = set(entity_names)
 
     def _mentions(row) -> bool:
-        ids = row.get("entity_ids") or []
+        ids = row.get("entity_ids")
+        if ids is None or (hasattr(ids, "__len__") and len(ids) == 0):
+            return False
         return any(n in name_set for n in ids)
 
     relevant = text_units[text_units.apply(_mentions, axis=1)] if entity_names else text_units
@@ -247,7 +249,11 @@ def build_text_unit_context(
     selected_idx = []
     used = tiktoken_len(header)
     for idx, row in relevant.iterrows():
-        doc_ids = row.get("document_ids") or [row.get("document_id")]
+        raw_doc_ids = row.get("document_ids")
+        if raw_doc_ids is None or (hasattr(raw_doc_ids, "__len__") and len(raw_doc_ids) == 0):
+            doc_ids = [row.get("document_id")]
+        else:
+            doc_ids = list(raw_doc_ids)
         doc_label = "; ".join(doc_titles.get(d, str(d)) for d in doc_ids if d)
         line = f"{row['id']},{doc_label},{(row['text'] or '').replace(chr(10), ' ')[:1200]}"
         tok = tiktoken_len(line)

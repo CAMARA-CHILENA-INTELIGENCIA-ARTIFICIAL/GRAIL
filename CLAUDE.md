@@ -262,16 +262,22 @@ GlobalSearchResult + map_responses, reduce_context_data, reduce_context_text
 
 ### 5.2 Parquet artifacts (produced under `<root_dir>/<output_folder>/`)
 
-| File | Produced by | Key columns |
+Output schemas are standardized against the original Nirvai implementation.
+Every legacy column is preserved; GRAIL adds a few bonus columns (marked `+`)
+that downstream consumers may ignore. The `partial_*` files are intermediate
+artifacts used as input to the next pipeline stage.
+
+| File | Produced by | Columns |
 |---|---|---|
 | `final_docs.parquet` | `FileLoader` | `id, text_unit_ids, raw_content, title, path, mapping` |
-| `partial_text_units.parquet` | `FileLoader` | `id, text, n_tokens, document_id, document_ids` |
-| `final_text_units.parquet` | `EntityRelationshipExtractor` | + `entity_ids, relationship_ids` |
-| `final_entities.parquet` | `EntityRelationshipExtractor` | `id, name, type, description, human_readable_id, graph_embedding, text_unit_ids, description_embedding, degree` |
-| `final_relationships.parquet` | `EntityRelationshipExtractor` | `id, source, target, description, weight, text_unit_ids, human_readable_id, source_degree, target_degree, rank` |
-| `final_nodes.parquet` | `CommunityExtractor` | per-level node assignments (community, level, degree, title) |
-| `final_communities.parquet` | `CommunityExtractor` | community membership |
-| `final_community_reports.parquet` | `CommunityReportGenerator` | JSON-encoded reports + `rank` |
+| `partial_text_units.parquet` | `FileLoader` | `id, text, n_tokens, document_id` (+`document_ids`) |
+| `final_text_units.parquet` | `EntityRelationshipExtractor` | `id, text, n_tokens, document_id, entity_ids, relationship_ids` (+`document_ids`) |
+| `final_entities.parquet` | `EntityRelationshipExtractor` | `id, name, type, description, human_readable_id, graph_embedding, text_unit_ids, description_embedding, degree` (+`title, document_ids`) |
+| `final_relationships.parquet` | `EntityRelationshipExtractor` | `id, source, target, description, weight, text_unit_ids, human_readable_id, source_degree, target_degree, rank` (+`source_id, target_id, document_ids`) |
+| `partial_nodes.parquet` | `EntityRelationshipExtractor` | `level, title, type, description, source_id, community, degree, human_readable_id, id, size, graph_embedding` — one row per entity, `community=None`, `level=0`; bridge to community stage |
+| `final_nodes.parquet` | `CommunityExtractor` | `level, title, type, description, source_id, community, degree, human_readable_id, id, size, graph_embedding, top_level_node_id, x, y` — one row per entity with community assignments filled in |
+| `final_communities.parquet` | `CommunityReportGenerator` | `id, title, level, raw_community, relationship_ids, text_unit_ids` (+`community, entity_ids, size`) — `title` is LLM-generated from reports; `raw_community`/`relationship_ids`/`text_unit_ids` are JSON-encoded lists |
+| `final_community_reports.parquet` | `CommunityReportGenerator` | `community, full_content, level, rank, title, rank_explanation, summary, findings, full_content_json, id` — `full_content` is markdown; `full_content_json` is the structured JSON |
 | `entity_relationship_graph.graphml` | `EntityRelationshipExtractor` | NetworkX graph |
 | `mapping.json` | `FileLoader` | source-file → metadata bridge (used by search to cite sources) |
 
@@ -497,3 +503,61 @@ grail status <project>           # show artifact freshness, last update
 - **Authorship line for new modules:** `"""Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero."""`
 
 When in doubt, search `_legacy_source/` for the exact symbol — the snapshot is verbatim, line numbers match the analyses captured in this file.
+
+---
+
+## 12. State as of 2026-05-19 — what landed, what still needs wiring
+
+The package compiled, tested (42/42 unit tests green), and ran the CLI smoke
+path. Several new features were added in the two days after the scaffold; some
+have no matching config/prompt wiring yet.
+
+### Landed since the v0.1 scaffold
+
+- **True incremental ops** (no longer "re-index in full" stubs). `GRAIL.append/edit/delete` now drive `FileLoader.append_files / batch_edit_documents / batch_delete_documents` → `EntityRelationshipExtractor.append_extract / edit_extract / delete_extract` (with `_merge_with_existing`) → `IncrementalCommunityExtractor.update / incremental_edit / incremental_delete` → `CommunityReportGenerator.generate_reports(affected_community_ids=...)`. Full design in `docs/incremental_pipeline.md`.
+- **AgentSearch** (`grail/query/agent.py`) — tool-calling loop where the LLM picks between local / global / document search. System prompt is currently inlined as `AGENT_SYSTEM_PROMPT` (constant in the module).
+- **DocumentSearch** (`grail/query/document_search.py`) — scoped retrieval against one document (resolved by id / path fragment / title). Currently reuses the `local_search` prompt.
+- **`LLMClient.execute_with_tools`** in `grail/llm/wrapper.py` — OpenAI function-calling protocol support.
+- **LocalSearch `include_entity_names` / `exclude_entity_names`** parameters and conversation-history-aware query enrichment.
+- **Helpers on GRAIL**: `_make_loader`, `_make_extractor`, `_make_community_extractor`, `_make_incremental_community` to keep the stage instantiation consistent across `index`, `append`, `edit`, `delete`, `search`.
+- **Config templates** in `configs/templates/` — one shipped: `low_cost_setup` (all 10 module YAMLs, demonstrates the OpenAI-API ``base_url`` pattern for any compatible host). User packs plug in via `grail init --template NAME --templates-dir PATH`.
+- **`docs/glossary.md`** — single source of truth for every config key.
+- **`docs/model_selection/`** — Artificial Analysis-backed report justifying the current default model picks. Re-runnable via the `benchmark-artificialanalysis` skill.
+- **`.env` autoload** in the CLI — no manual `export` needed.
+- **PDF + DOCX preprocessing** (`grail/indexing/preprocess.py`) ported from the legacy `AgentProcess.py`. Loader auto-converts non-text inputs to markdown under `input/_processed/` and caches by mtime. Supported extensions are catalogued in `docs/preprocessing.md`. New core deps: `pypdf`, `python-docx`. Vision-based OCR fallback (legacy PDF→image+LLM path) is deferred to a `[vision]` extra.
+- **Entity-type contract**: `IndexingConfig.entity_types` is normalized to UPPER_SNAKE_CASE by a Pydantic validator. `MANDATORY_ENTITY_TYPES = ("PERSON", "ORGANIZATION")` are always force-injected at the head of the list, even when the user attempts to omit them. The entity-extraction parser preserves the case of types coming back from the LLM (no more silent lowercasing). Tests cover normalization + mandatory injection.
+- **`--log-level` global CLI flag** (and `GRAIL_LOG_LEVEL` env var). Routes `grail.*` loggers through a Rich handler; suppresses noisy third-party loggers (openai, httpx, urllib3, asyncio) regardless of level.
+- **Per-run output folders** (`grail/indexing/run_manifest.py`). Every `grail index` generates a run id (`YYYY-MM-DDTHH-MM-SS-<5hex>`), writes all parquet artefacts to `output/runs/<run_id>/`, plus a `manifest.json` (config snapshot + operations history + files processed + LLM totals), a `llm_calls.jsonl` (one line per LLM call), and a `summary.json` (compact stats). `output/current.json` points to the active run. `search` / incremental ops resolve the active run via `resolve_active_run_folder`; falls back to legacy flat `output/` for projects that pre-date the layout.
+- **Honest pricing** in `grail/llm/cost.py`. `UsageRecord.cost_resolved: bool` and `CostTracker.pricing_status()` distinguish "complete" / "partial" / "undefined". `CostTracker.render_total_cost()` returns the canonical `UNDEFINED_COST_REASON` string ("Undefined, provider does not follow the proper OpenAI Python package output format") when no record in the ledger had a pricing match. `LLMConfig.extra_pricing: dict[str, list[float]]` lets users supply rates per `endpoint|model` to override / extend `DEFAULT_PRICING`; `GRAIL.from_config` merges them into the tracker at construction time. Quickstart wires in DeepInfra's Gemma-4-26B-A4B + Qwen3-Embedding-0.6B rates so the cost ledger resolves (verified $0.0377 / 244-call SEOM index run).
+- **Styled CLI output** (`grail/cli/banner.py` + `_StyledReporter` in `main.py`). Every command (`init`, `index`, `query`, `append`, `edit`, `delete`, `create-entities`, `config show`, `status`) prints a teal-gradient ASCII "GRAIL" banner, a config/params panel, styled step logs (diamond prefix + green checkmarks), and a summary panel. Artefact paths (manifest, calls log, summary) print below the panel as full unbroken lines. All paths use `_display_path()`: `./relative` when under cwd, absolute otherwise — keeps them short and Cmd+clickable. JSON output mode (`grail query --output json`) skips the banner. The old `RichProgressReporter` Live spinner is replaced by `_StyledReporter` (same `Reporter` protocol, plain `console.print` calls) for CLI commands.
+- **Community count fix**: previous runs produced ~123 communities for 2 PDFs because (a) graspologic's hierarchical_leiden silently skips isolated nodes and our wrapper promoted each one to its own singleton community, and (b) `merge_communities_by_embedding` minted a fresh id for every DBSCAN-noise cluster. Both fixed: isolates roll into one shared community per level; DBSCAN noise rolls into one "miscellaneous" bucket. Plus two new `CommunityConfig` knobs surface the level pick: `community_level` (`"coarsest"` default | `"finest"` | `"all"` | int) replaces the implicit `max(level)` pick, and `min_report_size` (default `3`) drops communities below the threshold before LLM report generation. SEOM re-index dropped from 123 → 16 reports (cost $0.0377 → $0.0252, wall time 3:10 → 2:04, quality preserved).
+- **Embedding cost tracking** (`grail/llm/embeddings.py`). `EmbeddingClient` now accepts a shared `CostTracker` (wired in `GRAIL.from_config`) and records one `UsageRecord` per embeddings API call with `prompt_tokens` pulled from `response.usage.prompt_tokens` and `completion_tokens=0`. Call sites are tagged `entity_embedding` (indexing) and `query_embedding` (search) so they appear as distinct rows in the manifest's `llm.by_tag`. When pricing is not supplied, those rows surface as `Undefined` instead of $0.0000 — matching the same "complete / partial / undefined" semantics used for chat completions. The CLI `COMPLETE` panel now lists one row per stage with tokens + cost (or `Undefined` honestly when unpriced).
+
+### Known gaps (carry into the next session)
+
+1. **SearchConfig has no `agent_search_*` or `document_search_*` fields.** AgentSearch + DocumentSearch fall back to the local-search endpoint/model. Add: `agent_search_endpoint`, `agent_search_model`, `agent_max_iterations` (today hardcoded to 5), `document_search_endpoint`, `document_search_model`.
+2. **`AGENT_SYSTEM_PROMPT` is inlined.** Extract into `grail/prompts/builtin/agent.py` so it can be overridden through the `PromptRegistry` like every other prompt. While at it, surface tool descriptions as separate prompt-pack constants.
+3. **DocumentSearch reuses `local_search` prompt.** Consider a dedicated `document_search` prompt — local search's reminders ("Do not mention entities and relationships directly") may not fit the document-scoped use case.
+4. **CLI doesn't expose agent / document modes.** Add `grail query <project> "<q>" --agent` and `grail query <project> "<q>" --mode document --document <name>`.
+5. **`community.incremental_change_threshold` may be hardcoded inside `IncrementalCommunityExtractor`.** Verify it reads the config field, not a private default.
+6. **`grail propose-entities` (smart entity-type discovery)** — designed in conversation, not yet built. The plan: pluggable Clusterer (KMeans default + auto-k via silhouette), structured proposal output under `output/entity_proposals/<timestamp>/{proposal,manifest,samples}.yaml`, `latest.yaml` pointer file, `indexing.entity_types_file` config field to reference a proposal. `--write` merges into config; `--replace` overwrites.
+7. **No tests for the incremental ops or for AgentSearch / DocumentSearch.** Cover `append_extract`, `edit_extract`, `delete_extract` (entity merging, orphan pruning, embedding re-computation) and the agent tool-call loop (with a fake LLM that emits scripted tool calls).
+8. **Re-ranker (Phase 7) still pending.**
+9. **Benchmark command (Phase 8) still pending.**
+10. **`graspologic` is a heavy dep.** When we move to a wheel release, evaluate whether we can swap for a slimmer Leiden implementation (e.g., `python-leiden` or a NumPy/NetworkX-only port).
+
+### What's wired and ready to test right now
+
+- Project: `examples/quickstart/`
+- LLM: `deepinfra | google/gemma-4-26B-A4B-it`
+- Embeddings: `deepinfra | Qwen/Qwen3-Embedding-0.6B`
+- Key: `DEEPINFRA_API_KEY` set in `.env`
+- Commands available: `grail init`, `grail index`, `grail append`, `grail edit`, `grail delete`, `grail query --mode local|global`, `grail create-entities`, `grail config show`, `grail status`.
+- 42 unit tests covering chunker, storage, prompts, config (with template merging), LLM wrapper (mocked), schemas, loader.
+
+### What to read first in a future session
+
+- This file (§12 especially).
+- `docs/incremental_pipeline.md` for the deep architectural picture.
+- `docs/glossary.md` for any config key.
+- `docs/model_selection/report.md` if questioning the default model picks.

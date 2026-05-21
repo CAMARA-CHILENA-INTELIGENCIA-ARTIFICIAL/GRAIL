@@ -11,6 +11,11 @@ GraphRAG canonical tuple format:
 The DEFAULT_DELIMITERS dict is the contract between this prompt and
 :mod:`grail.indexing.entities_relationships` — the parser there reads the same
 tokens, so don't change them in only one place.
+
+Models that use chain-of-thought or ``<think>`` blocks are explicitly supported:
+the prompt tells the model it may reason first, then emit ``<|START_OUTPUT|>``
+before the structured tuples. The parser splits on that token and ignores
+everything before it.
 """
 from typing import Any
 
@@ -22,10 +27,14 @@ DEFAULT_DELIMITERS: dict[str, str] = {
     "tuple_delimiter": "<|>",
     "record_delimiter": "##",
     "completion_delimiter": "<|COMPLETE|>",
+    "start_delimiter": "<|START_OUTPUT|>",
 }
 
-SYSTEM_TEMPLATE = """-Goal-
-Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
+SYSTEM_TEMPLATE = """
+-Goal-
+Given a text document that is potentially relevant to this activity and a list \
+of entity types, identify all entities of those types from the text and all \
+relationships among the identified entities.
 
 -Steps-
 1. Identify all entities. For each identified entity, extract the following information:
@@ -34,7 +43,8 @@ Given a text document that is potentially relevant to this activity and a list o
 - entity_description: Comprehensive description of the entity's attributes and activities
 Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
 
-2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+2. From the entities identified in step 1, identify all pairs of (source_entity, \
+target_entity) that are *clearly related* to each other.
 For each pair of related entities, extract the following information:
 - source_entity: name of the source entity, as identified in step 1
 - target_entity: name of the target entity, as identified in step 1
@@ -42,9 +52,17 @@ For each pair of related entities, extract the following information:
 - relationship_strength: a numeric score indicating the strength of the relationship between the source entity and target entity
 Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>)
 
-3. Return output in English as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+3. Return output in English as a single list of all the entities and \
+relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
 
 4. When finished, output {completion_delimiter}
+
+-Important-
+You may reason about the text before producing the structured output. When you \
+are ready to output the structured data, emit {start_delimiter} on its own \
+line. Everything after {start_delimiter} will be parsed — everything before it \
+is ignored. Do NOT use the delimiters {tuple_delimiter} or {record_delimiter} \
+before {start_delimiter}.
 
 ######################
 -Examples-
@@ -53,11 +71,18 @@ Example 1: Books
 
 Entity_types: [person, technology, mission, organization, location]
 Text:
-while Alex clenched his jaw, the buzz of frustration dull against the backdrop of Taylor's authoritarian certainty. It was this competitive undercurrent that kept him alert, the sense that his and Jordan's shared commitment to discovery was an unspoken rebellion against Cruz's narrowing vision of control and order.
+while Alex clenched his jaw, the buzz of frustration dull against the backdrop \
+of Taylor's authoritarian certainty. It was this competitive undercurrent that \
+kept him alert, the sense that his and Jordan's shared commitment to discovery \
+was an unspoken rebellion against Cruz's narrowing vision of control and order.
 
-Then Taylor did something unexpected. They paused beside Jordan and, for a moment, observed the device with something akin to reverence. "If this tech can be understood..." Taylor said, their voice quieter, "It could change the game for us. For all of us."
+Then Taylor did something unexpected. They paused beside Jordan and, for a \
+moment, observed the device with something akin to reverence. "If this tech \
+can be understood..." Taylor said, their voice quieter, "It could change the \
+game for us. For all of us."
 ################
 Output:
+{start_delimiter}
 ("entity"{tuple_delimiter}"Alex"{tuple_delimiter}"person"{tuple_delimiter}"Alex is a character who experiences frustration and is observant of the dynamics among other characters."){record_delimiter}
 ("entity"{tuple_delimiter}"Taylor"{tuple_delimiter}"person"{tuple_delimiter}"Taylor is portrayed with authoritarian certainty and shows a moment of reverence towards a device, indicating a change in perspective."){record_delimiter}
 ("entity"{tuple_delimiter}"Jordan"{tuple_delimiter}"person"{tuple_delimiter}"Jordan shares a commitment to discovery and has a significant interaction with Taylor regarding a device."){record_delimiter}
@@ -78,6 +103,7 @@ class DataPreprocessor:
         return (self.data - np.mean(self.data)) / np.std(self.data)
 ```
 Output:
+{start_delimiter}
 ("entity"{tuple_delimiter}"DataPreprocessor"{tuple_delimiter}"class"{tuple_delimiter}"A class that handles data preprocessing operations, including initialization with data and a method for normalization."){record_delimiter}
 ("entity"{tuple_delimiter}"normalize"{tuple_delimiter}"method"{tuple_delimiter}"A method of the DataPreprocessor class that normalizes the data using mean and standard deviation."){record_delimiter}
 ("relationship"{tuple_delimiter}"DataPreprocessor"{tuple_delimiter}"normalize"{tuple_delimiter}"The normalize method is part of the DataPreprocessor class."{tuple_delimiter}9){completion_delimiter}
@@ -86,15 +112,22 @@ Example 3: Scientific papers
 
 Entity_types: [concept, methodology, finding, author, institution, journal]
 Text:
-Dr. Sarah Chen and Prof. Michael Bergman from Stanford's Institute of Quantum Biology have published groundbreaking research in Nature Physics on quantum entanglement in photosynthesis. Using two-dimensional electronic spectroscopy and quantum dynamics simulations, they studied the Fenna-Matthews-Olson (FMO) complex in green sulfur bacteria.
+Dr. Sarah Chen and Prof. Michael Bergman from Stanford's Institute of Quantum \
+Biology have published groundbreaking research in Nature Physics on quantum \
+entanglement in photosynthesis. Using two-dimensional electronic spectroscopy \
+and quantum dynamics simulations, they studied the Fenna-Matthews-Olson (FMO) \
+complex in green sulfur bacteria.
 Output:
+{start_delimiter}
 ("entity"{tuple_delimiter}"Quantum Entanglement"{tuple_delimiter}"concept"{tuple_delimiter}"A quantum phenomenon where particles' states remain interconnected over distances."){record_delimiter}
 ("entity"{tuple_delimiter}"Dr. Sarah Chen"{tuple_delimiter}"author"{tuple_delimiter}"Primary researcher and author of the paper on quantum entanglement in photosynthesis."){record_delimiter}
 ("entity"{tuple_delimiter}"Institute of Quantum Biology"{tuple_delimiter}"institution"{tuple_delimiter}"Research institution at Stanford University where the study was conducted."){record_delimiter}
 ("relationship"{tuple_delimiter}"Dr. Sarah Chen"{tuple_delimiter}"Institute of Quantum Biology"{tuple_delimiter}"Dr. Chen is affiliated with the Institute of Quantum Biology at Stanford University."{tuple_delimiter}7){completion_delimiter}
 #############################"""
 
-USER_TEMPLATE = """Remember to identify entities and then create relationships for them; relationships can only reference defined entities. This is the real data.
+USER_TEMPLATE = """
+Remember to identify entities and then create relationships for them; \
+relationships can only reference defined entities. This is the real data.
 
 -Real Data-
 ######################
@@ -102,9 +135,12 @@ Entity_types: {entity_types}
 Text: {input_text}
 --END--
 
-Now create the entities and relationships with scores requested from the text.
+Now create the entities and relationships with scores requested from the text. \
+You may reason about the text first, then when ready output \
+{start_delimiter} followed by the structured tuples.
 
-The final output must use the delimited format: {tuple_delimiter} and {record_delimiter}, and finish with {completion_delimiter}."""
+The final output must use the delimited format: {tuple_delimiter} and \
+{record_delimiter}, and finish with {completion_delimiter}."""
 
 
 def build_messages(**params: Any) -> list[dict[str, Any]]:

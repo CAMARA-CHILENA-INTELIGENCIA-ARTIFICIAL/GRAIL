@@ -74,6 +74,8 @@ class EntityRelationshipExtractor:
     summarization_model: Optional[str] = None
     extraction_max_tokens: int = 4096
     extraction_temperature: float = 0.0
+    extraction_concurrency: Optional[int] = None
+    summarization_concurrency: Optional[int] = None
     output_folder: str = "output"
     delimiters: dict[str, str] = field(default_factory=lambda: dict(_entity_relation_prompt.DEFAULT_DELIMITERS))
     reporter: Reporter = field(default_factory=NullReporter)
@@ -113,7 +115,9 @@ class EntityRelationshipExtractor:
             )
 
         self.reporter.info(f"Extracting from {len(calls)} text units…")
-        responses = await self.llm.execute_concurrently(calls, safe=True)
+        responses = await self.llm.execute_concurrently(
+            calls, safe=True, concurrency=self.extraction_concurrency
+        )
         return self._parse_responses(text_units_df, responses)
 
     async def process_text_units(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, nx.Graph]:
@@ -138,7 +142,7 @@ class EntityRelationshipExtractor:
         # Embed entity descriptions.
         entity_names = list(entities_by_name.keys())
         descriptions = [entities_by_name[n].descriptions[0] for n in entity_names]
-        embeddings = await self.embeddings.embed_safe(descriptions)
+        embeddings = await self.embeddings.embed_safe(descriptions, tag="entity_embedding")
 
         entities_df = self._build_entities_df(entity_names, entities_by_name, embeddings)
         relationships_df = self._build_relationships_df(rels_by_pair, entities_df)
@@ -160,12 +164,21 @@ class EntityRelationshipExtractor:
         tup = re.escape(self.delimiters["tuple_delimiter"])
         rec = re.escape(self.delimiters["record_delimiter"])
         comp = re.escape(self.delimiters["completion_delimiter"])
+        start = self.delimiters.get("start_delimiter", "<|START_OUTPUT|>")
 
         for (_, row), response in zip(text_units_df.iterrows(), responses):
             if not response:
                 continue
+            if start in response:
+                response = response.split(start, 1)[1]
             tu_id = row["id"]
-            doc_ids = list(row.get("document_ids") or [row.get("document_id")])
+            # `row.get("document_ids")` may be a numpy array when loaded from
+            # parquet — so we can't use `or` (raises "ambiguous truth value").
+            raw_doc_ids = row.get("document_ids")
+            if raw_doc_ids is None or (hasattr(raw_doc_ids, "__len__") and len(raw_doc_ids) == 0):
+                doc_ids = [row.get("document_id")]
+            else:
+                doc_ids = list(raw_doc_ids)
             # Strip trailing completion marker + everything after it.
             cleaned = re.split(comp, response, maxsplit=1)[0]
             records = re.split(rec, cleaned)
@@ -181,7 +194,9 @@ class EntityRelationshipExtractor:
                 kind = fields[0].lower()
                 if kind == "entity" and len(fields) >= 4:
                     name = fields[1].upper().strip()
-                    etype = fields[2].lower().strip()
+                    # Keep entity type in UPPER_SNAKE_CASE to match the contract from
+                    # IndexingConfig.entity_types and stay readable in parquet output.
+                    etype = "_".join(fields[2].strip().upper().split())
                     desc = fields[3].strip()
                     if not name or not desc:
                         continue
@@ -224,7 +239,9 @@ class EntityRelationshipExtractor:
             if len(rel.descriptions) > 1
         ]
         if entity_jobs:
-            results = await self.summarizer.summarize_many(entity_jobs)
+            results = await self.summarizer.summarize_many(
+                entity_jobs, concurrency=self.summarization_concurrency
+            )
             for (name, _), summary in zip(entity_jobs, results):
                 entities[name].descriptions = [summary]
         else:
@@ -232,7 +249,9 @@ class EntityRelationshipExtractor:
                 if ent.descriptions:
                     ent.descriptions = [ent.descriptions[0]]
         if rel_jobs:
-            results = await self.summarizer.summarize_many(rel_jobs)
+            results = await self.summarizer.summarize_many(
+                rel_jobs, concurrency=self.summarization_concurrency
+            )
             for (_, _), summary in zip(rel_jobs, results):
                 pass
             # Replace descriptions on the rels in order.
@@ -538,10 +557,10 @@ class EntityRelationshipExtractor:
                 existing_by_name[name]["description"] = summary
                 existing_by_name[name]["description_embedding"] = None
 
-        # Batch re-embed affected entities.
+        # Batch re-embed affected entities (incremental updates).
         if names_to_reembed:
             descs = [existing_by_name[n]["description"] for n in names_to_reembed]
-            embeddings = await self.embeddings.embed_safe(descs)
+            embeddings = await self.embeddings.embed_safe(descs, tag="entity_embedding")
             for name, emb in zip(names_to_reembed, embeddings):
                 existing_by_name[name]["description_embedding"] = emb
 
@@ -726,3 +745,40 @@ class EntityRelationshipExtractor:
                 if data.get("embedding") is None:
                     data["embedding"] = ""
             nx.write_graphml(export, path)
+        self._write_partial_nodes(entities_df)
+
+    def _write_partial_nodes(self, entities_df: pd.DataFrame) -> None:
+        """Write ``partial_nodes.parquet`` — one row per entity with community=None.
+
+        This is the bridge between entity extraction and community detection:
+        the community stage reads it, fills in community/level/top_level_node_id,
+        and writes ``final_nodes.parquet``.
+        """
+        if entities_df.empty:
+            return
+        rows = []
+        for _, e in entities_df.iterrows():
+            tids = e.get("text_unit_ids")
+            if tids is not None and hasattr(tids, "__iter__") and not isinstance(tids, str):
+                source_id = ",".join(str(t) for t in tids)
+            else:
+                source_id = ""
+            degree = int(e.get("degree", 0) or 0)
+            rows.append({
+                "level": 0,
+                "title": e["name"],
+                "type": e.get("type", ""),
+                "description": e.get("description", ""),
+                "source_id": source_id,
+                "community": None,
+                "degree": degree,
+                "human_readable_id": int(e.get("human_readable_id", 0) or 0),
+                "id": e["id"],
+                "size": degree,
+                "graph_embedding": e.get("graph_embedding"),
+            })
+        partial_df = pd.DataFrame(rows)
+        with self.storage.open_for_write(
+            f"{self.output_folder}/partial_nodes.parquet"
+        ) as path:
+            partial_df.to_parquet(path, index=False)

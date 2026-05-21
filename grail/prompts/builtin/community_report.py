@@ -11,6 +11,10 @@ Returns JSON shaped like:
       "rating_explanation": str,
       "findings": [{"summary": str, "explanation": str}, ...]
     }
+
+The model may reason before outputting the JSON. The structured output must be
+wrapped in ``<report_json>...</report_json>`` tags — the parser extracts JSON
+from between these tags, ignoring any reasoning or preamble before them.
 """
 from typing import Any
 
@@ -44,49 +48,43 @@ JSON_SCHEMA: dict[str, Any] = {
     },
 }
 
-SYSTEM_TEMPLATE = """You are an AI assistant that helps a human analyst perform general information discovery. Information discovery is the process of identifying and assessing relevant information associated with certain entities (e.g., organizations and individuals) within a network.
+SYSTEM_TEMPLATE = """\
+You are a knowledge-graph analyst inside GRAIL. Your job is to write a concise \
+community report given a list of entities and their relationships.
 
-# Goal
-Write a comprehensive report of a community, given a list of entities that belong to the community as well as their relationships and optional associated claims. The report will be used to inform decision-makers about information associated with the community and their potential impact.
+# Output format
 
-# Report Structure
+You may reason about the data first. When ready, output the JSON inside \
+<report_json>...</report_json> tags. Everything outside these tags is ignored \
+by the parser.
 
-The report should include the following sections:
-- TITLE: community's name that represents its key entities — short but specific. When possible, include representative named entities in the title.
-- SUMMARY: An executive summary of the community's overall structure, how its entities are related, and significant associated information.
-- IMPACT SEVERITY RATING: a float score between 0-10 that represents the severity of IMPACT posed by entities within the community. IMPACT is the scored importance of a community.
-- RATING EXPLANATION: A single-sentence explanation of the IMPACT severity rating.
-- DETAILED FINDINGS: A list of 5-10 key insights about the community. Each insight has a short summary followed by multiple paragraphs of explanatory text grounded in the data.
-
-Return output as a well-formed JSON-formatted string with the following format:
+<report_json>
 {{
-    "title": <report_title>,
-    "summary": <executive_summary>,
-    "rating": <impact_severity_rating>,
-    "rating_explanation": <rating_explanation>,
-    "findings": [
-        {{"summary": <insight_1_summary>, "explanation": <insight_1_explanation>}},
-        {{"summary": <insight_2_summary>, "explanation": <insight_2_explanation>}}
-    ]
+  "title": "<short community name — include key entity names>",
+  "summary": "<2-3 sentence executive summary>",
+  "rating": <float 0-10>,
+  "rating_explanation": "<one sentence>",
+  "findings": [
+    {{"summary": "<one line>", "explanation": "<one short paragraph>"}},
+    ...
+  ]
 }}
+</report_json>
 
-# Grounding Rules
+# Rules
+- Keep it concise: 2-4 findings, each with a 1-sentence summary and a single \
+short paragraph explanation.
+- Reference data as: [Data: Entities (id, id); Relationships (id, id)]. Max 5 ids per reference.
+- Do not invent information — only use what appears in the provided data.
+- Keep reasoning brief to stay within the token budget."""
 
-Points supported by data should list their data references as follows:
-"This is an example sentence supported by multiple data references [Data: <dataset name> (record ids); <dataset name> (record ids)]."
+USER_TEMPLATE = """\
+Analyze the community data below and produce the JSON report inside \
+<report_json>...</report_json> tags.
 
-Do not list more than 5 record ids in a single reference. Instead, list the top 5 most relevant record ids and add "+more" to indicate that there are more.
-
-Do not include information where the supporting evidence for it is not provided."""
-
-USER_TEMPLATE = """# Real Data
-
-Use the following text for your answer. Do not make anything up.
-
-Text:
 {input_text}
 
-Return the JSON enclosed by the tags <report_json> and keep it short."""
+Output the report now."""
 
 
 def build_messages(**params: Any) -> list[dict[str, Any]]:

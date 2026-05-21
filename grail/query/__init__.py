@@ -2,6 +2,8 @@
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 """
+from grail.query.agent import AgentSearch
+from grail.query.document_search import DocumentSearch
 from grail.query.global_search import GlobalSearch
 from grail.query.local_search import LocalSearch
 from grail.query.retrieval import (
@@ -13,6 +15,8 @@ from grail.query.retrieval import (
 )
 
 __all__ = [
+    "AgentSearch",
+    "DocumentSearch",
     "GlobalSearch",
     "LocalSearch",
     "build_community_context",

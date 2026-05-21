@@ -54,9 +54,27 @@ Common combos:
 
 ## 3. Scaffold a project
 
+Fastest path — start from the shipped template:
+
+```bash
+uv run grail init ./examples/quickstart --name quickstart --template low_cost_setup
+```
+
+That copies all 10 module YAMLs pre-filled for a cost-biased DeepInfra setup
+(``google/gemma-4-26B-A4B-it`` for chat, ``Qwen/Qwen3-Embedding-0.6B`` for
+embeddings, LLM cache on, conservative concurrency). Swap the ``base_url`` in
+``endpoints.yaml`` to retarget any other OpenAI-compatible host.
+
+Want a minimal scaffold with just ``grail.yaml`` and defaults from code? Drop
+the ``--template`` flag:
+
 ```bash
 uv run grail init ./examples/quickstart --name quickstart
 ```
+
+See [`configs/templates/README.md`](../configs/templates/README.md) for the full
+template story and how to ship your own template pack with
+``--templates-dir PATH``.
 
 This creates:
 

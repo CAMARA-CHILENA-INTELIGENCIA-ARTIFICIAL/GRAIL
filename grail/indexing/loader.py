@@ -3,9 +3,9 @@ File loader and chunker.
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
-Walks a directory of source files, reads them, splits them into token-sized chunks
-with mixed-document support, and emits two parquet artefacts that the rest of the
-pipeline consumes:
+Walks a directory of source files, preprocesses non-text formats (PDF, DOCX)
+into markdown, splits everything into token-sized chunks with mixed-document
+support, and emits two parquet artefacts that the rest of the pipeline consumes:
 
 * ``final_docs.parquet`` — one row per source file (id, title, raw_content, path,
   text_unit_ids — the chunks generated from this doc).
@@ -13,14 +13,14 @@ pipeline consumes:
   document_id, document_ids).
 
 Plus a ``mapping.json`` keyed by document_id with the original on-disk path,
-source extension, and any extracted metadata. ``mapping.json`` is the citation
-root: every search response resolves text_unit → document_ids → mapping →
-original_path.
+the processed-file path (when conversion happened), source extension, and other
+metadata. ``mapping.json`` is the citation root: every search response resolves
+text_unit → document_ids → mapping → original_path.
 
-v0.1 supports text-like files (extensions in :func:`grail.utils.detect_data_type`
-buckets ``text``, ``code``, ``data``). PDF / Office / vision extraction will land
-in a later phase via the same provenance schema — slot a pre-processing step in
-``FileLoader._read_one`` that returns plain text per file.
+Supported source types live in :mod:`grail.indexing.preprocess`. Text-like /
+code / data files are read directly; PDFs and DOCX are converted to markdown via
+the registered :class:`Preprocessor` and the result is cached under
+``{input_folder}/_processed/`` so subsequent runs are O(1).
 """
 from __future__ import annotations
 
@@ -33,6 +33,12 @@ from typing import Any, Optional
 
 import pandas as pd
 
+from grail.indexing.preprocess import (
+    PREPROCESS_EXTENSIONS,
+    SUPPORTED_EXTENSIONS,
+    PreprocessResult,
+    preprocess_file,
+)
 from grail.reporting import NullReporter, Reporter
 from grail.storage import LocalStorage, StorageBackend
 from grail.utils.chunker import TokenTextSplitter
@@ -42,7 +48,7 @@ from grail.utils.text import detect_data_type
 log = logging.getLogger(__name__)
 
 _DEFAULT_DOC_BOUNDARY = "\n\n---DOCUMENT_BOUNDARY---\n\n"
-_READABLE_TYPES = {"text", "code", "data"}
+PROCESSED_SUBDIR = "_processed"
 
 
 @dataclass
@@ -74,29 +80,80 @@ class FileLoader:
     # ------------------------------------------------------------------ discovery
 
     def find(self) -> list[str]:
-        """Return keys (relative to storage root) for every readable input file."""
+        """Return keys (relative to storage root) for every supported input file.
+
+        Files whose extension is in :data:`SUPPORTED_EXTENSIONS` qualify. PDFs
+        and DOCX files are listed by their **original** path here — preprocessing
+        happens lazily during :meth:`_read_one`.
+        """
         keys = self.storage.list(self.input_folder)
         out: list[str] = []
         for key in keys:
             base = key.rsplit("/", 1)[-1]
             if base.startswith(".") or base.startswith("_"):
                 continue
+            # Skip anything that lives inside the processed-output directory.
+            if f"/{PROCESSED_SUBDIR}/" in f"/{key}/":
+                continue
             if any(pat in key for pat in self.exclude_patterns):
                 continue
-            if detect_data_type(key) not in _READABLE_TYPES:
-                # We log but don't fail — multi-modal hooks plug in here later.
-                log.debug("Skipping %s (unsupported type)", key)
+            if Path(key).suffix.lower() not in SUPPORTED_EXTENSIONS:
+                log.debug("Skipping %s (unsupported extension)", key)
                 continue
             out.append(key)
         return sorted(out)
 
-    def _read_one(self, key: str) -> str:
-        """Read ``key`` from storage and return its text content."""
+    def _processed_path_for(self, key: str) -> Path:
+        """Where the processed version of ``key`` lives on disk.
+
+        Only meaningful for backends that expose a real filesystem path. Cloud
+        backends would need a different cache layout — that's a follow-up.
+        """
+        if not isinstance(self.storage, LocalStorage):
+            raise RuntimeError(
+                "PDF/DOCX preprocessing currently requires the LocalStorage backend "
+                "(needs a real on-disk path for pypdf / python-docx). "
+                "S3/remote support is on the roadmap."
+            )
+        return (
+            self.storage.path_for(self.input_folder) / PROCESSED_SUBDIR
+        )
+
+    def _read_one(self, key: str) -> tuple[str, Optional[str]]:
+        """Read ``key`` from storage and return ``(text, processed_key)``.
+
+        For text-like files, ``processed_key`` is ``None`` (no conversion happened).
+        For PDFs / DOCX, ``processed_key`` is the storage-relative path to the
+        cached markdown produced by preprocessing.
+        """
+        ext = Path(key).suffix.lower()
+        if ext in PREPROCESS_EXTENSIONS:
+            source = self.storage.path_for(key) if isinstance(self.storage, LocalStorage) else None
+            if source is None:
+                raise RuntimeError(
+                    f"Cannot preprocess {key} — non-local storage backends are not yet supported."
+                )
+            output_dir = self._processed_path_for(key)
+            result: PreprocessResult = preprocess_file(source, output_dir=output_dir)
+            if not result.ok:
+                self.reporter.warning(
+                    f"Preprocessing failed for {Path(key).name}: {result.error}"
+                )
+                raise ValueError(result.error)
+            self.reporter.info(
+                f"Preprocessed {Path(key).name} → {result.processed.name}"
+                + (" (cached)" if result.cached else "")
+            )
+            processed_key = self.storage.join(
+                self.input_folder, PROCESSED_SUBDIR, result.processed.name
+            )
+            return self.storage.read_text(processed_key), processed_key
+
         try:
-            return self.storage.read_text(key)
+            return self.storage.read_text(key), None
         except UnicodeDecodeError:
             data = self.storage.read_bytes(key)
-            return data.decode("utf-8", errors="replace")
+            return data.decode("utf-8", errors="replace"), None
 
     # ------------------------------------------------------------------ chunking
 
@@ -117,12 +174,17 @@ class FileLoader:
         documents: list[dict[str, Any]] = []
         mapping: dict[str, Any] = {}
 
-        # First pass: read every file, record offsets in the concatenated buffer.
+        # First pass: read every file (preprocessing PDFs/DOCX on the fly), record
+        # offsets in the concatenated buffer for chunk → doc back-mapping.
         buffer_parts: list[str] = []
         char_offsets: list[tuple[str, int, int]] = []  # (doc_id, start_char, end_char)
         cursor = 0
         for key in keys:
-            text = self._read_one(key)
+            try:
+                text, processed_key = self._read_one(key)
+            except (ValueError, RuntimeError) as exc:
+                self.reporter.warning(f"Skipping {key}: {exc}")
+                continue
             doc_id = generate_guid()
             title = Path(key).name
             documents.append(
@@ -132,10 +194,12 @@ class FileLoader:
                     "raw_content": text,
                     "path": key,
                     "text_unit_ids": [],
+                    "mapping": key,
                 }
             )
             mapping[doc_id] = {
                 "original_path": key,
+                "processed_path": processed_key,  # None when no preprocessing was needed
                 "title": title,
                 "extension": Path(key).suffix.lower(),
                 "data_type": detect_data_type(key),
@@ -147,6 +211,10 @@ class FileLoader:
             char_offsets.append((doc_id, start, cursor))
             buffer_parts.append(self.document_boundary)
             cursor += len(self.document_boundary)
+
+        if not documents:
+            self.reporter.warning("No files were successfully read.")
+            return pd.DataFrame(), pd.DataFrame(), {}
 
         combined = "".join(buffer_parts)
 

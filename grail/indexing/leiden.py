@@ -89,15 +89,20 @@ def _compute_leiden_communities(
     if not results:
         return {}
 
-    # Any nodes that fell out (because of LCC trimming, or graph quirks) get their own
-    # singleton communities so the downstream pipeline doesn't lose them.
+    # Any nodes that fell out (LCC trimming or graphrag isolates) go into a SINGLE
+    # shared bucket per level, not per-node singletons. Promoting each isolate to
+    # its own community used to produce dozens of one-entity "reports" that are
+    # useless: by definition isolates have no relationships, so the "community"
+    # has no graph structure to summarise. Filing them under one ID makes the
+    # downstream report generator skip them via min_report_size.
     max_level = max(results.keys())
     max_id = max((max(v.values()) for v in results.values()), default=0)
     missing = set(graph.nodes()) - set(results[max_level].keys())
-    for node in missing:
-        max_id += 1
+    if missing:
+        isolate_id = max_id + 1
         for lvl in results:
-            results[lvl][node] = max_id
+            for node in missing:
+                results[lvl][node] = isolate_id
     return results
 
 
@@ -141,13 +146,18 @@ def merge_communities_by_embedding(
     merged = dict(large)
     next_id = max((int(k) for k in merged.keys() if k.isdigit()), default=0) + 1
     cluster_to_id: dict[int, str] = {}
+    # Single "miscellaneous" bucket for noise. Previously each noise community
+    # got a fresh id, which is what produced the long tail of singleton "reports"
+    # we'd see at indexing time.
+    misc_bucket_id: Optional[str] = None
 
     for i, (cid, _centroid) in enumerate(centroids.items()):
         label = labels[i] if i < len(labels) else -1
         if label == -1:
-            new_id = str(next_id)
-            next_id += 1
-            merged[new_id] = small[cid]
+            if misc_bucket_id is None:
+                misc_bucket_id = str(next_id)
+                next_id += 1
+            merged.setdefault(misc_bucket_id, []).extend(small[cid])
         else:
             if label not in cluster_to_id:
                 cluster_to_id[label] = str(next_id)
@@ -155,9 +165,13 @@ def merge_communities_by_embedding(
             new_id = cluster_to_id[label]
             merged.setdefault(new_id, []).extend(small[cid])
 
+    # Small communities whose nodes had no embeddings at all: lump them with the
+    # noise bucket as well — same reasoning, no signal to cluster on.
     for cid, nodes in small.items():
-        if cid not in centroids:
-            new_id = str(next_id)
+        if cid in centroids:
+            continue
+        if misc_bucket_id is None:
+            misc_bucket_id = str(next_id)
             next_id += 1
-            merged[new_id] = nodes
+        merged.setdefault(misc_bucket_id, []).extend(nodes)
     return merged

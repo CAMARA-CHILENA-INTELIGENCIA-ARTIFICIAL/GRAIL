@@ -1,0 +1,29 @@
+# LLM (chat completions) client.
+# See docs/glossary.md#llm for every field.
+
+# Which endpoint (from endpoints.yaml) handles chat traffic.
+endpoint: inference
+
+# Whatever model name your endpoint accepts. The string is passed verbatim in the
+# "model" field of the OpenAI request body. For DeepInfra, browse
+# https://deepinfra.com/models to see what's hosted. Pick something
+# IFBench-strong if you care about parser format compliance.
+model: google/gemma-4-26B-A4B-it
+
+# --- Concurrency & timeouts ---
+# Eight in-flight calls is gentle on most provider rate limits. Raise it if your
+# tier allows; the LLMClient uses a global semaphore so this caps EVERY stage.
+concurrent_requests: 8
+request_timeout: 180.0
+max_retries: 10
+max_retry_wait: 10.0
+sleep_on_rate_limit: 30.0
+
+debug: false
+
+# --- Cache ---
+# Hash (endpoint, model, messages, params) → reuse the response. Critical for
+# cost-sensitive setups: re-running indexing or queries with identical inputs
+# costs nothing. Cache lives under {root_dir}/cache/llm.
+cache_enabled: true
+cache_dir: null

@@ -1,0 +1,38 @@
+# Endpoint definitions — where the OpenAI-protocol calls go.
+#
+# GRAIL is endpoint-agnostic by design. It only speaks the OpenAI Chat Completions
+# and Embeddings API. Any host that serves that protocol works here:
+#   - api.openai.com         (OpenAI Inc.)
+#   - api.deepinfra.com/v1/openai     (DeepInfra)
+#   - api.together.xyz/v1    (Together)
+#   - api.groq.com/openai/v1 (Groq)
+#   - http://localhost:8000/v1   (self-hosted vLLM / SGLang / LM Studio)
+#
+# Each entry below is one such deployment. The base_url is the prefix that the
+# OpenAI SDK appends "/chat/completions" or "/embeddings" to. You do NOT include
+# /chat/completions or /embeddings in base_url — the SDK handles that.
+#
+# User entries deep-merge with the built-in defaults in grail/llm/providers.py:
+# anything you don't override here keeps the built-in value.
+
+# One inference endpoint covers both chat and embeddings for most providers.
+# Rename it to whatever helps you remember which deployment it is.
+inference:
+  # Example: DeepInfra's OpenAI-compatible host.
+  # The same base_url serves both:
+  #   POST {base_url}/chat/completions  → chat
+  #   POST {base_url}/embeddings        → embeddings
+  base_url: https://api.deepinfra.com/v1/openai
+  api_key_env: DEEPINFRA_API_KEY
+  requires_key: true
+  notes: |
+    Swap base_url + api_key_env to point at any OpenAI-compatible deployment.
+    For self-hosted vLLM use e.g. http://localhost:8000/v1 with requires_key: false.
+
+# If your chat host and embedding host are different (uncommon but supported),
+# uncomment and add a second endpoint, then reference it from embeddings.yaml:
+#
+# embeddings_host:
+#   base_url: http://my-embedding-server:8001/v1
+#   api_key_env: null
+#   requires_key: false

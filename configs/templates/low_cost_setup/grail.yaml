@@ -1,0 +1,18 @@
+# Template: low_cost_setup
+# A fully-filled GRAIL project, biased for cost.
+#
+# Design choices in plain language:
+#   • One inference endpoint speaks the OpenAI Chat Completions + Embeddings
+#     protocol. Swap the base_url to point at any compatible host (DeepInfra,
+#     OpenAI, Together, Groq, your own vLLM/SGLang server, …). See endpoints.yaml.
+#   • LLM cache is ON — re-running the same indexing operation costs nothing.
+#   • Conservative concurrency so most provider rate limits aren't hit.
+#   • Single-pass extraction (max_gleanings: 0) — no extra re-asks per chunk.
+#   • Tighter search token budgets than the GRAIL defaults.
+#
+# Every key has a one-line definition in docs/glossary.md.
+# The master file just declares project identity; module-specific knobs live in
+# the sibling YAMLs (load_config(<dir>) merges them automatically).
+
+project_name: {name}
+root_dir: {root}

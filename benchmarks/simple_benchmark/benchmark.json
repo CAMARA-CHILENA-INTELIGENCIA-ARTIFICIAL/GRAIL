@@ -1,0 +1,384 @@
+{
+  "name": "oncology_laws_chile_v1",
+  "description": "Chilean oncology laws benchmark.  Tests retrieval across Ley 19.966 (GES), Ley 20.850 (Ley Ricarte Soto), and Decreto 54 (implementing regulation). Designed for a cancer-patient information assistant use case.\n",
+  "language": "es",
+  "categories": [
+    {
+      "id": "single_fact",
+      "label": "Single Fact Retrieval",
+      "description": "Locate one specific datum buried in a single chunk. Both RAG and GRAIL should handle these — sets the baseline floor.\n"
+    },
+    {
+      "id": "multi_chunk",
+      "label": "Multi-Chunk Reasoning",
+      "description": "Answer requires assembling information from 2+ chunks of the same document.  GRAIL's community summaries pre-aggregate related concepts.\n"
+    },
+    {
+      "id": "cross_source",
+      "label": "Cross-Source Synthesis",
+      "description": "Answer requires combining information from 2+ different documents. GRAIL's entity graph connects concepts across documents.\n"
+    },
+    {
+      "id": "procedural",
+      "label": "Procedural / Step-by-Step",
+      "description": "\"What are the steps to…?\" — ordered sequences spanning multiple articles.  Relationship chains in the graph preserve procedural flow.\n"
+    },
+    {
+      "id": "comparative",
+      "label": "Comparative Analysis",
+      "description": "\"What's the difference between X and Y?\" where X and Y are defined in different places.  Entity pairs linked in the graph shine here.\n"
+    },
+    {
+      "id": "negation_boundary",
+      "label": "Negation / Boundary",
+      "description": "\"Does the law cover X?\" where the answer is NO.  Tests whether the system retrieves exclusion clauses that embedding similarity may miss.\n"
+    },
+    {
+      "id": "global_synthesis",
+      "label": "Global / Synthesis",
+      "description": "Bird's-eye view of the entire corpus.  RAG has no chunk to retrieve; GRAIL's global search over community reports handles natively.\n"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q01",
+      "category": "single_fact",
+      "difficulty": "easy",
+      "question": "¿Cuál es el objeto de la Ley 20.850?",
+      "gold_answer": "Crear un Sistema de Protección Financiera para el otorgamiento de diagnósticos y tratamientos de alto costo declarados por decreto supremo del Ministerio de Salud.  Forma parte del Régimen General de Garantías en Salud.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 1"
+      ],
+      "rationale": "Direct needle — the answer is stated verbatim in Article 1.\n"
+    },
+    {
+      "id": "Q02",
+      "category": "single_fact",
+      "difficulty": "easy",
+      "question": "¿Cuántos miembros tiene la Comisión de Recomendación Priorizada y quién la preside?\n",
+      "gold_answer": "12 miembros de reconocida idoneidad en medicina, salud pública, economía, bioética, derecho sanitario, y expertos en fármacos, elementos de uso médico y alimentos.  Es presidida por el Subsecretario de Salud Pública.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 8"
+      ],
+      "rationale": "Two facts (count + chair) in the same article.\n"
+    },
+    {
+      "id": "Q03",
+      "category": "single_fact",
+      "difficulty": "easy",
+      "question": "¿Cada cuántos años se fija el umbral nacional de costo para determinar si un diagnóstico o tratamiento es de alto costo?\n",
+      "gold_answer": "Cada tres años, mediante decreto supremo de los Ministerios de Salud y de Hacienda, tomando en cuenta el 40% de los ingresos familiares anuales promedio una vez cubiertos los gastos básicos de subsistencia.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 6"
+      ],
+      "rationale": "Single numeric fact with a formula — tests precision.\n"
+    },
+    {
+      "id": "Q04",
+      "category": "single_fact",
+      "difficulty": "medium",
+      "question": "¿Cuál es el plazo de prescripción de las infracciones y sanciones del Título IV (obligatoriedad del otorgamiento) de la Ley 20.850?\n",
+      "gold_answer": "Las infracciones y sanciones del Título IV prescriben en el plazo de dos años.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 13 (párrafo final del Título IV)"
+      ],
+      "rationale": "Buried in a long article — tests whether retrieval pulls the right paragraph.\n"
+    },
+    {
+      "id": "Q05",
+      "category": "single_fact",
+      "difficulty": "medium",
+      "question": "¿Qué datos mínimos debe registrar un prestador de salud por cada beneficiario de la Ley 20.850 según el Decreto 54?\n",
+      "gold_answer": "Según el Artículo 8 del Decreto 54, los prestadores deben registrar al menos: (a) nombre completo y RUT del paciente, (b) domicilio incluyendo ciudad y comuna, (c) situación previsional en materia de salud, (d) motivo de consulta, (e) diagnóstico probable, (f) fecha y hora de la atención, (g) prestación garantizada correspondiente, (h) nombre completo y RUT del profesional.\n",
+      "source_refs": [
+        "Decreto 54, Artículo 8"
+      ],
+      "rationale": "Enumerated list in a specific regulation article.\n"
+    },
+    {
+      "id": "Q06",
+      "category": "multi_chunk",
+      "difficulty": "medium",
+      "question": "¿Cuáles son las condiciones copulativas que debe cumplir un diagnóstico o tratamiento para ser incorporado al decreto de alto costo?\n",
+      "gold_answer": "Según el Artículo 5 de la Ley 20.850, se requieren cuatro condiciones copulativas: (a) que el costo sea igual o superior al umbral del Artículo 6, (b) que hayan sido objeto de una favorable evaluación científica de la evidencia conforme al Artículo 7, (c) que hayan sido recomendados de acuerdo al Artículo 8, y (d) que se haya decidido su incorporación conforme al Artículo 9.\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 5, 6, 7, 8, 9"
+      ],
+      "rationale": "Article 5 lists the four conditions but each refers to a different article for its definition — requires spanning multiple chunks.\n"
+    },
+    {
+      "id": "Q07",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "question": "Describe el proceso completo desde que se inicia la evaluación científica de un tratamiento hasta la decisión final de incorporarlo al Sistema de Protección Financiera.\n",
+      "gold_answer": "El proceso tiene tres fases: (1) Evaluación científica (Art. 7): la Subsecretaría de Salud Pública inicia de oficio la evaluación basada en la evidencia disponible, considerando eficacia, seguridad, evaluación económica, impacto presupuestario, alternativas, y repercusiones éticas/jurídicas/sociales. (2) Recomendación priorizada (Art. 8): la Comisión de 12 miembros delibera sobre el valor científico, económico y social, y emite una recomendación con propuesta de contenido y plazo de revisión. (3) Decisión (Art. 9): los Ministerios de Salud y Hacienda determinan mediante decreto supremo fundado los diagnósticos y tratamientos cubiertos, asegurando que el costo anual esperado sea ≤80% del valor esperado de los recursos del Fondo al 1 de enero siguiente.\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 7, 8, 9"
+      ],
+      "rationale": "Three-phase process spanning three long articles — tests sequential reasoning across chunks.\n"
+    },
+    {
+      "id": "Q08",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "question": "¿Qué ocurre con la protección financiera cuando un paciente en urgencia vital es atendido fuera de la Red de Prestadores?\n",
+      "gold_answer": "Según el Artículo 3 de la Ley 20.850, el paciente mantiene la protección financiera hasta que pueda ser trasladado a un prestador aprobado.  Los costos son reembolsados por FONASA con cargo al Fondo. Si el paciente (o su representante) opta por quedarse fuera de la red, los copagos desde ese momento no se cubren.  Si opta por trasladarse a un establecimiento fuera de la red, también pierde cobertura.  Si opta por trasladarse a uno de la red, la protección continúa.  El médico tratante determina cuándo el paciente está en condiciones de ser trasladado.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 3"
+      ],
+      "rationale": "Long article with three conditional scenarios (a, b, c) — tests whether the system captures the full decision tree.\n"
+    },
+    {
+      "id": "Q09",
+      "category": "multi_chunk",
+      "difficulty": "medium",
+      "question": "¿Qué criterios se usan para elaborar la propuesta de Garantías Explícitas en Salud?\n",
+      "gold_answer": "Según los Artículos 13 y 14 de la Ley 19.966: estudios epidemiológicos, carga de enfermedad, revisiones sistemáticas sobre la efectividad de las intervenciones, evaluaciones económicas, contribución a la calidad de vida, relación costo-efectividad, demanda potencial, y capacidad de oferta del sistema de salud chileno (público y privado).  Se descartarán enfermedades para las que no haya fundamentos de beneficio para la sobrevida o calidad de vida.\n",
+      "source_refs": [
+        "Ley 19.966, Artículos 13, 14"
+      ],
+      "rationale": "Two consecutive articles that together define the methodology.\n"
+    },
+    {
+      "id": "Q10",
+      "category": "multi_chunk",
+      "difficulty": "medium",
+      "question": "¿Cómo se financia el Fondo para Diagnósticos y Tratamientos de Alto Costo?  Enumera todas las fuentes.\n",
+      "gold_answer": "Según el Artículo 20 de la Ley 20.850, el Fondo se financia con: (a) aportes fiscales anuales por un monto de hasta cien mil millones de pesos, reajustados el 1 de enero por el 100% de la variación del IPC; (b) donaciones y herencias que acepte el Ministerio de Hacienda; (c) aportes de la cooperación internacional; (d) la rentabilidad que genere la inversión de los recursos del Fondo.  Los recursos se contemplan en la partida presupuestaria del Tesoro Público.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 20"
+      ],
+      "rationale": "Four funding sources in one article, but the article is long and the fund details span multiple paragraphs.\n"
+    },
+    {
+      "id": "Q11",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "question": "¿Qué relación existe entre la Ley Ricarte Soto (20.850) y las Garantías Explícitas en Salud de la Ley 19.966?\n",
+      "gold_answer": "La Ley 20.850 complementa la Ley 19.966: su Sistema de Protección Financiera forma parte del Régimen General de Garantías en Salud (Art. 1, Ley 20.850).  Los beneficiarios de ISAPRE deben primero agotar la Cobertura Adicional para Enfermedades Catastróficas (CAEC) antes de acceder a la Ley 20.850.  Si un diagnóstico o tratamiento de alto costo es incorporado al Régimen de Garantías Explícitas (GES), pasa a regirse por la Ley 19.966, pero la protección financiera continúa vigente para beneficiarios no incorporados al GES mientras subsista su eficacia terapéutica (Art. 10, Ley 20.850). El Decreto 54 operacionaliza esta relación definiendo las normas concretas de otorgamiento y cobertura.\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 1, 10",
+        "Ley 19.966, Artículos 1, 2",
+        "Decreto 54, considerandos"
+      ],
+      "rationale": "Requires synthesizing the hierarchical relationship across all three documents.\n"
+    },
+    {
+      "id": "Q12",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "question": "Un paciente con cáncer al que le niegan un tratamiento de alto costo: ¿ante qué instituciones puede reclamar?\n",
+      "gold_answer": "Puede reclamar ante: (1) la Intendencia de Fondos y Seguros Previsionales de la Superintendencia de Salud, según el procedimiento de los artículos 117 y siguientes del DFL N°1/2005 del Ministerio de Salud (Ley 20.850 Art. 13, Decreto 54 Art. 6).  (2) La Superintendencia de Salud puede iniciar procedimientos de oficio (Ley 20.850 Art. 13).  (3) Bajo la Ley 19.966, si hay incumplimiento de las Garantías Explícitas, puede reclamar ante la Superintendencia de Salud (Art. 24) que puede sancionar con amonestación o suspensión de hasta 180 días.  (4) Para daños por falta de servicio de prestadores públicos, existe la vía de mediación ante el Consejo de Defensa del Estado (Ley 19.966, Art. 43).\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 13",
+        "Decreto 54, Artículo 6",
+        "Ley 19.966, Artículos 24, 43"
+      ],
+      "rationale": "Complaint mechanisms are scattered across all three documents.\n"
+    },
+    {
+      "id": "Q13",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "question": "¿Qué requisitos debe cumplir un prestador para otorgar prestaciones bajo la Ley 20.850 y cómo se operacionaliza según el Decreto 54?\n",
+      "gold_answer": "La Ley 20.850 (Art. 13) exige que los prestadores estén acreditados en la Superintendencia de Salud según la Ley 19.966 Art. 4 letra b), y cuenten con aprobación del Ministerio de Salud.  El Decreto 54 detalla el proceso: la Subsecretaría de Redes Asistenciales inicia la evaluación de oficio o a solicitud (Art. 13°); la Comisión Asesora para la Evaluación de Prestadores analiza el cumplimiento de estándares técnicos pudiendo verificar en terreno (Art. 13°, 14°); recomienda al Ministro de Salud la aprobación o rechazo; el Ministro decide por decreto (Art. 13°); el prestador aprobado suscribe convenio con FONASA en 10 días hábiles (Art. 17°); FONASA publica el listado de prestadores aprobados en su sitio web.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 13",
+        "Decreto 54, Artículos 11, 13, 14, 17"
+      ],
+      "rationale": "Law sets high-level requirement; regulation operationalizes it.\n"
+    },
+    {
+      "id": "Q14",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "question": "¿Qué garantías explícitas se definen para los pacientes oncológicos y cómo se complementan entre la Ley 19.966 y la Ley 20.850?\n",
+      "gold_answer": "La Ley 19.966 (Art. 4) define cuatro Garantías Explícitas en Salud: (a) Acceso — obligación de asegurar el otorgamiento de prestaciones; (b) Calidad — otorgamiento por prestador registrado o acreditado; (c) Oportunidad — plazo máximo para el otorgamiento; (d) Protección Financiera — copago máximo del 20% del valor de referencia.  La Ley 20.850 complementa con cobertura del 100% (sin copago) para diagnósticos y tratamientos que superan el umbral de alto costo, incluyendo enfermedades oncológicas expresamente mencionadas en Art. 5.  Así, un paciente oncológico puede tener doble cobertura: GES para la patología base y Ley Ricarte Soto para tratamientos que exceden el umbral.\n",
+      "source_refs": [
+        "Ley 19.966, Artículo 4",
+        "Ley 20.850, Artículos 1, 5"
+      ],
+      "rationale": "Two complementary coverage systems defined in different laws.\n"
+    },
+    {
+      "id": "Q15",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "question": "¿Cuándo termina la protección financiera de un paciente bajo la Ley Ricarte Soto?  Contrasta con la vigencia de las Garantías Explícitas bajo la Ley 19.966.\n",
+      "gold_answer": "Bajo la Ley Ricarte Soto (Decreto 54, Art. 10), la protección termina por: (a) alta médica; (b) decisión voluntaria de recibir prestaciones fuera de la Red de Prestadores; (c) rechazo voluntario de la prestación cubierta conforme a la Ley 20.584; (d) muerte del beneficiario.  Bajo la Ley 19.966 (Art. 23), las Garantías Explícitas tienen vigencia de tres años, prorrogables automáticamente por otros tres si no se modifican.  El Presidente puede disponer su modificación antes del plazo en circunstancias especiales.  Las GES son permanentes mientras el decreto esté vigente; la Ley Ricarte Soto es por tratamiento individual hasta su conclusión.\n",
+      "source_refs": [
+        "Decreto 54, Artículo 10",
+        "Ley 19.966, Artículo 23"
+      ],
+      "rationale": "Termination rules live in different documents — one per-patient, one systemic.\n"
+    },
+    {
+      "id": "Q16",
+      "category": "procedural",
+      "difficulty": "hard",
+      "question": "¿Cuáles son los pasos que debe seguir un paciente con cáncer para acceder al Sistema de Protección Financiera de alto costo?\n",
+      "gold_answer": "(1) Ser beneficiario de un sistema previsional de salud (FONASA o ISAPRE).  (2) Si es beneficiario de ISAPRE, debe primero agotar la Cobertura Adicional para Enfermedades Catastróficas (CAEC) cuando fuere procedente (Art. 1, Ley 20.850).  (3) El diagnóstico o tratamiento debe estar incluido en el decreto del Artículo 5. (4) Atenderse en la Red de Prestadores aprobada por el Ministerio de Salud (Art. 14, Ley 20.850; Art. 3, Decreto 54).  (5) El prestador informa al paciente de sus derechos y garantías de oportunidad, calidad y protección financiera (Art. 4-5, Decreto 54). (6) La protección financiera cubre el valor total de las prestaciones de confirmación diagnóstica y tratamientos.\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 1, 3, 14",
+        "Decreto 54, Artículos 3, 4, 5"
+      ],
+      "rationale": "End-to-end patient journey spanning both the law and regulation.\n"
+    },
+    {
+      "id": "Q17",
+      "category": "procedural",
+      "difficulty": "hard",
+      "question": "Describe el procedimiento de mediación que debe seguir un paciente antes de demandar a un prestador público por daño en salud.\n",
+      "gold_answer": "Según la Ley 19.966, Título III: (1) el interesado presenta reclamo ante el Consejo de Defensa del Estado con nombre completo, cédula, profesión, domicilio, motivo del reclamo y peticiones concretas (Art. 44).  (2) Se cita a las partes a primera audiencia (Art. 45). (3) El plazo total es de 60 días corridos, prorrogable a 120 por acuerdo (Art. 45).  (4) El mediador informa sobre la naturaleza, objetivos, duración y carácter voluntario (Art. 47).  (5) Todas las declaraciones son secretas (Art. 51).  (6) Si hay acuerdo, se firma acta que surte efectos de contrato de transacción (Art. 53). (7) Si no hay acuerdo, se levanta acta de fracaso y el paciente queda habilitado para la vía judicial.  Para prestadores privados, la mediación es ante mediadores acreditados por la Superintendencia de Salud (Art. 43).\n",
+      "source_refs": [
+        "Ley 19.966, Artículos 43-53"
+      ],
+      "rationale": "Sequential procedure spanning 10+ articles within one document.\n"
+    },
+    {
+      "id": "Q18",
+      "category": "procedural",
+      "difficulty": "medium",
+      "question": "¿Cómo se aprueba un nuevo prestador para la Red de la Ley Ricarte Soto según el Decreto 54?\n",
+      "gold_answer": "(1) La Subsecretaría de Redes Asistenciales inicia la evaluación de oficio o a solicitud del prestador (Art. 13°).  (2) Se remiten antecedentes a la Comisión Asesora para la Evaluación de Prestadores (Art. 13°).  (3) La Comisión analiza el cumplimiento de estándares técnicos, pudiendo verificar en terreno a través del Departamento de Auditoría del Ministerio (Art. 13°).  (4) La Comisión recomienda al Ministro de Salud la aprobación o rechazo; el acta se publica en el sitio web dentro de 15 días (Art. 13°, 14°).  (5) El Ministro decide por decreto (Art. 13°).  (6) El prestador aprobado suscribe convenio con FONASA en 10 días hábiles (Art. 17°).  (7) FONASA publica el listado de prestadores aprobados con convenio en su sitio web (Art. 13° de la Ley 20.850).\n",
+      "source_refs": [
+        "Decreto 54, Artículos 11, 13, 14, 17"
+      ],
+      "rationale": "Multi-step administrative procedure within the regulation.\n"
+    },
+    {
+      "id": "Q19",
+      "category": "procedural",
+      "difficulty": "medium",
+      "question": "¿Qué sucede cuando hay desabastecimiento de un producto sanitario cubierto por la Ley 20.850?\n",
+      "gold_answer": "(1) El titular del registro, productor, importador o distribuidor debe comunicar cualquier riesgo de desabastecimiento dentro de 24 horas al Ministerio de Salud, FONASA, CENABAST y la Superintendencia de Salud (Art. 16).  (2) Si no existe en el mercado chileno otra alternativa al precio máximo industrial (Art. 7°), CENABAST puede importar y distribuir el producto excepcionalmente, incluso sin registro sanitario (Art. 15).  (3) El titular del registro es civilmente responsable de la discontinuidad del tratamiento (Art. 15).  (4) El ISP debe poner la información en conocimiento del público (Art. 16).  (5) Cada día de desabastecimiento se considera una falta reiterada para efectos sancionatorios (Art. 16).\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 15, 16"
+      ],
+      "rationale": "Chain of obligations triggered by a supply event.\n"
+    },
+    {
+      "id": "Q20",
+      "category": "comparative",
+      "difficulty": "easy",
+      "question": "¿Cuál es la diferencia entre \"diagnóstico de alto costo\" y \"tratamiento de alto costo\" según la ley?\n",
+      "gold_answer": "Según el Artículo 2 de la Ley 20.850 (replicado en Art. 2 del Decreto 54): (a) Diagnóstico de alto costo es el conjunto de prestaciones demostradamente útiles para la confirmación y posterior control y tratamiento de la patología, cuando dichas prestaciones impiden el acceso al tratamiento o impactan catastróficamente en el gasto del beneficiario.  (b) Tratamiento de alto costo es el constituido por medicamentos, alimentos o elementos de uso médico asociados a enfermedades, y por las prestaciones indispensables para su confirmación diagnóstica y seguimiento, que por su costo impiden el acceso o impactan catastróficamente en el gasto.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 2",
+        "Decreto 54, Artículo 2"
+      ],
+      "rationale": "Definitions side by side in the same article — easy but tests whether the system captures both parts.\n"
+    },
+    {
+      "id": "Q21",
+      "category": "comparative",
+      "difficulty": "hard",
+      "question": "¿En qué se diferencian las sanciones por incumplimiento del Título IV (obligatoriedad de otorgamiento) versus el Título III (determinación de tratamientos) de la Ley 20.850?\n",
+      "gold_answer": "Título III (Art. 12): multa de 100 a 10.000 UTM, atendida la naturaleza y gravedad.  Si el beneficio económico supera las 10.000 UTM, la multa es equivalente al monto del beneficio.  Reincidencia se sanciona con el doble.  Además, cancelación de autorizaciones o eliminación del registro de agrupaciones de pacientes.  Prescripción: 4 años.  Título IV (Art. 13): amonestación O multa de 10 a 1.000 UTM.  Para establecimientos públicos, puede solicitarse sumario administrativo.  Prescripción: 2 años.  La diferencia clave es de escala: el Título III castiga la manipulación del sistema (inducir o influir prescripciones), mientras el Título IV castiga la falta de otorgamiento de prestaciones.\n",
+      "source_refs": [
+        "Ley 20.850, Artículos 12, 13"
+      ],
+      "rationale": "Two sanction regimes in the same law — tests whether the system retrieves and contrasts both.\n"
+    },
+    {
+      "id": "Q22",
+      "category": "comparative",
+      "difficulty": "hard",
+      "question": "Compara la composición del Consejo Consultivo de la Ley 19.966 con la Comisión Ciudadana de Vigilancia de la Ley 20.850.\n",
+      "gold_answer": "Consejo Consultivo (Ley 19.966, Art. 21): 9 miembros — 1 representante de la Academia Chilena de Medicina, 2 de facultades de medicina, 2 de facultades de economía o administración, 1 de facultades de química y farmacia, 3 designados por el Presidente de la República con representación regional.  Todos de universidades reconocidas oficialmente.  Comisión Ciudadana de Vigilancia (Ley 20.850, Art. 22): 12 miembros — 4 representantes de asociaciones de pacientes (registradas Art. 30), 2 de asociaciones científicas, 2 académicos de facultades de medicina, 4 expertos del área de la salud designados por el Ministro.  La diferencia clave: el Consejo es técnico-académico (economía, medicina, farmacia); la Comisión tiene participación ciudadana directa (1/3 son asociaciones de pacientes).\n",
+      "source_refs": [
+        "Ley 19.966, Artículo 21",
+        "Ley 20.850, Artículo 22"
+      ],
+      "rationale": "Two bodies in different laws — tests cross-source comparison.\n"
+    },
+    {
+      "id": "Q23",
+      "category": "negation_boundary",
+      "difficulty": "medium",
+      "question": "¿La Ley Ricarte Soto cubre los accidentes laborales o los accidentes de tránsito?\n",
+      "gold_answer": "No.  El Artículo 1 de la Ley 20.850 excluye expresamente: (A) las prestaciones cubiertas por la Ley 16.744 (accidentes del trabajo y enfermedades profesionales) y la Ley 18.490 (seguro obligatorio de accidentes personales por vehículos motorizados); y (B) las prestaciones cubiertas por la Cobertura Adicional para Enfermedades Catastróficas (CAEC) del contrato de salud previsional.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 1"
+      ],
+      "rationale": "Explicit exclusion — tests whether retrieval finds the negation.\n"
+    },
+    {
+      "id": "Q24",
+      "category": "negation_boundary",
+      "difficulty": "medium",
+      "question": "¿Puede un prestador de salud suspender voluntariamente la distribución de un producto cubierto por la Ley 20.850?\n",
+      "gold_answer": "No, salvo que el producto pueda causar daños a la salud de la población, en cuyo caso debe informar inmediatamente al Instituto de Salud Pública.  El Artículo 16 prohíbe la suspensión voluntaria y obliga a garantizar el adecuado abastecimiento de los productos sanitarios incorporados al Sistema.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 16"
+      ],
+      "rationale": "Prohibition with one narrow exception.\n"
+    },
+    {
+      "id": "Q25",
+      "category": "negation_boundary",
+      "difficulty": "easy",
+      "question": "¿Tiene la Comisión Ciudadana de Vigilancia facultad para administrar el Fondo de Diagnósticos y Tratamientos de Alto Costo?\n",
+      "gold_answer": "No.  El Artículo 22 de la Ley 20.850 establece expresamente que \"la Comisión no estará facultada para intervenir en la administración del Fondo para Diagnósticos y Tratamientos de Alto Costo\".  Su función es exclusivamente de asesoría y monitoreo, mediante la elaboración de recomendaciones a los ministros de Salud y Hacienda.\n",
+      "source_refs": [
+        "Ley 20.850, Artículo 22"
+      ],
+      "rationale": "Explicit limitation of scope.\n"
+    },
+    {
+      "id": "Q26",
+      "category": "global_synthesis",
+      "difficulty": "easy",
+      "question": "¿De qué trata esta base de conocimiento?",
+      "gold_answer": "Es un conjunto de normativas legales chilenas que establecen un sistema de protección financiera y garantías de salud para pacientes con enfermedades de alto costo, incluyendo cáncer.  Comprende tres documentos: (1) la Ley 19.966 (2004), que establece el Régimen General de Garantías en Salud (GES) con garantías explícitas de acceso, calidad, oportunidad y protección financiera; (2) la Ley 20.850 (2015), conocida como Ley Ricarte Soto, que crea el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo; y (3) el Decreto 54 (2015), que es el reglamento que operacionaliza la Ley 20.850 con normas concretas sobre otorgamiento, cobertura, prestadores y registro de información.\n",
+      "source_refs": [
+        "All three documents"
+      ],
+      "rationale": "The canonical \"what is this about?\" question — RAG has no chunk to match.  GRAIL's community reports answer this directly.\n"
+    },
+    {
+      "id": "Q27",
+      "category": "global_synthesis",
+      "difficulty": "medium",
+      "question": "¿Qué derechos tiene un paciente con cáncer en Chile según estas leyes?\n",
+      "gold_answer": "Un paciente oncológico tiene: (1) garantías de acceso, calidad, oportunidad y protección financiera bajo el GES (Ley 19.966); (2) cobertura total sin copago para diagnósticos y tratamientos de alto costo bajo la Ley Ricarte Soto; (3) derecho a ser informado sobre su protección financiera y garantías (Decreto 54, Art. 4-5); (4) derecho a reclamar ante la Superintendencia de Salud en caso de incumplimiento; (5) continuidad de tratamientos incluso cuando cambien de sistema previsional (Ley 20.850, Art. 17); (6) acceso a medicamentos incluso sin registro sanitario cuando hay desabastecimiento (Ley 20.850, Art. 15); (7) participación ciudadana a través de asociaciones de pacientes registradas (Ley 20.850, Art. 30); (8) mediación gratuita antes de acciones judiciales por daño en salud (Ley 19.966, Art. 43+).\n",
+      "source_refs": [
+        "All three documents"
+      ],
+      "rationale": "Comprehensive rights summary spanning the entire corpus.\n"
+    },
+    {
+      "id": "Q28",
+      "category": "global_synthesis",
+      "difficulty": "hard",
+      "question": "¿Cuáles son las principales instituciones involucradas en la protección de pacientes oncológicos y qué rol cumple cada una?\n",
+      "gold_answer": "(1) Fondo Nacional de Salud (FONASA): administra el Fondo de Alto Costo, asegura cobertura financiera, suscribe convenios con prestadores.  (2) Ministerio de Salud: dicta decretos que incorporan tratamientos, define la Red de Prestadores, aprueba estándares. (3) Superintendencia de Salud: fiscaliza, resuelve controversias, sanciona incumplimientos.  (4) Subsecretaría de Salud Pública: conduce la evaluación científica y las comisiones.  (5) CENABAST (Central de Abastecimiento): adquiere productos sanitarios, puede importar sin registro en emergencias.  (6) Comisión de Recomendación Priorizada: 12 miembros que evalúan y recomiendan tratamientos.  (7) Comisión Ciudadana de Vigilancia: monitoreo ciudadano con participación de pacientes.  (8) Consejo Consultivo (GES): 9 miembros que asesoran en la determinación de garantías. (9) ISAPREs: deben cumplir las GES y derivar a CAEC/Ley 20.850. (10) Red de Prestadores: establecimientos aprobados que otorgan las prestaciones.\n",
+      "source_refs": [
+        "All three documents"
+      ],
+      "rationale": "Institutional map requiring synthesis across all documents.\n"
+    },
+    {
+      "id": "Q29",
+      "category": "global_synthesis",
+      "difficulty": "hard",
+      "question": "¿Cuáles son los principales mecanismos de control y fiscalización que establecen estas leyes?\n",
+      "gold_answer": "(1) Superintendencia de Salud: fiscalización general, sanciones de amonestación hasta 10.000 UTM, inicio de procedimientos de oficio. (2) Comisión Ciudadana de Vigilancia: monitoreo ciudadano, informes anuales al Ministro (Ley 20.850, Art. 22-25).  (3) Comisión Asesora para Evaluación de Prestadores: acreditación y verificación en terreno (Decreto 54, Art. 13-14).  (4) Declaraciones de conflictos de interés obligatorias para comisionados (Ley 20.850, Art. 8; Decreto 54, Art. 15).  (5) Sistema de información obligatorio que FONASA debe implementar con registro de prestaciones y gastos (Ley 20.850, Art. 27).  (6) Informes trimestrales de precios y frecuencias por FONASA y CENABAST a la Superintendencia (Ley 20.850, Art. 26).  (7) Procedimiento sancionatorio con prescripción de 2-4 años (Ley 20.850, Arts. 12-13).  (8) Mediación obligatoria antes de demanda judicial (Ley 19.966, Arts. 43+).\n",
+      "source_refs": [
+        "All three documents"
+      ],
+      "rationale": "Oversight mechanisms scattered throughout the three documents.\n"
+    },
+    {
+      "id": "Q30",
+      "category": "global_synthesis",
+      "difficulty": "hard",
+      "question": "Haz un resumen ejecutivo de cómo estas tres normativas se conectan entre sí para proteger a un paciente de cáncer.\n",
+      "gold_answer": "La Ley 19.966 (2004) establece el marco general de garantías en salud (GES/AUGE) con cuatro garantías explícitas — acceso, calidad, oportunidad y protección financiera — para un conjunto priorizado de enfermedades.  La Ley 20.850 (2015, Ley Ricarte Soto) complementa creando protección financiera específica para diagnósticos y tratamientos que superan un umbral de alto costo, financiados por un Fondo dedicado de hasta 100 mil millones de pesos anuales, con un proceso de evaluación científica, recomendación y decisión ministerial.  El Decreto 54 (2015) operacionaliza la Ley 20.850 con reglas concretas: cómo se aprueban prestadores, qué información registrar, plazos de convenios, cuándo termina la protección. Juntas forman una red de seguridad donde el cáncer, como enfermedad oncológica de alto costo (Art. 5, Ley 20.850), tiene potencialmente doble cobertura: GES para la patología base y Ley Ricarte Soto para tratamientos que exceden el umbral, todo fiscalizado por la Superintendencia de Salud y monitoreado por una Comisión Ciudadana con participación directa de pacientes.\n",
+      "source_refs": [
+        "All three documents"
+      ],
+      "rationale": "The ultimate synthesis question — requires understanding the full hierarchical relationship between the three normative layers.\n"
+    }
+  ]
+}

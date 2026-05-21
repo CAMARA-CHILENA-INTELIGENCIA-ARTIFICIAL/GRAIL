@@ -38,6 +38,11 @@ dependencies = [
     "httpx>=0.27",
     "aiohttp>=3.9",
     "python-dotenv>=1.0",
+    # Document preprocessors. Both are pure-Python, small footprint.
+    # pypdf parses PDFs (text-only; OCR for image-only pages is a future [vision] extra).
+    # python-docx reads DOCX paragraphs + tables; no Java/Node binary dependency.
+    "pypdf>=5.0",
+    "python-docx>=1.1",
     "numpy>=1.24",
     "scikit-learn>=1.3",
     "scipy>=1.10",
@@ -46,6 +51,13 @@ dependencies = [
 [project.optional-dependencies]
 s3 = ["boto3>=1.34", "aioboto3>=12"]
 rerank = ["sentence-transformers>=2.7"]
+notebook = [
+    "pyvis>=0.3.2",
+    "matplotlib>=3.8",
+    "ipywidgets>=8.1",
+    "jupyter>=1.0",
+    "ipykernel>=6.29",
+]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",

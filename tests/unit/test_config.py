@@ -98,3 +98,39 @@ def test_user_endpoint_can_override_default(tmp_path: Path):
     assert cfg.endpoints["openai"].base_url == "https://my-openai-proxy/v1"
     # The api_key_env from the built-in default still applies (deep merge).
     assert cfg.endpoints["openai"].api_key_env == "OPENAI_API_KEY"
+
+
+def test_entity_types_normalize_to_caps(tmp_path: Path):
+    (tmp_path / "grail.yaml").write_text(
+        "project_name: et\n"
+        "indexing:\n"
+        "  entity_types:\n"
+        "    - disease\n"
+        "    - clinical study\n"
+        "    - DRUG\n"
+    )
+    cfg = load_config(tmp_path / "grail.yaml")
+    # PERSON and ORGANIZATION are force-injected at the head; user entries follow.
+    assert cfg.indexing.entity_types[0] == "PERSON"
+    assert cfg.indexing.entity_types[1] == "ORGANIZATION"
+    assert "DISEASE" in cfg.indexing.entity_types
+    assert "CLINICAL_STUDY" in cfg.indexing.entity_types
+    assert "DRUG" in cfg.indexing.entity_types
+    assert len(cfg.indexing.entity_types) == len(set(cfg.indexing.entity_types))
+
+
+def test_entity_types_default_includes_mandatory():
+    cfg = load_config()
+    assert cfg.indexing.entity_types[0] == "PERSON"
+    assert cfg.indexing.entity_types[1] == "ORGANIZATION"
+    assert len(cfg.indexing.entity_types) >= 5
+
+
+def test_entity_types_user_cannot_drop_mandatory(tmp_path: Path):
+    (tmp_path / "grail.yaml").write_text(
+        "project_name: et\nindexing:\n  entity_types: [DISEASE, DRUG, TREATMENT, LOCATION, EVENT]\n"
+    )
+    cfg = load_config(tmp_path / "grail.yaml")
+    assert "PERSON" in cfg.indexing.entity_types
+    assert "ORGANIZATION" in cfg.indexing.entity_types
+    assert "DISEASE" in cfg.indexing.entity_types

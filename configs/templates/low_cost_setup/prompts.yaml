@@ -1,0 +1,14 @@
+# Prompt registry.
+#
+# GRAIL ships built-in prompts under grail/prompts/builtin/. To override one or
+# more, point custom_paths at a directory of .py files using the same module
+# contract (NAME, REQUIRED_PARAMS, build_messages). Resolution searches custom
+# paths first, then falls back to built-ins per file.
+#
+# See docs/prompts.md.
+
+custom_paths: []
+
+# When true, the custom directory must provide EVERY built-in prompt name —
+# useful for shipping a fully translated prompt pack.
+strict: false

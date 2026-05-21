@@ -1,0 +1,14 @@
+# Storage backend.
+#
+# "local"  → plain filesystem under `root`. The default and what most users want.
+# "s3"     → requires the optional [s3] extra (pip install grail[s3]) and the
+#            s3_* fields below.
+
+backend: local
+root: {root}
+
+# S3 — uncomment if backend: s3
+# s3_bucket: my-bucket
+# s3_prefix: grail/projects/{name}
+# s3_region: us-east-1
+# s3_endpoint_url: null    # set for MinIO / S3-compatible stores

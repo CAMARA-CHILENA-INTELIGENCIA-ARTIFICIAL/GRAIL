@@ -67,6 +67,7 @@ class GlobalSearch:
         extra_knowledge: str = "",
     ) -> SearchResult:
         started = time.perf_counter()
+        self.reporter.info("Loading indexed artifacts…")
         artifacts = self.artifacts or load_artifacts_for_search(self.storage, self.output_folder)
         if artifacts.community_reports.empty:
             return SearchResult(
@@ -76,14 +77,19 @@ class GlobalSearch:
                 completion_time=time.perf_counter() - started,
                 llm_calls=0,
             )
+        self.reporter.success(
+            f"Loaded {len(artifacts.community_reports)} community reports"
+        )
 
+        self.reporter.info("Building community context…")
         context_text, used_reports = build_community_context(
             artifacts.community_reports, max_tokens=self.chunk_size
         )
 
         llm_calls = 0
-        # Single-pass reduce when everything fits in one chunk.
         if isinstance(context_text, str):
+            self.reporter.info("Single-pass reduce — context fits in one chunk")
+            self.reporter.info("Generating response…")
             answer, calls = await self._reduce(
                 context_text,
                 query,
@@ -100,8 +106,8 @@ class GlobalSearch:
                 llm_calls=llm_calls,
             )
 
-        # Map-reduce.
         chunks = context_text  # list of strings
+        self.reporter.info(f"Map-reduce — {len(chunks)} chunks to process")
         sem = asyncio.Semaphore(self.concurrency)
 
         async def _map_one(chunk: str) -> list[dict[str, Any]]:
@@ -123,14 +129,18 @@ class GlobalSearch:
                 )
                 return _parse_map_points(resp)
 
+        self.reporter.info("Mapping chunks…")
         mapped = await asyncio.gather(*(_map_one(chunk) for chunk in chunks))
         llm_calls += len(chunks)
         all_points: list[dict[str, Any]] = [pt for batch in mapped for pt in batch]
         all_points.sort(key=lambda p: p.get("score", 0), reverse=True)
+        self.reporter.success(f"Mapped {len(all_points)} key points")
+
         reduce_context = "\n".join(
             f"- ({p.get('score', 0)}) {p.get('description', '')}" for p in all_points
         )
 
+        self.reporter.info("Reducing to final answer…")
         answer, calls = await self._reduce(
             reduce_context,
             query,
