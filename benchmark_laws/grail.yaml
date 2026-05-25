@@ -1,0 +1,51 @@
+# GRAIL benchmark project — Chilean oncology laws
+
+project_name: benchmark_laws
+root_dir: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/benchmark_laws
+
+llm:
+  endpoint: deepinfra
+  model: Qwen/Qwen3.6-35B-A3B
+  request_timeout: 360.0
+  extra_pricing:
+    "deepinfra|Qwen/Qwen3.6-35B-A3B": [0.15, 0.95]
+    "deepinfra|Qwen/Qwen3-Embedding-0.6B": [0.005, 0.0]
+    "deepinfra|Qwen/Qwen3-Reranker-0.6B": [0.005, 0.0]
+
+embeddings:
+  endpoint: deepinfra
+  model: Qwen/Qwen3-Embedding-0.6B
+
+indexing:
+  entity_types:
+    - PERSON
+    - ORGANIZATION
+    - LAW
+    - REGULATION
+    - INSTITUTION
+    - LEGAL_CONCEPT
+    - FUND
+    - COMMISSION
+    - PROCEDURE
+    - BENEFIT
+  chunk_size: 1500
+  chunk_overlap: 100
+  extraction_max_tokens: 16384
+  extraction_concurrency: 10
+  summarization_concurrency: 10
+
+community:
+  max_report_length: 16384
+  report_concurrency: 3
+
+reranker:
+  enabled: true
+  endpoint: deepinfra
+  model: Qwen/Qwen3-Reranker-0.6B
+  rerank_entities: true
+  rerank_text_units: true
+  overfetch_factor: 3
+
+storage:
+  backend: local
+  root: /Users/bgg/Documents/repos/cchia/opensource_comission/projects/GRAIL/benchmark_laws

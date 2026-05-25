@@ -308,22 +308,26 @@ search:
   # Local search
   local_search_endpoint: null           # null → inherits from llm.endpoint
   local_search_model: null              # null → inherits from llm.model
-  local_max_tokens: 8192                # Total context window for local search
+  local_max_tokens: 12000               # Total context window for local search
   local_text_unit_prop: 0.5             # Proportion of tokens for source text
   local_community_prop: 0.1             # Proportion of tokens for community reports
   local_conversation_history_max_turns: 5
   local_top_k_entities: 10
   local_top_k_relationships: 10
+  use_community_summary: false          # false = full reports; true = summary only
 
   # Global search
   global_search_endpoint: null
   global_search_model: null
-  global_max_tokens: 6000
   global_map_max_tokens: 2000
-  global_reduce_max_tokens: 6000
+  global_reduce_max_tokens: 8192
   global_chunk_size: 100000             # Threshold for single-pass vs map-reduce
   global_concurrency: 5                 # Parallel map calls
 
+  # Response generation
+  response_max_tokens: 16384            # Max output tokens for the final LLM answer.
+                                        # Set high for thinking models (Qwen3, etc.)
+                                        # whose internal reasoning consumes token budget.
   response_type: "Multiple Paragraphs"
 ```
 
@@ -331,33 +335,177 @@ search:
 
 ## CLI
 
+```
+grail query [OPTIONS] PROJECT_DIR QUESTION
+
+Options:
+  -m, --mode      local | global | document | agent  [default: local]
+  -d, --document  Document name/path for --mode document.
+  -o, --output    text | json                        [default: text]
+```
+
+### Local search — specific factual questions
+
 ```bash
-# Simple search
-grail query ./my_project "Who is Einstein?" --mode local
-grail query ./my_project "What are the main themes?" --mode global
-grail query ./my_project "Summarize this file" --mode document --document report.txt
+grail query examples/quickstart "What are the main treatment options for low-grade gliomas?"
+```
 
-# Agentic search
-grail query ./my_project "Compare these two papers" --agent
+Local is the default mode. It embeds the query, finds the top-k entities by
+similarity, collects their relationships and source text, and synthesizes an
+answer. The CLI prints each step as it runs:
 
-# Output format
-grail query ./my_project "..." --mode local --output json
+```
+  ◆  Loading indexed artifacts…
+     ✓ Loaded 489 entities, 485 relationships, 3 community reports
+  ◆  Embedding query…
+  ◆  Ranking top-10 entities by similarity…
+  ◆  Building context window…
+     ✓ Context: 10 entities, 28 relationships, 2 communities, 9 source chunks
+  ◆  Generating response…
+╭─ RESPONSE ───────────────────────────────────────────────────────────────────╮
+│  Based on the provided clinical guidelines...                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  19.2s  ·  1 LLM call  ·  $0.0031
+  Context: 10 entities, 28 relationships, 9 sources, 2 reports
+  Entities: SURGICAL RESECTION, EARLY SURGICAL RESECTION, SECOND SURGERY, ...
+```
+
+### Global search — broad thematic questions
+
+```bash
+grail query examples/quickstart "What are the main themes across all indexed documents?" --mode global
+```
+
+Global search reads all community reports (pre-generated LLM summaries of
+entity clusters) and synthesizes a single answer. When the total context fits
+in one chunk it runs a single reduce pass; otherwise it map-reduces.
+
+```
+  ◆  Loading indexed artifacts…
+     ✓ Loaded 3 community reports
+  ◆  Building community context…
+  ◆  Single-pass reduce — context fits in one chunk
+  ◆  Generating response…
+╭─ RESPONSE ───────────────────────────────────────────────────────────────────╮
+│  Based on the indexed documents, the main themes converge around...          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  12.0s  ·  1 LLM call  ·  $0.0020
+  Context: 3 reports
+```
+
+### Document search — file-scoped questions
+
+```bash
+grail query examples/quickstart "What treatments are discussed?" --mode document --document "gliomas"
+```
+
+Document search restricts the entire retrieval pipeline to a single source
+file. The `--document` value is matched flexibly: by filename, path fragment,
+title, or document ID.
+
+```
+  ◆  Loading indexed artifacts…
+  ◆  Resolving document 'gliomas'…
+  ◆  Scoping to 1 document(s)…
+     ✓ Scoped: 245 entities, 235 relationships, 12 text units
+  ◆  Embedding query…
+  ◆  Ranking top-10 entities…
+  ◆  Building context window…
+  ◆  Generating response…
+╭─ RESPONSE ───────────────────────────────────────────────────────────────────╮
+│  Based on the provided guidelines...                                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  21.9s  ·  1 LLM call  ·  $0.0030
+  Context: 10 entities, 10 relationships, 6 sources
+```
+
+### Agent search — LLM decides the strategy
+
+```bash
+grail query examples/quickstart "Compare treatment approaches for gliomas and cancer cachexia" --mode agent
+```
+
+The agent receives three tools (`local_search`, `global_search`,
+`document_search`) and decides which to call, with what parameters, and how
+many times. It iterates until it has enough context, then synthesizes a final
+answer.
+
+```
+  ◆  Loading indexed artifacts…
+     ✓ Loaded 489 entities, 485 relationships, 3 community reports
+  ◆  Starting agent loop (max 5 iterations)…
+  ◆  Iteration 1/5 — reasoning…
+  ◆  Calling tool: global_search(query='treatment approaches for gliomas and cancer cachexia')
+     ...
+     ✓ global_search returned (1 LLM calls)
+  ◆  Calling tool: local_search(query='glioma treatment approaches', top_k=10)
+     ...
+     ✓ local_search returned (1 LLM calls)
+  ◆  Calling tool: local_search(query='cancer cachexia treatment approaches', top_k=10)
+     ...
+     ✓ local_search returned (1 LLM calls)
+  ◆  Iteration 2/5 — reasoning…
+     ✓ Agent finished — synthesizing final answer
+╭─ RESPONSE ───────────────────────────────────────────────────────────────────╮
+│  Glioma management focuses on oncological control (tumor removal and         │
+│  molecular targeting), while cancer cachexia management focuses on           │
+│  metabolic and nutritional support...                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  1m 12.9s  ·  5 LLM calls  ·  $0.0116
+```
+
+### JSON output
+
+```bash
+grail query examples/quickstart "What is IDH?" --mode local --output json
+```
+
+Returns machine-readable JSON with the response, timing, cost, context stats,
+and entity names:
+
+```json
+{
+  "response": "IDH (Isocitrate Dehydrogenase) is...",
+  "completion_time": 12.3,
+  "llm_calls": 1,
+  "context_stats": {"entities": 10, "relationships": 14, "reports": 2, "sources": 6},
+  "entities_used": ["IDH1 OR IDH2 MUTATIONS", "IDH-MUTANT ASTROCYTOMA", "..."],
+  "cost": "$0.0032"
+}
+```
+
+### More examples
+
+```bash
+# Conversation-style: force specific entities into context
+grail query ./project "What are their contributions?" --mode local
+
+# Override model for a single query (via search config in grail.yaml)
+# search:
+#   local_search_endpoint: openai
+#   local_search_model: gpt-4o
+
+# Document search with a path fragment
+grail query ./project "Summarize findings" --mode document --document "reports/q4"
+
+# Agent with a multi-hop question
+grail query ./project "Which authors wrote about both topic A and topic B?" --mode agent
 ```
 
 ---
 
 ## When to Use Which
 
-| Question Type | Mode | Why |
-|---------------|------|-----|
-| "Who is X?" | `local` | Entity-anchored; needs specific facts |
-| "What is the relationship between A and B?" | `local` with `include_entity_names` | Force both entities into context |
-| "What are the main themes?" | `global` | Needs cross-cutting community-level synthesis |
-| "Summarize this document" | `document` | File-scoped; only that source matters |
-| "What does report.txt say about X?" | `document` | File-scoped question |
-| "Compare report.txt and paper.pdf on topic Y" | `agent_search` | Needs multiple document searches + synthesis |
-| "Find everything about X, starting broad then drilling down" | `agent_search` | Needs global → local refinement |
-| Conversational follow-ups ("tell me more") | `local` with conversation history | History enrichment finds entities from prior turns |
+| Question Type | CLI | Why |
+|---------------|-----|-----|
+| "Who is X?" | `--mode local` | Entity-anchored; needs specific facts |
+| "What is the relationship between A and B?" | `--mode local` | Force both entities into context via API `include_entity_names` |
+| "What are the main themes?" | `--mode global` | Needs cross-cutting community-level synthesis |
+| "Summarize this document" | `--mode document -d file.pdf` | File-scoped; only that source matters |
+| "What does report.txt say about X?" | `--mode document -d report.txt` | File-scoped question |
+| "Compare report.txt and paper.pdf on topic Y" | `--mode agent` | Needs multiple document searches + synthesis |
+| "Find everything about X, starting broad then drilling down" | `--mode agent` | Agent starts with global, refines with local |
+| Conversational follow-ups ("tell me more") | `--mode local` | History enrichment finds entities from prior turns (Python API only) |
 
 ---
 

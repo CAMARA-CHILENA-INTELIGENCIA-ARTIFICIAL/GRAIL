@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from grail.llm import EmbeddingClient, LLMClient
+from grail.llm import EmbeddingClient, LLMClient, RerankerClient
 from grail.prompts import PromptRegistry
 from grail.query.retrieval import (
     SearchArtifacts,
@@ -28,7 +28,7 @@ from grail.query.retrieval import (
 from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import StorageBackend
-from grail.vectorstores import LanceDBVectorStore
+from grail.vectorstores import BaseVectorStore
 
 
 @dataclass
@@ -49,6 +49,9 @@ class DocumentSearch:
     model: Optional[str] = None
     assistant_name: str = "GRAIL"
     reporter: Reporter = field(default_factory=NullReporter)
+    reranker: Optional[RerankerClient] = None
+    reranker_overfetch_factor: int = 3
+    rerank_entities: bool = False
 
     async def asearch(
         self,
@@ -57,6 +60,7 @@ class DocumentSearch:
         document: str,
         conversation_history: Optional[list[dict[str, Any]]] = None,
         artifact_instructions: str = "",
+        use_reranker: Optional[bool] = None,
     ) -> SearchResult:
         """Search within a single document.
 
@@ -104,15 +108,51 @@ class DocumentSearch:
             f"{len(scoped_rels)} relationships, {len(scoped_tu)} text units"
         )
 
+        do_rerank = (
+            use_reranker is True
+            or (use_reranker is None and self.rerank_entities)
+        ) and self.reranker is not None
+
         self.reporter.info("Embedding query…")
         query_embedding = await self.embeddings.embed_one(query, tag="query_embedding")
 
-        self.reporter.info(f"Ranking top-{self.top_k_entities} entities…")
+        fetch_k = (
+            self.top_k_entities * self.reranker_overfetch_factor
+            if do_rerank
+            else self.top_k_entities
+        )
+        self.reporter.info(f"Ranking top-{fetch_k} entities…")
         ranked = map_query_to_entities(
             query_embedding=query_embedding,
             entities_df=scoped_entities,
-            top_k=self.top_k_entities,
+            top_k=fetch_k,
         )
+
+        if do_rerank and not ranked.empty:
+            assert self.reranker is not None
+            descriptions = []
+            for _, row in ranked.iterrows():
+                desc = row.get("description") or row.get("name", "")
+                name = row.get("name", "")
+                etype = row.get("type", "")
+                descriptions.append(f"{name} ({etype}): {desc}")
+            self.reporter.info(
+                f"Re-ranking {len(descriptions)} entities with cross-encoder…"
+            )
+            results = await self.reranker.rerank(
+                query, descriptions, tag="rerank_entities"
+            )
+            score_map = {r.index: r.score for r in results}
+            ranked = ranked.copy()
+            ranked["__rerank_score__"] = [
+                score_map.get(i, -float("inf")) for i in range(len(ranked))
+            ]
+            ranked = ranked.sort_values("__rerank_score__", ascending=False)
+            ranked = ranked.head(self.top_k_entities)
+            ranked = ranked.drop(columns=["__rerank_score__"])
+            self.reporter.success(
+                f"Re-ranked → top-{self.top_k_entities} entities selected"
+            )
 
         entity_budget = self.max_tokens // 3
         rel_budget = self.max_tokens // 4

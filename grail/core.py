@@ -49,14 +49,14 @@ from grail.indexing.run_manifest import (
     write_manifest,
     write_summary,
 )
-from grail.llm import CostTracker, EmbeddingClient, Endpoint, EndpointRegistry, LLMCache, LLMClient
+from grail.llm import CostTracker, EmbeddingClient, Endpoint, EndpointRegistry, LLMCache, LLMClient, RerankerClient
 from grail.prompts import PromptRegistry
 from grail.query import AgentSearch, DocumentSearch, GlobalSearch, LocalSearch
 from grail.query.retrieval import SearchArtifacts, load_artifacts_for_search
 from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import LocalStorage, StorageBackend, get_backend
-from grail.vectorstores import LanceDBVectorStore, VectorStoreDocument
+from grail.vectorstores import BaseVectorStore, LanceDBVectorStore, VectorStoreDocument
 
 log = logging.getLogger("grail.core")
 
@@ -75,6 +75,7 @@ class GRAIL:
     prompts: PromptRegistry
     cost_tracker: CostTracker = field(default_factory=CostTracker)
     reporter: Reporter = field(default_factory=NullReporter)
+    reranker: Optional[RerankerClient] = None
 
     # ------------------------------------------------------------------ construction
 
@@ -84,9 +85,13 @@ class GRAIL:
         config: Optional[Config | str | Path] = None,
         *,
         reporter: Optional[Reporter] = None,
+        vectorstore: Optional[str] = None,
     ) -> "GRAIL":
         if not isinstance(config, Config):
             config = load_config(config)
+
+        if vectorstore is not None:
+            config.vectorstore.backend = vectorstore
 
         # Storage
         s_cfg = config.storage
@@ -164,6 +169,19 @@ class GRAIL:
             custom_paths=[Path(p) for p in config.prompts.custom_paths],
             strict=config.prompts.strict,
         )
+
+        reranker: Optional[RerankerClient] = None
+        if config.reranker.enabled:
+            reranker = RerankerClient(
+                default_endpoint=config.reranker.endpoint,
+                default_model=config.reranker.model,
+                base_url=config.reranker.base_url,
+                request_timeout=config.reranker.request_timeout,
+                endpoint_registry=registry,
+                cost_tracker=cost,
+                reporter=rep,
+            )
+
         return cls(
             config=config,
             storage=storage,
@@ -172,6 +190,7 @@ class GRAIL:
             prompts=prompts,
             cost_tracker=cost,
             reporter=rep,
+            reranker=reranker,
         )
 
     # ------------------------------------------------------------------ helpers
@@ -238,26 +257,39 @@ class GRAIL:
         )
         return {"manifest": manifest_key, "llm_calls": calls_key, "summary": summary_key}
 
-    def _vector_store(self) -> Optional[LanceDBVectorStore]:
+    def _vector_store(self) -> Optional[BaseVectorStore]:
         cfg = self.config.vectorstore
-        if cfg.backend != "lancedb":
-            return None
         if isinstance(self.storage, LocalStorage):
-            base = self.storage.path_for(cfg.uri or "lancedb") if cfg.uri else self.storage.path_for("lancedb")
-            uri = str(base)
+            uri = str(self.storage.path_for(cfg.uri or cfg.backend))
         else:
-            uri = cfg.uri or "./lancedb"  # cloud → user must supply a usable URI
-        store = LanceDBVectorStore(collection_name=cfg.collection_name)
-        store.connect(db_uri=uri)
-        if self.storage.exists(uri + "/" + cfg.collection_name + ".lance") or (
-            isinstance(self.storage, LocalStorage)
-            and Path(uri, cfg.collection_name + ".lance").exists()
-        ):
-            try:
-                store.document_collection = store.db_connection.open_table(cfg.collection_name)
-            except Exception:  # pragma: no cover
-                store.document_collection = None
-        return store
+            uri = cfg.uri or f"./{cfg.backend}"
+
+        if cfg.backend == "lancedb":
+            store = LanceDBVectorStore(collection_name=cfg.collection_name)
+            store.connect(db_uri=uri)
+            if self.storage.exists(uri + "/" + cfg.collection_name + ".lance") or (
+                isinstance(self.storage, LocalStorage)
+                and Path(uri, cfg.collection_name + ".lance").exists()
+            ):
+                try:
+                    store.document_collection = store.db_connection.open_table(cfg.collection_name)
+                except Exception:  # pragma: no cover
+                    store.document_collection = None
+            return store
+
+        if cfg.backend == "faiss":
+            from grail.vectorstores.faiss import FAISSVectorStore
+            store = FAISSVectorStore(collection_name=cfg.collection_name)
+            store.connect(db_uri=uri)
+            return store
+
+        if cfg.backend == "chromadb":
+            from grail.vectorstores.chroma import ChromaDBVectorStore
+            store = ChromaDBVectorStore(collection_name=cfg.collection_name)
+            store.connect(db_uri=uri, distance_fn=cfg.distance_fn)
+            return store
+
+        return None
 
     # ------------------------------------------------------------------ INDEX
 
@@ -356,14 +388,25 @@ class GRAIL:
         document: Optional[str] = None,
         include_entity_names: Optional[list[str]] = None,
         exclude_entity_names: Optional[list[str]] = None,
+        use_reranker: Optional[bool] = None,
     ) -> SearchResult:
         """Run a single search.
 
         ``mode`` is one of ``"local"``, ``"global"``, or ``"document"``.
         For ``"document"`` mode, pass ``document`` (filename, path, or doc ID).
+
+        ``use_reranker`` overrides the config-level reranker setting for this call:
+        ``True`` forces reranking on, ``False`` forces it off, ``None`` uses config.
         """
+        if use_reranker is True and self.reranker is None:
+            raise ValueError(
+                "use_reranker=True but no reranker is configured. "
+                "Set reranker.enabled: true in your config and provide endpoint/model."
+            )
+
         artifacts = load_artifacts_for_search(self.storage, self._output_folder())
         resp_max = self.config.search.response_max_tokens
+        r_cfg = self.config.reranker
         if mode == "local":
             s = LocalSearch(
                 storage=self.storage,
@@ -383,6 +426,11 @@ class GRAIL:
                 endpoint=self.config.search.local_search_endpoint,
                 model=self.config.search.local_search_model,
                 reporter=self.reporter,
+                reranker=self.reranker,
+                reranker_overfetch_factor=r_cfg.overfetch_factor,
+                rerank_entities=r_cfg.rerank_entities,
+                rerank_text_units=r_cfg.rerank_text_units,
+                use_community_summary=self.config.search.use_community_summary,
             )
             return await s.asearch(
                 query,
@@ -390,6 +438,7 @@ class GRAIL:
                 artifact_instructions=artifact_instructions,
                 include_entity_names=include_entity_names,
                 exclude_entity_names=exclude_entity_names,
+                use_reranker=use_reranker,
             )
         elif mode == "global":
             s = GlobalSearch(
@@ -404,6 +453,7 @@ class GRAIL:
                 reduce_max_tokens=self.config.search.global_reduce_max_tokens,
                 endpoint=self.config.search.global_search_endpoint,
                 model=self.config.search.global_search_model,
+                use_community_summary=self.config.search.use_community_summary,
                 reporter=self.reporter,
             )
             return await s.asearch(
@@ -427,12 +477,16 @@ class GRAIL:
                 endpoint=self.config.search.local_search_endpoint,
                 model=self.config.search.local_search_model,
                 reporter=self.reporter,
+                reranker=self.reranker,
+                reranker_overfetch_factor=r_cfg.overfetch_factor,
+                rerank_entities=r_cfg.rerank_entities,
             )
             return await s.asearch(
                 query,
                 document=document,
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
+                use_reranker=use_reranker,
             )
         raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local', 'global', or 'document'.")
 
@@ -462,6 +516,7 @@ class GRAIL:
             top_k_entities=self.config.search.local_top_k_entities,
             text_unit_prop=self.config.search.local_text_unit_prop,
             community_prop=self.config.search.local_community_prop,
+            use_community_summary=self.config.search.use_community_summary,
             response_max_tokens=self.config.search.response_max_tokens,
             endpoint=self.config.search.local_search_endpoint,
             model=self.config.search.local_search_model,

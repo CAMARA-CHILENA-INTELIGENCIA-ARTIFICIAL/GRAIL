@@ -8,13 +8,16 @@ global_search_endpoint: null
 global_search_model: null
 
 # --- Local search ---
-# Total prompt+completion budget for entity-anchored search. Drop for cheaper
+# Total context budget for entity-anchored search. Drop for cheaper
 # inference; raise if context-heavy answers matter more than cost.
-local_max_tokens: 6000
+local_max_tokens: 8000
 
 # Proportions of the total budget allocated to each context layer.
 local_text_unit_prop: 0.5           # raw source-text citations
-local_community_prop: 0.1           # community-report headers
+local_community_prop: 0.1           # community-report content
+
+# Use summary-only community context to save tokens on small-context models.
+use_community_summary: true
 
 # How many recent conversation turns to fold into the local search prompt.
 local_conversation_history_max_turns: 5
@@ -25,7 +28,6 @@ local_top_k_entities: 10
 local_top_k_relationships: 10
 
 # --- Global search ---
-global_max_tokens: 4000
 global_map_max_tokens: 1500
 global_reduce_max_tokens: 4000
 
@@ -33,6 +35,9 @@ global_reduce_max_tokens: 4000
 # reduce pass to map-reduce. Lower → more chunked calls, higher → one big call.
 global_chunk_size: 80000
 global_concurrency: 4
+
+# Maximum tokens the LLM can generate in its response.
+response_max_tokens: 8192
 
 # Free-text instruction injected into the global-reduce prompt's
 # artifact_instructions block.

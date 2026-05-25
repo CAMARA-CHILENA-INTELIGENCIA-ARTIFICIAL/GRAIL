@@ -143,6 +143,7 @@ class TestRunBenchmark:
                 "category": q["category"],
                 "rag": {"weighted_score": 2.5},
                 "grail_local": {"weighted_score": 4.0},
+                "grail_local_reranked": {"weighted_score": 4.2},
                 "grail_global": {"weighted_score": 3.5},
             }
 
@@ -155,4 +156,5 @@ class TestRunBenchmark:
         assert "OVERALL" in report
         assert "RAG" in report
         assert "GRAIL Local" in report
+        assert "Local+Rerank" in report
         assert "test-model" in report

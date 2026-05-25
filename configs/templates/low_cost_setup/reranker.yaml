@@ -1,0 +1,10 @@
+# Reranker — enabled in this template for better retrieval quality.
+# Uses the same DeepInfra endpoint as LLM + embeddings.
+
+enabled: true
+endpoint: deepinfra
+model: Qwen/Qwen3-Reranker-0.6B
+overfetch_factor: 3
+rerank_entities: true
+rerank_text_units: true
+request_timeout: 30.0

@@ -1,0 +1,33 @@
+# Reranker config (optional). See docs/reranker.md.
+#
+# When enabled, a cross-encoder re-ranker scores entity and text-unit candidates
+# after the initial vector similarity retrieval. This improves which items fill
+# the limited context window sent to the LLM, at the cost of one extra API call.
+#
+# Toggle per-query with --rerank / --no-rerank on the CLI, or use_reranker= in
+# the Python API, without changing this config.
+
+enabled: false
+
+# Endpoint name (from endpoints.yaml) that hosts the reranker model.
+# The reranker uses a dedicated HTTP API (not OpenAI Chat Completions).
+endpoint: deepinfra
+
+# Cross-encoder model name. Passed to the inference API.
+model: Qwen/Qwen3-Reranker-0.6B
+
+# Full URL override. When null, auto-derived from endpoint name.
+# DeepInfra: https://api.deepinfra.com/v1/inference/{model}
+base_url: null
+
+# Over-fetch factor: retrieve top_k * overfetch_factor entities by vector
+# similarity, then rerank and trim to top_k. Higher = more candidates for the
+# reranker to choose from, but more tokens sent to the reranker API.
+overfetch_factor: 3
+
+# Which retrieval stages to rerank.
+rerank_entities: true
+rerank_text_units: true
+
+# HTTP timeout for the reranker API call (seconds).
+request_timeout: 30.0

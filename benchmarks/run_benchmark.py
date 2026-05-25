@@ -79,8 +79,10 @@ def write_report(path: Path, report: str) -> None:
 async def collect_grail_responses(
     grail: GRAIL,
     questions: list[dict],
+    *,
+    include_reranked: bool = False,
 ) -> dict[str, dict[str, Any]]:
-    """Run each question through GRAIL local + global search."""
+    """Run each question through GRAIL local, global, and optionally local+reranker."""
     results: dict[str, dict[str, Any]] = {}
     total = len(questions)
 
@@ -88,7 +90,9 @@ async def collect_grail_responses(
         qid = q["id"]
         log.info(f"[{i}/{total}] GRAIL — {qid}: {q['question'][:60]}...")
 
-        local_result = await grail.search(query=q["question"], mode="local")
+        local_result = await grail.search(
+            query=q["question"], mode="local", use_reranker=False
+        )
         global_result = await grail.search(query=q["question"], mode="global")
 
         results[qid] = {
@@ -104,6 +108,17 @@ async def collect_grail_responses(
                 "llm_calls": global_result.llm_calls,
             },
         }
+
+        if include_reranked:
+            reranked_result = await grail.search(
+                query=q["question"], mode="local", use_reranker=True
+            )
+            results[qid]["grail_local_reranked"] = {
+                "response": reranked_result.response,
+                "completion_time": reranked_result.completion_time,
+                "llm_calls": reranked_result.llm_calls,
+            }
+
     return results
 
 
@@ -143,7 +158,7 @@ async def judge_responses(
     """Score every (question, system, response) triple via LLM-as-judge."""
     scores: dict[str, dict[str, Any]] = {}
     total = len(questions)
-    systems = ["grail_local", "grail_global", "rag"]
+    systems = ["grail_local", "grail_local_reranked", "grail_global", "rag"]
 
     for i, q in enumerate(questions, 1):
         qid = q["id"]
@@ -208,10 +223,8 @@ def generate_report(
     ]
 
     categories = {c["id"]: c["label"] for c in benchmark["categories"]}
-    systems = ["rag", "grail_local", "grail_global"]
-    system_labels = {"rag": "RAG", "grail_local": "GRAIL Local", "grail_global": "GRAIL Global"}
+    systems = ["rag", "grail_local", "grail_local_reranked", "grail_global"]
 
-    # per-category averages
     cat_scores: dict[str, dict[str, list[float]]] = {
         cat_id: {s: [] for s in systems} for cat_id in categories
     }
@@ -229,11 +242,11 @@ def generate_report(
     lines.append("## Summary by Category")
     lines.append("")
     lines.append(
-        "| Category | RAG | GRAIL Local | GRAIL Global | Best delta |"
+        "| Category | RAG | GRAIL Local | GRAIL Local+Rerank | GRAIL Global | Best delta |"
     )
-    lines.append("|---|---|---|---|---|")
+    lines.append("|---|---|---|---|---|---|")
 
-    all_rag, all_local, all_global = [], [], []
+    all_scores: dict[str, list[float]] = {s: [] for s in systems}
 
     for cat_id, label in categories.items():
         avgs = {}
@@ -242,34 +255,33 @@ def generate_report(
             avgs[sys_name] = sum(vals) / len(vals) if vals else 0.0
 
         rag_avg = avgs["rag"]
-        best_grail = max(avgs["grail_local"], avgs["grail_global"])
+        best_grail = max(avgs["grail_local"], avgs["grail_local_reranked"], avgs["grail_global"])
         delta = best_grail - rag_avg
 
-        all_rag.append(rag_avg)
-        all_local.append(avgs["grail_local"])
-        all_global.append(avgs["grail_global"])
+        for sys_name in systems:
+            all_scores[sys_name].append(avgs[sys_name])
 
         lines.append(
             f"| {label} | {rag_avg:.2f} | {avgs['grail_local']:.2f} | "
+            f"{avgs['grail_local_reranked']:.2f} | "
             f"{avgs['grail_global']:.2f} | {'+' if delta >= 0 else ''}{delta:.2f} |"
         )
 
-    overall_rag = sum(all_rag) / len(all_rag) if all_rag else 0
-    overall_local = sum(all_local) / len(all_local) if all_local else 0
-    overall_global = sum(all_global) / len(all_global) if all_global else 0
-    overall_delta = max(overall_local, overall_global) - overall_rag
+    overalls = {s: (sum(v) / len(v) if v else 0) for s, v in all_scores.items()}
+    best_grail = max(overalls["grail_local"], overalls["grail_local_reranked"], overalls["grail_global"])
+    overall_delta = best_grail - overalls["rag"]
 
     lines.append(
-        f"| **OVERALL** | **{overall_rag:.2f}** | **{overall_local:.2f}** | "
-        f"**{overall_global:.2f}** | **{'+' if overall_delta >= 0 else ''}{overall_delta:.2f}** |"
+        f"| **OVERALL** | **{overalls['rag']:.2f}** | **{overalls['grail_local']:.2f}** | "
+        f"**{overalls['grail_local_reranked']:.2f}** | "
+        f"**{overalls['grail_global']:.2f}** | **{'+' if overall_delta >= 0 else ''}{overall_delta:.2f}** |"
     )
     lines.append("")
 
-    # per-question detail
     lines.append("## Per-Question Breakdown")
     lines.append("")
-    lines.append("| ID | Category | Difficulty | RAG | Local | Global |")
-    lines.append("|---|---|---|---|---|---|")
+    lines.append("| ID | Category | Difficulty | RAG | Local | Local+Rerank | Global |")
+    lines.append("|---|---|---|---|---|---|---|")
 
     q_lookup = {q["id"]: q for q in benchmark["questions"]}
     for qid in sorted(scores.keys()):
@@ -286,6 +298,7 @@ def generate_report(
         lines.append(
             f"| {qid} | {q.get('category', '?')} | {q.get('difficulty', '?')} | "
             f"{fmt(row_scores['rag'])} | {fmt(row_scores['grail_local'])} | "
+            f"{fmt(row_scores['grail_local_reranked'])} | "
             f"{fmt(row_scores['grail_global'])} |"
         )
 
@@ -315,9 +328,14 @@ async def main(args: argparse.Namespace) -> None:
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     out_dir = Path(args.output) / timestamp.replace(":", "-")
 
-    # Phase 1: collect GRAIL responses
+    include_reranked = args.include_reranked and grail.reranker is not None
+    if args.include_reranked and grail.reranker is None:
+        log.warning("--include-reranked requested but no reranker configured. Skipping reranked variant.")
+
     log.info("Phase 1a: collecting GRAIL responses...")
-    grail_responses = await collect_grail_responses(grail, questions)
+    grail_responses = await collect_grail_responses(
+        grail, questions, include_reranked=include_reranked
+    )
 
     # Phase 1b: collect RAG responses
     merged_responses: dict[str, dict[str, Any]] = {}
@@ -391,7 +409,7 @@ def cli() -> None:
         "--config", required=True, help="Path to grail.yaml config"
     )
     parser.add_argument(
-        "--benchmark", required=True, help="Path to benchmark YAML"
+        "--benchmark", required=True, help="Path to benchmark JSON file"
     )
     parser.add_argument(
         "--judge-model",
@@ -424,6 +442,11 @@ def cli() -> None:
         help="Collect responses only; skip judging",
     )
     parser.add_argument(
+        "--include-reranked",
+        action="store_true",
+        help="Include GRAIL local search with reranking as a 4th system",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -434,6 +457,16 @@ def cli() -> None:
         level=getattr(logging, args.log_level),
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
+
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_PROJECT_ROOT / ".env", override=False)
+        config_dir = Path(args.config).resolve().parent
+        if (config_dir / ".env").exists():
+            load_dotenv(config_dir / ".env", override=False)
+    except ImportError:
+        pass
+
     asyncio.run(main(args))
 
 

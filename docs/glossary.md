@@ -128,18 +128,37 @@ Mismatched dimensions silently degrade recall.
 | `local_search_model` | str \| null | `null` | Same, model side. |
 | `global_search_endpoint` | str \| null | `null` | Override LLM endpoint for global map/reduce. |
 | `global_search_model` | str \| null | `null` | Same, model side. |
-| `local_max_tokens` | int | `8192` | Total prompt + completion budget for local search. |
+| `local_max_tokens` | int | `12000` | Total context budget for local search (entities + relationships + communities + sources). |
 | `local_text_unit_prop` | float | `0.5` | Fraction of `local_max_tokens` reserved for raw text-unit citations. |
 | `local_community_prop` | float | `0.1` | Fraction reserved for community-report context. |
 | `local_conversation_history_max_turns` | int | `5` | How many prior turns to include in the local-search context. |
 | `local_top_k_entities` | int | `10` | Top entities pulled by semantic similarity. |
 | `local_top_k_relationships` | int | `10` | Top relationships per selected entity. |
-| `global_max_tokens` | int | `6000` | Total budget for the global single-reduce path. |
+| `use_community_summary` | bool | `false` | When false (default), community reports include the full LLM-generated content with detailed findings. When true, only the one-line summary is used (legacy behaviour for tight token budgets). |
 | `global_map_max_tokens` | int | `2000` | Output budget per map chunk. |
-| `global_reduce_max_tokens` | int | `6000` | Output budget for the reduce synthesis call. |
+| `global_reduce_max_tokens` | int | `8192` | Output budget for the reduce synthesis call. |
 | `global_chunk_size` | int | `100000` | Token threshold — above this we switch from single-reduce to map-reduce. |
 | `global_concurrency` | int | `5` | Map-phase concurrency cap. |
+| `response_max_tokens` | int | `16384` | Maximum tokens the LLM can generate in its response. |
 | `response_type` | str | `"Multiple Paragraphs"` | Free-text instruction injected as the `artifact_instructions` block. |
+
+---
+
+## reranker — optional cross-encoder re-ranking
+
+| Key | Type | Default | What it controls |
+|---|---|---|---|
+| `enabled` | bool | `false` | Master switch. When false, no reranker client is constructed. |
+| `endpoint` | str | `"deepinfra"` | Endpoint name from `endpoints:` — used to resolve `api_key_env`. |
+| `model` | str | `"Qwen/Qwen3-Reranker-0.6B"` | Cross-encoder model name passed to the inference API. |
+| `base_url` | str \| null | `null` | Full URL override. When null, auto-derived (e.g. DeepInfra → `https://api.deepinfra.com/v1/inference/{model}`). |
+| `overfetch_factor` | int | `3` | Vector retrieval fetches `top_k × factor` candidates; the reranker trims to `top_k`. Range 1–10. |
+| `rerank_entities` | bool | `true` | Re-rank entity candidates in local / document search. |
+| `rerank_text_units` | bool | `true` | Re-rank text unit candidates in local search. |
+| `request_timeout` | float | `30.0` | HTTP timeout for the reranker API call (seconds). |
+
+CLI override: `--rerank` / `--no-rerank` on the `query` command.
+Python API override: `use_reranker=True|False` on `GRAIL.search()`.
 
 ---
 
@@ -173,9 +192,10 @@ Built-in prompt names: `entity_relation`, `summarize_description`,
 
 | Key | Type | Default | What it controls |
 |---|---|---|---|
-| `backend` | str | `"lancedb"` | Only LanceDB ships today. ChromaDB/FAISS adapters can be added by subclassing `BaseVectorStore`. |
-| `collection_name` | str | `"entity_descriptions"` | LanceDB table name. |
-| `uri` | str \| null | `null` | LanceDB URI. `null` → `{root_dir}/lancedb`. |
+| `backend` | str | `"lancedb"` | `"lancedb"` (default), `"faiss"` (requires `pip install grail[faiss]`), or `"chromadb"` (requires `pip install grail[chroma]`). |
+| `collection_name` | str | `"entity_descriptions"` | Table / collection name for entity description embeddings. |
+| `uri` | str \| null | `null` | Store path. `null` → `{root_dir}/{backend}`. |
+| `distance_fn` | str | `"l2"` | Distance function for ChromaDB (`"l2"` or `"cosine"`). Ignored by LanceDB and FAISS. |
 
 ---
 

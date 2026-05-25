@@ -64,6 +64,18 @@ community:
   max_report_length: 16384
   report_concurrency: 3
 
+# --- Reranker (optional) ---
+# Cross-encoder re-ranking after vector similarity retrieval. Improves entity
+# and text-unit selection quality at the cost of one extra API call per query.
+# Toggle per-query with --rerank / --no-rerank without changing this config.
+reranker:
+  enabled: true
+  endpoint: deepinfra
+  model: Qwen/Qwen3-Reranker-0.6B
+  overfetch_factor: 3
+  rerank_entities: true
+  rerank_text_units: true
+
 # --- Storage ---
 storage:
   backend: local

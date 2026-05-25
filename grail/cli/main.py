@@ -395,6 +395,10 @@ def index(
         help="Use the LLM to discover entity types from the corpus before extraction. "
         "Overrides indexing.discover_entity_types in the config.",
     ),
+    vectorstore: Optional[str] = typer.Option(
+        None, "--vectorstore", "--vs",
+        help="Vector store backend: lancedb (default) | faiss | chromadb.",
+    ),
 ) -> None:
     """Run the full indexing pipeline."""
     console = Console()
@@ -407,7 +411,7 @@ def index(
     print_config_panel(console, config, command="index")
 
     reporter = _StyledReporter(console)
-    grail = GRAIL.from_config(config, reporter=reporter)
+    grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
     result = asyncio.run(grail.index())
 
     print_summary(console, result, root_dir=config.resolved_root())
@@ -435,6 +439,18 @@ def query(
         help="Document name/path for --mode document.",
     ),
     output: str = typer.Option("text", "--output", "-o", help="text | json"),
+    rerank: Optional[bool] = typer.Option(
+        None, "--rerank/--no-rerank",
+        help="Override reranker config for this query. Default: use config setting.",
+    ),
+    trace: Optional[Path] = typer.Option(
+        None, "--trace", "-t",
+        help="Directory to write full query trace (prompts, responses, context).",
+    ),
+    vectorstore: Optional[str] = typer.Option(
+        None, "--vectorstore", "--vs",
+        help="Vector store backend: lancedb (default) | faiss | chromadb.",
+    ),
 ) -> None:
     """Answer a question against an indexed project."""
     if mode == "document" and not document:
@@ -446,15 +462,39 @@ def query(
 
     if output != "json":
         print_banner(console)
-        print_query_panel(console, config, question=question, mode=mode, document=document)
+        print_query_panel(console, config, question=question, mode=mode, document=document, rerank=rerank)
 
     reporter = _StyledReporter(console)
-    grail = GRAIL.from_config(config, reporter=reporter)
+    grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
+
+    # Attach tracer if --trace is given.
+    tracer = None
+    if trace is not None:
+        from grail.query.trace import QueryTracer
+
+        tracer = QueryTracer()
+        grail.llm.tracer = tracer
 
     if mode == "agent":
         result = asyncio.run(grail.agent_search(question))
     else:
-        result = asyncio.run(grail.search(question, mode=mode, document=document))
+        result = asyncio.run(grail.search(question, mode=mode, document=document, use_reranker=rerank))
+
+    # Write trace if requested.
+    trace_path = None
+    if tracer is not None and trace is not None:
+        context_text = result.context_text if isinstance(result.context_text, str) else "\n\n".join(result.context_text)
+        trace_path = tracer.dump(
+            trace,
+            query=question,
+            mode=mode,
+            result_response=result.response if isinstance(result.response, str) else json.dumps(result.response, default=str),
+            context_text=context_text,
+            completion_time=result.completion_time,
+            llm_calls=result.llm_calls,
+        )
+        if output != "json":
+            reporter.success(f"Trace written to {trace_path}")
 
     # Extract context stats from the result for display.
     context_stats: dict[str, int] = {}
@@ -480,6 +520,7 @@ def query(
                     "context_stats": context_stats,
                     "entities_used": entities_used,
                     "cost": cost_display,
+                    "trace_path": str(trace_path) if trace_path is not None else None,
                 },
                 indent=2,
                 default=str,
@@ -506,6 +547,10 @@ def query(
 def append(
     project_dir: Path = typer.Argument(...),
     files: list[Path] = typer.Argument(..., help="Files to add to the input folder."),
+    vectorstore: Optional[str] = typer.Option(
+        None, "--vectorstore", "--vs",
+        help="Vector store backend: lancedb (default) | faiss | chromadb.",
+    ),
 ) -> None:
     """Add new files to an existing index (incremental update)."""
     console = Console()
@@ -516,7 +561,7 @@ def append(
     print_append_panel(console, config, files=file_names)
 
     reporter = _StyledReporter(console)
-    grail = GRAIL.from_config(config, reporter=reporter)
+    grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
     result = asyncio.run(grail.append([str(f) for f in files]))
 
     print_append_summary(console, result)
@@ -526,6 +571,10 @@ def append(
 def delete(
     project_dir: Path = typer.Argument(...),
     files: list[str] = typer.Argument(..., help="Input-folder filenames to remove."),
+    vectorstore: Optional[str] = typer.Option(
+        None, "--vectorstore", "--vs",
+        help="Vector store backend: lancedb (default) | faiss | chromadb.",
+    ),
 ) -> None:
     """Remove files from the index and prune orphaned entities."""
     console = Console()
@@ -535,7 +584,7 @@ def delete(
     print_delete_panel(console, config, files=files)
 
     reporter = _StyledReporter(console)
-    grail = GRAIL.from_config(config, reporter=reporter)
+    grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
     result = asyncio.run(grail.delete(files))
 
     print_delete_summary(console, result)
@@ -546,6 +595,10 @@ def edit(
     project_dir: Path = typer.Argument(...),
     name: str = typer.Option(..., help="Existing filename in the input folder."),
     src: Path = typer.Option(..., help="Local path with replacement content."),
+    vectorstore: Optional[str] = typer.Option(
+        None, "--vectorstore", "--vs",
+        help="Vector store backend: lancedb (default) | faiss | chromadb.",
+    ),
 ) -> None:
     """Replace an existing file and re-extract affected entities."""
     console = Console()
@@ -555,7 +608,7 @@ def edit(
     print_edit_panel(console, config, name=name, src=str(src))
 
     reporter = _StyledReporter(console)
-    grail = GRAIL.from_config(config, reporter=reporter)
+    grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
     result = asyncio.run(grail.edit({name: str(src)}))
 
     print_edit_summary(console, result)
@@ -916,6 +969,59 @@ def viz(
         rprint("[dim]Opened in your default browser.[/dim]")
     else:
         rprint(f"[dim]Open in a browser:[/dim] file://{out_path.resolve()}")
+
+
+# ================================================================ ui
+
+
+@app.command()
+def ui(
+    project_dir: Path = typer.Argument(
+        ...,
+        help="Path to an indexed GRAIL project (must contain output/ with artifacts).",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    host: str = typer.Option(
+        "127.0.0.1", "--host", "-h", help="Bind address."
+    ),
+    port: int = typer.Option(
+        8765, "--port", "-p", help="Port to serve on."
+    ),
+    dev: bool = typer.Option(
+        False, "--dev", help="Enable dev mode (CORS for Vite dev server on :5173)."
+    ),
+) -> None:
+    """Launch the GRAIL chat web interface."""
+    _autoload_env(project_dir)
+
+    console = Console()
+    print_banner(console)
+
+    try:
+        from grail.apps.chat.server import run_server
+    except ImportError as exc:
+        rprint(
+            f"[red]Missing dependencies for the chat UI.[/red] "
+            f"Install with: [bold]pip install grail\\[ui][/bold]\n{exc}"
+        )
+        raise typer.Exit(1)
+
+    console.print(
+        f"  [dim bold]{'Project':>10}[/dim bold]  [bold white]{project_dir.name}[/bold white]"
+    )
+    console.print(
+        f"  [dim bold]{'URL':>10}[/dim bold]  [cyan]http://{host}:{port}[/cyan]"
+    )
+    if dev:
+        console.print(
+            f"  [dim bold]{'Dev mode':>10}[/dim bold]  [yellow]ON[/yellow] — CORS enabled for localhost:5173"
+        )
+    console.print()
+
+    run_server(project_dir=project_dir, host=host, port=port, dev=dev)
 
 
 if __name__ == "__main__":  # pragma: no cover

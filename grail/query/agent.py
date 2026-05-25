@@ -25,31 +25,55 @@ from grail.query.retrieval import SearchArtifacts, load_artifacts_for_search
 from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import StorageBackend
-from grail.vectorstores import LanceDBVectorStore
+from grail.vectorstores import BaseVectorStore
 
 log = logging.getLogger(__name__)
 
-AGENT_SYSTEM_PROMPT = """
+AGENT_SYSTEM_PROMPT = """\
 You are a knowledge-graph research assistant powered by GRAIL. You have access \
 to three search tools over an indexed knowledge base:
 
-1. **local_search** — finds entities, relationships, and source text related to \
-a query. Use ``include_entities`` / ``exclude_entities`` to filter. Best for \
-specific factual questions.
-2. **global_search** — synthesises answers from community-level summaries. Best \
-for broad, thematic, or comparative questions.
+1. **local_search** — retrieves specific entities, relationships, and source \
+text chunks via vector similarity. Use ``include_entities`` / \
+``exclude_entities`` to focus. Best for detailed, entity-level questions.
+2. **global_search** — synthesises answers from community-level report \
+summaries that cover the entire knowledge base. Best for broad, thematic, or \
+comparative questions.
 3. **document_search** — searches within a single source document by filename. \
 Best when the user asks about a specific file or source.
 
-Strategy:
-- Start with the tool that best matches the question type.
-- If the first result is incomplete, call another tool to fill gaps.
-- Use entity filtering when you need to focus on specific people, places, or concepts.
-- Use document_search when the user references a specific file.
-- Combine local + global when the user asks both for details and for big-picture context.
+## Strategy — think step-by-step
 
-When you have enough information, synthesise a final answer. Cite source \
-documents when available.\
+You MUST call exactly ONE tool per turn, then reflect on the result before \
+deciding your next action. Never call multiple tools in a single turn.
+
+Follow this workflow:
+
+1. **Assess the question.** Determine if it is broad/thematic (→ start with \
+global_search), specific/factual (→ start with local_search), or \
+document-scoped (→ start with document_search).
+2. **Execute one search.** Call the chosen tool.
+3. **Reflect.** Read the result carefully. Ask yourself:
+   - Does this fully answer the question?
+   - What specific gaps remain?
+   - Would a different search mode or a more targeted query fill those gaps?
+4. **If gaps remain**, call ONE more tool with a query crafted to fill the \
+specific gap you identified — not a broad repeat of the original question. \
+Use entity filtering (include_entities / exclude_entities) to avoid \
+retrieving information you already have.
+5. **Repeat** steps 3-4 until you have enough information, then synthesise \
+your final answer WITHOUT calling any more tools.
+
+## Important guidelines
+
+- **Do not repeat searches.** If global_search already covered a topic, do \
+not call local_search on the same topic unless you need entity-level detail \
+that the global result explicitly lacks.
+- **Be specific.** Each successive search should target a narrower, concrete \
+gap — not a reformulation of the original question.
+- **Stop early.** If the first search already answers the question, \
+synthesise immediately. More searches are not always better.
+- **Cite sources.** Reference source documents when available in the results.\
 """
 
 TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -142,13 +166,14 @@ class AgentSearch:
     llm: LLMClient
     embeddings: EmbeddingClient
     prompts: PromptRegistry = field(default_factory=PromptRegistry)
-    vector_store: Optional[LanceDBVectorStore] = None
+    vector_store: Optional[BaseVectorStore] = None
     output_folder: str = "output"
     max_iterations: int = 5
-    max_tokens: int = 8192
+    max_tokens: int = 12_000
     top_k_entities: int = 10
     text_unit_prop: float = 0.5
     community_prop: float = 0.1
+    use_community_summary: bool = False
     response_max_tokens: int = 4096
     endpoint: Optional[str] = None
     model: Optional[str] = None
@@ -205,17 +230,26 @@ class AgentSearch:
                     llm_calls=total_llm_calls,
                 )
 
+            tool_calls = result["tool_calls"][:1]
+            if len(result["tool_calls"]) > 1:
+                log.debug(
+                    "Agent returned %d tool calls; enforcing one-at-a-time — "
+                    "dropping %d extra call(s)",
+                    len(result["tool_calls"]),
+                    len(result["tool_calls"]) - 1,
+                )
+
             assistant_msg: dict[str, Any] = {
                 "role": "assistant",
                 "content": result["content"] or "",
                 "tool_calls": [
                     {"id": tc["id"], "type": "function", "function": tc["function"]}
-                    for tc in result["tool_calls"]
+                    for tc in tool_calls
                 ],
             }
             messages.append(assistant_msg)
 
-            for tc in result["tool_calls"]:
+            for tc in tool_calls:
                 fn_name = tc["function"]["name"]
                 try:
                     args = json.loads(tc["function"]["arguments"])
@@ -269,6 +303,7 @@ class AgentSearch:
                 top_k_entities=args.get("top_k", self.top_k_entities),
                 text_unit_prop=self.text_unit_prop,
                 community_prop=self.community_prop,
+                use_community_summary=self.use_community_summary,
                 reporter=self.reporter,
             )
             return await search.asearch(
@@ -284,6 +319,7 @@ class AgentSearch:
                 prompts=self.prompts,
                 artifacts=artifacts,
                 output_folder=self.output_folder,
+                use_community_summary=self.use_community_summary,
                 reporter=self.reporter,
             )
             return await search.asearch(args["query"])

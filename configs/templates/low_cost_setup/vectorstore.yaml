@@ -1,12 +1,16 @@
 # Vector store — where entity-description embeddings live for local search.
 
-# Only LanceDB is wired in v0.1. To add Chroma/FAISS/Qdrant, subclass
-# grail.vectorstores.base.BaseVectorStore.
+# Supported backends: "lancedb" (default), "faiss", "chromadb".
+# faiss requires:    pip install grail[faiss]
+# chromadb requires: pip install grail[chroma]
 backend: lancedb
 
-# LanceDB table name.
+# Collection / table name.
 collection_name: entity_descriptions
 
-# When null, the LanceDB store lives at {root_dir}/lancedb. Override for shared
+# When null, the store lives at {root_dir}/{backend}. Override for shared
 # mounts or to keep multiple projects in one DB.
 uri: null
+
+# Distance function for ChromaDB ("l2" or "cosine"). Ignored by other backends.
+distance_fn: l2

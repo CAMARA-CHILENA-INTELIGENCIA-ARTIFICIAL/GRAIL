@@ -1,10 +1,15 @@
-# Vector store config. See docs/vectorstores.md.
+# Vector store config. See docs/glossary.md.
 
-# Supported backends today: "lancedb". More to land in Phase 7+.
+# Supported backends: "lancedb" (default), "faiss", "chromadb".
+# faiss requires:    pip install grail[faiss]
+# chromadb requires: pip install grail[chroma]
 backend: lancedb
 
 # Collection / table name (entity description embeddings).
 collection_name: entity_descriptions
 
-# When null, GRAIL writes to {root_dir}/lancedb. Override for shared mounts.
+# When null, GRAIL writes to {root_dir}/{backend}. Override for shared mounts.
 uri: null
+
+# Distance function for ChromaDB ("l2" or "cosine"). Ignored by other backends.
+distance_fn: l2

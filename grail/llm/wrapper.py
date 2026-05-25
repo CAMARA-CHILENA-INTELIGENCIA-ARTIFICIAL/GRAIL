@@ -42,10 +42,11 @@ Added in the port:
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Callable, Coroutine, Optional
 
 from openai import (
     APIConnectionError,
@@ -71,6 +72,16 @@ from grail.llm.providers import (
 from grail.reporting import NullReporter, Reporter
 
 log = logging.getLogger("grail.llm")
+
+StreamCallback = Callable[[str], Coroutine[Any, Any, None]]
+_stream_callback_var: contextvars.ContextVar[StreamCallback | None] = contextvars.ContextVar(
+    "grail_stream_callback", default=None,
+)
+
+
+def set_stream_callback(cb: StreamCallback | None) -> None:
+    _stream_callback_var.set(cb)
+
 
 _THINKING_RE = re.compile(r"<think>.*?</think>\s*", flags=re.S)
 
@@ -110,6 +121,7 @@ class LLMClient(BaseModel):
     reporter: Any = Field(default_factory=NullReporter)
     default_session_id: str = Field(default="default")
     debug: bool = Field(default=False)
+    tracer: Optional[Any] = None  # QueryTracer; Optional to avoid circular import.
 
     _semaphore: Optional[asyncio.Semaphore] = None
     _clients: dict[str, _ClientHandle] = {}
@@ -263,6 +275,7 @@ class LLMClient(BaseModel):
                     raise
 
                 try:
+                    _cb = _stream_callback_var.get(None)
                     async for chunk in stream:
                         usage = getattr(chunk, "usage", None)
                         if usage is not None:
@@ -272,6 +285,8 @@ class LLMClient(BaseModel):
                             delta = chunk.choices[0].delta
                             if delta and delta.content:
                                 chunks.append(delta.content)
+                                if _cb is not None:
+                                    await _cb(delta.content)
                 except Exception:
                     if chunks:
                         log.warning(
@@ -302,6 +317,18 @@ class LLMClient(BaseModel):
 
         if self.cache is not None and self.cache.enabled and cache_key is not None:
             await self.cache.set(sid, cache_key, content)
+
+        if self.tracer is not None and hasattr(self.tracer, "record") and self.tracer.active:
+            self.tracer.record(
+                tag=tag,
+                endpoint=endpoint_name,
+                model=model_name,
+                messages=list(messages),
+                response=content,
+                duration_s=now() - start,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
 
         return content
 
@@ -409,7 +436,22 @@ class LLMClient(BaseModel):
             content = _strip_thinking(msg.content) if msg.content else msg.content
             return {"content": content, "tool_calls": tool_calls}
 
-        return await self._retry()(_call)()
+        result = await self._retry()(_call)()
+
+        if self.tracer is not None and hasattr(self.tracer, "record") and self.tracer.active:
+            self.tracer.record(
+                tag=tag,
+                endpoint=endpoint_name,
+                model=model_name,
+                messages=list(messages),
+                response=result.get("content"),
+                tool_calls=result.get("tool_calls"),
+                duration_s=now() - start,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+        return result
 
     # ------------------------------------------------------------------ legacy shim
 

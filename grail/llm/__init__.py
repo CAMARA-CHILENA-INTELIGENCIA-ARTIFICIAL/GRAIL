@@ -15,7 +15,8 @@ from grail.llm.providers import (
     parse_model_id,
     resolve_endpoint_and_model,
 )
-from grail.llm.wrapper import LLMClient
+from grail.llm.reranker import RerankerClient, RerankResult
+from grail.llm.wrapper import LLMClient, set_stream_callback
 
 __all__ = [
     "CostTracker",
@@ -28,7 +29,10 @@ __all__ = [
     "LLMClient",
     "ProviderConfig",
     "ProviderRegistry",
+    "RerankerClient",
+    "RerankResult",
     "UsageRecord",
     "parse_model_id",
     "resolve_endpoint_and_model",
+    "set_stream_callback",
 ]

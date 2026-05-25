@@ -7,21 +7,28 @@ global_search_endpoint: null
 global_search_model: null
 
 # --- Local search budgeting ---
-local_max_tokens: 8192
+local_max_tokens: 12000
 local_text_unit_prop: 0.5
 local_community_prop: 0.1
 local_conversation_history_max_turns: 5
 local_top_k_entities: 10
 local_top_k_relationships: 10
 
+# When false (default), community reports include full LLM-generated content
+# with detailed findings. When true, only the one-line summary is used (legacy
+# behaviour for tight token budgets or small-context models).
+use_community_summary: false
+
 # --- Global search budgeting ---
-global_max_tokens: 6000
 global_map_max_tokens: 2000
-global_reduce_max_tokens: 6000
+global_reduce_max_tokens: 8192
 # When the assembled community-report context exceeds this token budget, GRAIL
 # falls back to a map-reduce path. Otherwise it does a single reduce pass.
 global_chunk_size: 100000
 global_concurrency: 5
+
+# Maximum tokens the LLM can generate in its response.
+response_max_tokens: 16384
 
 # Description of the desired response style — injected into the global reduce
 # prompt's artifact_instructions block.

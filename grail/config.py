@@ -49,6 +49,7 @@ _MODULES = (
     "indexing",
     "community",
     "search",
+    "reranker",
     "storage",
     "prompts",
     "vectorstore",
@@ -212,19 +213,32 @@ class SearchConfig(BaseModel):
     local_search_model: Optional[str] = None
     global_search_endpoint: Optional[str] = None
     global_search_model: Optional[str] = None
-    local_max_tokens: int = 8192
+    local_max_tokens: int = 32_000
     local_text_unit_prop: float = 0.5
     local_community_prop: float = 0.1
     local_conversation_history_max_turns: int = 5
     local_top_k_entities: int = 10
     local_top_k_relationships: int = 10
-    global_max_tokens: int = 6000
+    use_community_summary: bool = False
     global_map_max_tokens: int = 2000
-    global_reduce_max_tokens: int = 6000
+    global_reduce_max_tokens: int = 8192
     global_chunk_size: int = 100_000
     global_concurrency: int = 5
-    response_max_tokens: int = 8192
+    response_max_tokens: int = 16_384
     response_type: str = "Multiple Paragraphs"
+
+
+class RerankerConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    endpoint: str = "deepinfra"
+    model: str = "Qwen/Qwen3-Reranker-0.6B"
+    base_url: Optional[str] = None
+    overfetch_factor: int = Field(default=3, ge=1, le=10)
+    rerank_entities: bool = True
+    rerank_text_units: bool = True
+    request_timeout: float = 30.0
 
 
 class StorageConfig(BaseModel):
@@ -251,6 +265,15 @@ class VectorStoreConfig(BaseModel):
     backend: str = "lancedb"
     collection_name: str = "entity_descriptions"
     uri: Optional[str] = None
+    distance_fn: str = "l2"
+
+    @field_validator("backend")
+    @classmethod
+    def _validate_backend(cls, v: str) -> str:
+        allowed = {"lancedb", "faiss", "chromadb"}
+        if v not in allowed:
+            raise ValueError(f"vectorstore.backend must be one of {allowed}, got {v!r}")
+        return v
 
 
 def _default_endpoints() -> dict[str, EndpointConfig]:
@@ -279,6 +302,7 @@ class Config(BaseModel):
     indexing: IndexingConfig = Field(default_factory=IndexingConfig)
     community: CommunityConfig = Field(default_factory=CommunityConfig)
     search: SearchConfig = Field(default_factory=SearchConfig)
+    reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     vectorstore: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
@@ -394,6 +418,7 @@ __all__ = [
     "IndexingConfig",
     "LLMConfig",
     "PromptsConfig",
+    "RerankerConfig",
     "SearchConfig",
     "StorageConfig",
     "VectorStoreConfig",

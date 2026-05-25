@@ -18,7 +18,7 @@ import pandas as pd
 
 from grail.storage import StorageBackend
 from grail.utils.tokens import tiktoken_len
-from grail.vectorstores import LanceDBVectorStore, VectorStoreSearchResult
+from grail.vectorstores import BaseVectorStore, VectorStoreSearchResult
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ def map_query_to_entities(
     entities_df: pd.DataFrame,
     *,
     top_k: int = 10,
-    vector_store: Optional[LanceDBVectorStore] = None,
+    vector_store: Optional[BaseVectorStore] = None,
 ) -> pd.DataFrame:
     """Return the top-k entities most similar to the query vector.
 
@@ -180,16 +180,64 @@ def build_community_context(
     community_reports: pd.DataFrame,
     *,
     max_tokens: int = 4000,
+    use_community_summary: bool = False,
 ) -> tuple[str | list[str], pd.DataFrame]:
-    """Render community-report headers + summaries until ``max_tokens`` is exhausted.
+    """Render community reports until ``max_tokens`` is exhausted.
 
-    Returns the joined string if everything fits, or a list of chunked strings when
-    the report set exceeds the budget (the map-reduce path slices on this).
+    When ``use_community_summary`` is *False* (default), each report is rendered
+    as a full markdown block using the ``full_content`` field — the complete
+    LLM-generated report with detailed findings.  When *True*, only the one-line
+    ``summary`` is included (legacy behaviour for tight token budgets).
+
+    Returns the joined string if everything fits, or a list of chunked strings
+    when the report set exceeds the budget (the map-reduce path slices on this).
     """
     if community_reports.empty:
         return "", community_reports
 
     sorted_reports = community_reports.sort_values("rank", ascending=False)
+
+    if use_community_summary:
+        return _build_community_context_summary(sorted_reports, max_tokens=max_tokens)
+    return _build_community_context_full(sorted_reports, max_tokens=max_tokens)
+
+
+def _build_community_context_full(
+    sorted_reports: pd.DataFrame,
+    *,
+    max_tokens: int,
+) -> tuple[str | list[str], pd.DataFrame]:
+    header = "Reports"
+    chunks: list[str] = []
+    selected_idx = []
+    blocks: list[str] = []
+    used = tiktoken_len(header)
+    for idx, row in sorted_reports.iterrows():
+        title = row.get("title", "")
+        rank = row.get("rank", 1.0)
+        content = row.get("full_content") or row.get("summary") or ""
+        block = f"---\nReport: {title} (rank: {rank})\n\n{content}\n---"
+        tok = tiktoken_len(block)
+        if used + tok > max_tokens and blocks:
+            chunks.append("\n\n".join([header, *blocks]))
+            blocks = []
+            used = tiktoken_len(header)
+        blocks.append(block)
+        selected_idx.append(idx)
+        used += tok
+    if blocks:
+        chunks.append("\n\n".join([header, *blocks]))
+
+    if len(chunks) <= 1:
+        return chunks[0] if chunks else "", sorted_reports.loc[selected_idx]
+    return chunks, sorted_reports.loc[selected_idx]
+
+
+def _build_community_context_summary(
+    sorted_reports: pd.DataFrame,
+    *,
+    max_tokens: int,
+) -> tuple[str | list[str], pd.DataFrame]:
     header = "Reports\nid,title,summary,rank"
     chunks: list[str] = []
     selected_idx = []
@@ -237,6 +285,18 @@ def build_text_unit_context(
     if relevant.empty:
         return "", relevant
 
+    # Rank by number of selected entities mentioned — chunks with more overlap are more relevant.
+    def _overlap_count(row) -> int:
+        ids = row.get("entity_ids")
+        if ids is None or (hasattr(ids, "__len__") and len(ids) == 0):
+            return 0
+        return sum(1 for n in ids if n in name_set)
+
+    relevant = relevant.copy()
+    relevant["__entity_overlap__"] = relevant.apply(_overlap_count, axis=1)
+    relevant = relevant.sort_values("__entity_overlap__", ascending=False)
+    relevant = relevant.drop(columns=["__entity_overlap__"])
+
     doc_titles: dict[str, str] = {}
     if documents is not None and not documents.empty:
         doc_titles = dict(zip(documents["id"], documents["title"]))
@@ -255,7 +315,7 @@ def build_text_unit_context(
         else:
             doc_ids = list(raw_doc_ids)
         doc_label = "; ".join(doc_titles.get(d, str(d)) for d in doc_ids if d)
-        line = f"{row['id']},{doc_label},{(row['text'] or '').replace(chr(10), ' ')[:1200]}"
+        line = f"{row['id']},{doc_label},{(row['text'] or '').replace(chr(10), ' ')}"
         tok = tiktoken_len(line)
         if used + tok > max_tokens:
             break

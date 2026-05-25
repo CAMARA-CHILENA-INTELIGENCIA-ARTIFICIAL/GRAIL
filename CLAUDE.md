@@ -506,11 +506,11 @@ When in doubt, search `_legacy_source/` for the exact symbol — the snapshot is
 
 ---
 
-## 12. State as of 2026-05-19 — what landed, what still needs wiring
+## 12. State as of 2026-05-22 — what landed, what still needs wiring
 
-The package compiled, tested (42/42 unit tests green), and ran the CLI smoke
-path. Several new features were added in the two days after the scaffold; some
-have no matching config/prompt wiring yet.
+The package compiled, tested (160/160 unit tests green), and ran the CLI smoke
+path. Several new features were added since the scaffold; some have no matching
+config/prompt wiring yet.
 
 ### Landed since the v0.1 scaffold
 
@@ -532,28 +532,32 @@ have no matching config/prompt wiring yet.
 - **Styled CLI output** (`grail/cli/banner.py` + `_StyledReporter` in `main.py`). Every command (`init`, `index`, `query`, `append`, `edit`, `delete`, `create-entities`, `config show`, `status`) prints a teal-gradient ASCII "GRAIL" banner, a config/params panel, styled step logs (diamond prefix + green checkmarks), and a summary panel. Artefact paths (manifest, calls log, summary) print below the panel as full unbroken lines. All paths use `_display_path()`: `./relative` when under cwd, absolute otherwise — keeps them short and Cmd+clickable. JSON output mode (`grail query --output json`) skips the banner. The old `RichProgressReporter` Live spinner is replaced by `_StyledReporter` (same `Reporter` protocol, plain `console.print` calls) for CLI commands.
 - **Community count fix**: previous runs produced ~123 communities for 2 PDFs because (a) graspologic's hierarchical_leiden silently skips isolated nodes and our wrapper promoted each one to its own singleton community, and (b) `merge_communities_by_embedding` minted a fresh id for every DBSCAN-noise cluster. Both fixed: isolates roll into one shared community per level; DBSCAN noise rolls into one "miscellaneous" bucket. Plus two new `CommunityConfig` knobs surface the level pick: `community_level` (`"coarsest"` default | `"finest"` | `"all"` | int) replaces the implicit `max(level)` pick, and `min_report_size` (default `3`) drops communities below the threshold before LLM report generation. SEOM re-index dropped from 123 → 16 reports (cost $0.0377 → $0.0252, wall time 3:10 → 2:04, quality preserved).
 - **Embedding cost tracking** (`grail/llm/embeddings.py`). `EmbeddingClient` now accepts a shared `CostTracker` (wired in `GRAIL.from_config`) and records one `UsageRecord` per embeddings API call with `prompt_tokens` pulled from `response.usage.prompt_tokens` and `completion_tokens=0`. Call sites are tagged `entity_embedding` (indexing) and `query_embedding` (search) so they appear as distinct rows in the manifest's `llm.by_tag`. When pricing is not supplied, those rows surface as `Undefined` instead of $0.0000 — matching the same "complete / partial / undefined" semantics used for chat completions. The CLI `COMPLETE` panel now lists one row per stage with tokens + cost (or `Undefined` honestly when unpriced).
+- **Optional cross-encoder re-ranker** (`grail/llm/reranker.py`). `RerankerClient` wraps the DeepInfra inference API for cross-encoder models like `Qwen/Qwen3-Reranker-0.6B`. When `reranker.enabled: true` in config, local search over-fetches `top_k × overfetch_factor` entity candidates by vector similarity, then calls the reranker to score `(query, entity_description)` pairs and trims to the best `top_k`. Text units are similarly reranked before token-budget truncation. Per-query toggle via `--rerank / --no-rerank` CLI flag or `use_reranker=True|False` Python API parameter. Wired into `LocalSearch`, `DocumentSearch`, and `GRAIL.search()`. Config: `RerankerConfig` in `grail/config.py` with `enabled`, `endpoint`, `model`, `base_url`, `overfetch_factor`, `rerank_entities`, `rerank_text_units`, `request_timeout`. Template: `configs/templates/low_cost_setup/reranker.yaml`. Docs: `docs/reranker.md`. Tests: `tests/unit/test_reranker.py` (17 tests). Verified on quickstart SEOM corpus — reranker surfaced `BEVACIZUMAB` (a real cancer drug entity) that pure vector similarity missed.
+- **Query tracing** (`grail/query/trace.py`). `--trace <dir>` flag on `grail query` captures every LLM interaction during a search: the exact `messages` list (system + user prompts with full context), the raw response, tool calls (for agent mode), timing, endpoint/model, and the assembled context text. Written as a single timestamped JSON per query to the specified directory. `QueryTracer` hooks into `LLMClient` via an optional `tracer` field — records are appended on every `execute()` and `execute_with_tools()` call. Works across all four search modes (local, global, document, agent). Tests: `tests/unit/test_trace.py` (4 tests). Verified on quickstart SEOM corpus — traces at `examples/quickstart/traces/`.
+- **Full community reports in search context**. `build_community_context` (`grail/query/retrieval.py`) now sends the complete LLM-generated `full_content` field (markdown with section headers and detailed findings) instead of the one-line `summary`. Controlled by `SearchConfig.use_community_summary` (default `false`). When `true`, reverts to the legacy summary-only CSV format for tight token budgets or small-context models. The low-cost template sets `use_community_summary: true`. Verified via trace comparison: global search context grew from 2.4K → 6K chars, answer quality improved significantly (surfaced individual findings like "IDH mutations indicate favorable outcomes" that were invisible with summary-only).
+- **Raised context budgets**. Search defaults updated from the 32K-context-window era to match modern 128K+ models: `local_max_tokens` 8,192 → 12,000; `global_reduce_max_tokens` 6,000 → 8,192; `response_max_tokens` 8,192 → 16,384. `local_community_prop` stays at 0.1 — local search is about entities and relationships, community reports are supplementary. Removed dead `global_max_tokens` field (was 6,000, never referenced in code). All values are template-overridable: `low_cost_setup` uses `local_max_tokens: 8000`, `use_community_summary: true`, `response_max_tokens: 8192`.
 
 ### Known gaps (carry into the next session)
 
 1. **SearchConfig has no `agent_search_*` or `document_search_*` fields.** AgentSearch + DocumentSearch fall back to the local-search endpoint/model. Add: `agent_search_endpoint`, `agent_search_model`, `agent_max_iterations` (today hardcoded to 5), `document_search_endpoint`, `document_search_model`.
 2. **`AGENT_SYSTEM_PROMPT` is inlined.** Extract into `grail/prompts/builtin/agent.py` so it can be overridden through the `PromptRegistry` like every other prompt. While at it, surface tool descriptions as separate prompt-pack constants.
 3. **DocumentSearch reuses `local_search` prompt.** Consider a dedicated `document_search` prompt — local search's reminders ("Do not mention entities and relationships directly") may not fit the document-scoped use case.
-4. **CLI doesn't expose agent / document modes.** Add `grail query <project> "<q>" --agent` and `grail query <project> "<q>" --mode document --document <name>`.
-5. **`community.incremental_change_threshold` may be hardcoded inside `IncrementalCommunityExtractor`.** Verify it reads the config field, not a private default.
-6. **`grail propose-entities` (smart entity-type discovery)** — designed in conversation, not yet built. The plan: pluggable Clusterer (KMeans default + auto-k via silhouette), structured proposal output under `output/entity_proposals/<timestamp>/{proposal,manifest,samples}.yaml`, `latest.yaml` pointer file, `indexing.entity_types_file` config field to reference a proposal. `--write` merges into config; `--replace` overwrites.
-7. **No tests for the incremental ops or for AgentSearch / DocumentSearch.** Cover `append_extract`, `edit_extract`, `delete_extract` (entity merging, orphan pruning, embedding re-computation) and the agent tool-call loop (with a fake LLM that emits scripted tool calls).
-8. **Re-ranker (Phase 7) still pending.**
-9. **Benchmark command (Phase 8) still pending.**
-10. **`graspologic` is a heavy dep.** When we move to a wheel release, evaluate whether we can swap for a slimmer Leiden implementation (e.g., `python-leiden` or a NumPy/NetworkX-only port).
+4. **`community.incremental_change_threshold` may be hardcoded inside `IncrementalCommunityExtractor`.** Verify it reads the config field, not a private default.
+5. **`grail propose-entities` (smart entity-type discovery)** — designed in conversation, not yet built. The plan: pluggable Clusterer (KMeans default + auto-k via silhouette), structured proposal output under `output/entity_proposals/<timestamp>/{proposal,manifest,samples}.yaml`, `latest.yaml` pointer file, `indexing.entity_types_file` config field to reference a proposal. `--write` merges into config; `--replace` overwrites.
+6. **No tests for the incremental ops or for AgentSearch / DocumentSearch.** Cover `append_extract`, `edit_extract`, `delete_extract` (entity merging, orphan pruning, embedding re-computation) and the agent tool-call loop (with a fake LLM that emits scripted tool calls).
+7. **Benchmark command (Phase 8) still pending.**
+8. **`graspologic` is a heavy dep.** When we move to a wheel release, evaluate whether we can swap for a slimmer Leiden implementation (e.g., `python-leiden` or a NumPy/NetworkX-only port).
+9. **Local search does not leverage relationship `rank` or text-unit ordering from the legacy code.** The original `LocalSearchMixedContext` sorted relationships by a configurable `relationship_ranking_attribute` (default `rank` = `source_degree + target_degree`) and sorted text units by `(entity_order, -num_relationships)`. The current port uses in-network/out-network ordering for relationships and a simple entity-mention filter for text units. These structural signals exist in the parquet files but are not used.
 
 ### What's wired and ready to test right now
 
 - Project: `examples/quickstart/`
-- LLM: `deepinfra | google/gemma-4-26B-A4B-it`
+- LLM: `deepinfra | Qwen/Qwen3.6-35B-A3B`
 - Embeddings: `deepinfra | Qwen/Qwen3-Embedding-0.6B`
 - Key: `DEEPINFRA_API_KEY` set in `.env`
-- Commands available: `grail init`, `grail index`, `grail append`, `grail edit`, `grail delete`, `grail query --mode local|global`, `grail create-entities`, `grail config show`, `grail status`.
-- 42 unit tests covering chunker, storage, prompts, config (with template merging), LLM wrapper (mocked), schemas, loader.
+- Commands available: `grail init`, `grail index`, `grail append`, `grail edit`, `grail delete`, `grail query --mode local|global|document|agent`, `grail create-entities`, `grail config show`, `grail status`.
+- Query tracing: `grail query <project> "<q>" --trace <dir>` — captures full prompts, responses, context.
+- 160 unit tests covering chunker, storage, prompts, config (with template merging), LLM wrapper (mocked), schemas, loader, cost tracking, reranker, trace, community filtering, preprocessing, run manifest, benchmarks, viz.
 
 ### What to read first in a future session
 

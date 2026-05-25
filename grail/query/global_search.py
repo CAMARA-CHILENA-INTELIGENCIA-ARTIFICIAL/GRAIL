@@ -51,10 +51,11 @@ class GlobalSearch:
     chunk_size: int = 100_000
     concurrency: int = 5
     map_max_tokens: int = 2000
-    reduce_max_tokens: int = 6000
+    reduce_max_tokens: int = 8192
     response_temperature: float = 0.0
     endpoint: Optional[str] = None
     model: Optional[str] = None
+    use_community_summary: bool = False
     assistant_name: str = "GRAIL"
     reporter: Reporter = field(default_factory=NullReporter)
 
@@ -83,7 +84,9 @@ class GlobalSearch:
 
         self.reporter.info("Building community context…")
         context_text, used_reports = build_community_context(
-            artifacts.community_reports, max_tokens=self.chunk_size
+            artifacts.community_reports,
+            max_tokens=self.chunk_size,
+            use_community_summary=self.use_community_summary,
         )
 
         llm_calls = 0

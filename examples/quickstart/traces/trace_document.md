@@ -1,0 +1,98 @@
+# Document Search Trace
+
+**Query:** What is the role of IDH mutations?
+**Mode:** document
+**Model:** deepinfra/Qwen/Qwen3.6-35B-A3B
+**Duration:** 42.346s
+**LLM Calls:** 1
+
+---
+
+## System Message
+
+```
+You are a helpful multi-lingual assistant called GRAIL responding to questions about data in the tables provided.
+Only answer based on information from document 'gliomas'.
+---Data tables---
+This is the official information delivered by the knowledge base.
+Entities
+id,entity,type,description
+483,IDH1 OR IDH2 MUTATIONS,BIOMARKER,Genetic mutations that serve as critical predictive biomarkers, indicating longer survival and enhanced response to temozolomide in low-grade glioma patients.
+454,IDHMUT,BIOMARKER,An IDH mutation biomarker associated with improved progression-free survival and specific MRI monitoring intervals.
+391,IDH-MUTANT ASTROCYTOMA,DISEASE,A brain tumor subtype characterized by IDH mutations, with grades ranging from 2 to 4.
+465,IDH1 MUTATION,BIOMARKER,A genetic marker in glioma tumors that influences risk stratification and eligibility for targeted therapies like Vorasidenib.
+388,IDH-WILDTYPE DIFFUSE ASTROCYTIC TUMOR,DISEASE,A malignant brain tumor subtype characterized by the absence of IDH mutations, often requiring specific molecular markers for diagnosis.
+466,IDH2 MUTATION,BIOMARKER,A genetic marker in glioma tumors that influences risk stratification and eligibility for targeted therapies like Vorasidenib.
+421,GRADE 2 IDH-MUTANT GLIOMAS,DISEASE,Gliomas characterized by mutations in IDH1 or IDH2 enzymes, often treated with surgery followed by targeted therapy or observation.
+359,1P19Q,BIOMARKER,Critical molecular marker used alongside IDH mutations for accurate diagnosis, classification, and prognostic stratification of gliomas.
+527,MUTANT IDH1/2,BIOMARKER,A specific genetic mutation found in glioma cells that serves as the molecular target for the investigational drug vorasidenib. Genetic mutations in isocitrate dehydrogenase 1 or 2, serving as therapeutic targets in glioma.
+380,1P19Q CO-DELETION,BIOMARKER,A molecular alteration necessary to establish a diagnosis of oligodendroglioma in IDH mutant tumors. A genetic marker correlated with improved progression-free and overall survival, typically found in oligodendrogliomas. A genetic characteristic defining low-risk post-surgical low-grade glioma patie
+
+Relationships
+id,source,target,description,weight
+217,1P19Q,GRADE 2 GLIOMAS,Essential molecular biomarker used in conjunction with IDH mutations for diagnosis.,9.00
+244,1P19Q CO-DELETION,LOW-GRADE GLIOMA,1p19q co-deletion is a biomarker necessary to diagnose oligodendroglioma, a subtype of low-grade glioma. 1p19q co-deletion is a defining genetic characteristic of low-risk post-surgical low-grade glioma.,8.00
+251,IDH-WILDTYPE DIFFUSE ASTROCYTIC TUMOR,TERT PROMOTER MUTATION,The presence of a TERT promoter mutation is a key molecular marker used to diagnose IDH-wildtype diffuse astrocytic tumor.,9.00
+252,EGFR GENE AMPLIFICATION,IDH-WILDTYPE DIFFUSE ASTROCYTIC TUMOR,EGFR gene amplification is one of the molecular criteria sufficient to diagnose IDH-wildtype diffuse astrocytic tumor.,9.00
+253,CHROMOSOME COPY NUMBER CHANGES,IDH-WILDTYPE DIFFUSE ASTROCYTIC TUMOR,Specific chromosome copy number changes (+7/-10) are diagnostic biomarkers for IDH-wildtype diffuse astrocytic tumor.,9.00
+254,CDKN2A/B HOMOZYGOUS DELETION,IDH-MUTANT ASTROCYTOMA,The presence of CDKN2A/B homozygous deletion upgrades IDH-mutant astrocytoma to WHO grade 4.,8.00
+272,1P19Q CO-DELETION,LOW-RISK PATIENT GROUP,1p19q co-deletion is a key molecular marker associated with the low-risk patient group.,9.00
+279,1P19Q CO-DELETION,OLIGODENDROGLIOMA,1p19q co-deletion is a defining molecular characteristic of oligodendroglioma.,9.00
+281,GRADE 2 IDH-MUTANT GLIOMAS,VORASIDENIB,Vorasidenib is specifically indicated and shows significant efficacy for treating this disease.,9.00
+296,GRADE 2 IDH-MUTANT GLIOMAS,IDH1,IDH1 mutations are a defining molecular characteristic of this disease.,9.00
+297,GRADE 2 IDH-MUTANT GLIOMAS,IDH2,IDH2 mutations are a defining molecular characteristic of this disease.,9.00
+309,IDHMUT,VORASIDENIB,Vorasidenib is a targeted drug specifically investigated for its efficacy in patients harboring IDH1- or IDH2-mutant low-grade glioma.,9.00
+311,IDHMUT,NEWLY DIAGNOSED LGG PATIENTS,IDH mutation status is a critical biomarker routinely assessed in newly diagnosed LGG patients to guide treatment and surveillance.,8.00
+322,IDH1 MUTATION,LOW-GRADE GLIOMA,IDH1 mutation is a key molecular biomarker used to classify and stratify low-grade glioma risk.,8.00
+323,IDH2 MUTATION,LOW-GRADE GLIOMA,IDH2 mutation is a key molecular biomarker used to classify and stratify low-grade glioma risk.,8.00
+327,1P19Q CO-DELETION,POST-SURGICAL LOW-RISK LGG PATIENTS,Post-surgical low-risk LGG patients are clinically defined by the presence of 1p19q co-deletion.,8.00
+333,IDH1 OR IDH2 MUTATIONS,TEMOZOLOMIDE,These genetic mutations act as predictive biomarkers that indicate a higher likelihood of positive response to temozolomide.,9.00
+376,MUTANT IDH1/2,VORASIDENIB,Vorasidenib functions as a dual inhibitor specifically designed to target mutant IDH1/2. Vorasidenib is explicitly described as a dual inhibitor targeting mutant IDH1/2.,9.50
+382,MUTANT IDH1/2,OLUTASIDENIB,Olutasidenib is administered to patients with IDH1-mutant glioma, indicating a direct target relationship.,9.00
+402,GLIOMA,MUTANT IDH1/2,Gliomas, particularly recurrent or progressive forms, are strongly associated with IDH1/2 mutations.,7.00
+
+Sources
+id,document,text
+36e1ff4e-4cab-49b2-8cb9-ca811592bf47,SEOM_2023_cachexia.pdf; SEOM_2023_gliomas.pdf, Luis Cabezón Gutierrez10  * Ainara Soria Rivas   ainarasoria@hotmail.com  Yolanda Escobar Álvarez   yolandaesco@yahoo.es  Ana Blasco Cordellat   blascocordellat@yahoo.es  Margarita Majem Tarruella   MMajem@santpau.cat  Kevin Molina Mata   kevindie@hotmail.es  Marta Motilla de la Cámara   motillamarta@gmail.com  ## Page 11  2876 Clinical and Translational Oncology (2024) 26:2866–2876  Mª del Mar Muñoz Sánchez   mmmunozs@yahoo.es  Marta Zafra Poves   martazafrap@gmail.com  Carmen Beato Zambrano   cbeatoz@hotmail.com  Luis Cabezón Gutierrez   pitucgp@hotmail.com 1 Medical Oncology Department, Hospital Univ. Ramón y  Cajal, Madrid, Spain 2 Medical Oncology Department, Hospital General  Univ. Gregorio Marañón, Madrid, Spain 3 Medical Oncology Department, Consorcio Hospital General  Univ. de Valencia, Valencia, Spain 4 Medical Oncology Department, Hospital de La Santa Creu I  Sant Pau, Barcelona, Spain 5 Medical Oncology Department, Hospital Duran I Reynals,  Institut Català D’Oncologia L’Hospitalet (ICO), Barcelona,  Spain 6 Endocrinology and Nutrition Department, Hospital General  Univ. Gregorio Marañón, Madrid, Spain 7 Medical Oncology Department, Hospital General Virgen de  La Luz, 
+e6b90df0-867d-4371-ae55-34d3ff0621fb,SEOM_2023_gliomas.pdf,nez Munárriz, Paula Sampedro  Domarco, Ainhoa Hernández González, María Vieito Villar, Raquel  Luque Caro, María Luisa Villamayor Delgado and Juan Manuel  Sepúlveda Sánchez contributed equally to the current work. Extended author information available on the last page of the article  ## Page 2  2857Clinical and Translational Oncology (2024) 26:2856–2865  On the other hand, the association between forms of non- ionizing radiation and cancer is less clear, and the data do  not support an important role [7 , 8]. An established risk factor for primary brain tumors is  exposure to ionizing radiation. Cohort studies of atomic  bomb survivors and childhood cancer survivors have demon- strated that cranial radiation is associated with an increased  risk for a variety of brain tumors, including meningiomas,  gliomas, and nerve sheath tumors [9]. Methodology The aim of this document is to provide a clear, practical  recommendation for the management of grade 2 gliomas in  Spain. These guidelines have been elaborated by a multidis- ciplinary group with expertise in clinical and investigational  neuro-oncology. A bibliographic search of the MEDLINE  database (PubMed) was conducted. The differe
+855b5dcc-aace-407f-9c96-2f523d4cf72c,SEOM_2023_gliomas.pdf,ological parameters and be sufficient to assign a  higher grade [3 ]. For example, in an IDH-wildtype diffuse  astrocytic tumor, the presence of TERT promoter mutation,  EGFR gene amplification, or + 7/ − 10 chromosome copy  number changes, is sufficient to diagnose IDH-wt Glioblas- toma, grade 4, and the presence of CDKN2A/ B homozy - gous deletion results in a WHO grade 4 IDH-mutant Astro- cytoma (Level IV-A). Pediatric-type diffuse gliomas, in particular, diffuse LGG,  MAPK pathway-altered, that can present astrocytic or oli- godendroglial morphology should receive special attention,  particularly in young adult patients, and the presence of  mutations in genes such as BRAF, CRAF, NF1, FGFR1,  NTRK2, or PTPN11, among others, can be identified and  enable targeted therapies [15]. The 2021 WHO classification suggests that results should  be provided using a layered report structure in which an  overall “integrated” diagnosis is given and includes the  histopathological denomination, grade, and molecular  information. For instance, diffuse gliomas that occur in  adults (adult-type gliomas) are given the integrated diagno- sis of either astrocytoma, IDH-mutant (that can be grades  2
+b25d0a61-e41e-4b7a-b1f3-cfa4c7823e8a,SEOM_2023_gliomas.pdf, high-risk characteristic (aged > 40 years, progres- sive disease, tumor size > 5 cm, tumor crossing the midline,  or neurological symptoms) were enrolled [48]. A total of  477 patients were randomized to receive RT (up to 50·4 Gy)  or dose-dense oral temozolomide. The endpoint was PFS.  No significant differences were detected (46 months with  radiotherapy and 39 months with temozolomide (unad- justed HR 1.16 [95% CI 0.9–1.5], p = 0.22)). More follow- up is required. CT alone can be contemplated if RT is not  possible. Vorasidenib is the first IDH inhibitor of mutant IDH1  and IDH2 enzymes that has showed significant improve- ment in PFS in patients with grade 2 IDH-mutant gliomas  that had not received other previous treatment than surgery  [2]. The INDIGO trial was a double-blind, phase 3 trial,  that assigned 331 patients with residual or recurrent grade 2  IDH-mutant glioma to receive either vorasidenib or placebo.  The primary endpoint was imaging-based PFS according  to a blinded assessment by an independent review commit- tee. The most important secondary endpoint was the time to  the next anticancer intervention. Vorasidenib improved PFS  (median: 27.7 months vs 11.1 month
+b8c5d13d-e049-4b38-b1bc-08fadaee8ff2,SEOM_2023_gliomas.pdf, has been put forth for surveillance  imaging in newly diagnosed LGG and their recurrence that  includes histological grade and molecular subtype (2021  WHO classification) considering growth rate and outcomes  following the addition of CT and RT to surgery [66]. For WHO Grade 2 astrocytoma and oligodendroglioma,  clinical trials have shown median time to tumor progression  (mPFS) > 2 years after treatment initiation either with RT  alone (4 years PFS in RTOG 9802 and 3.8 years in EORTC  22033), RT with CT (10.4 years in RTOG 9802), and CT  alone (3.2 years in EORTC 22033) [1 , 48]. Therefore, these  data speak to not reducing close follow-up after 2 years,  particularly in subjects who have not received RT or CT. In  contrast, in a small number of patients with IDHmut who  have received both RT and PCV, improved PFS was demon- strated > 50% after 10 years of treatment [1], suggesting that  less intensive initial monitoring is reasonable. Taken together, a rational approach is MRI monitor - ing every 6 months in cases on non-deletion and every  6–9 months for those with codeletion, especially if complete  resection has been achieved, until the first tumor progres- sion. In those pa
+632684c7-1a9f-4059-b7fc-3548d2099e02,SEOM_2023_gliomas.pdf,55. https:// doi. org/ 10. 1056/ NEJMo a1500 925.  2. Mellinghoff IK, Van den Bent MJ, Blumenthal DT, Touat M,  Peters KB, Clarke J, et al. Vorasidenib in IDH1- or IDH2-mutant  low-grade glioma. N Engl J Med. 2023;389(7):589–601. https://   doi. org/ 10. 1056/ NEJMo a2304 194.  3. Louis DN, Perry A, Wesseling P, Brat DJ, Cree IA, Figarella- Branger D, et  al. The 2021 WHO classification of tumors  of the central nervous system: a summary. Neuro Oncol.  2021;23(8):1231–51. https:// doi. org/ 10. 1093/ neuonc/ noab1 06. Table 4  Summary of recommendations Risk assessment  The post-surgical low-risk LGG patient are those in whom we can observe all of the following characteristics: ≤ 40 years, gross total resection  (GTR), and IDH-mut, 1p19q-codel tumor (Level II-B)  The high-risk patient group, i.e., those who could benefit from adjuvant treatment, are > 40 years, had STR, or biopsy without IDH mutation  (Level I-A) Surgery  Surgical resection is the first step to diagnose LGG, even in incidentally-discovered tumors. The goal of surgery should be to remove as much  tumor as possible (Level IV-B), whenever feasible and safe, and does not compromise neurological function Radiotherapy  I
+7499a0a5-d3e0-4aa7-af27-40f9cf8b6f22,SEOM_2023_gliomas.pdf,   theon colog ist. 2013- 0345.  13. Komori T. Grading of adult diffuse gliomas according to the  2021 WHO classification of tumors of the central nervous sys- tem. Lab Invest. 2022;102(2):126–33. https:// doi. org/ 10. 1038/  s41374- 021- 00667-6.  14. Weller M, van den Bent M, Preusser M, Le Rhun E, Tonn JC,  Minniti G, et al. EANO guidelines on the diagnosis and treat- ment of diffuse gliomas of adulthood. Nat Rev Clin Oncol.  2021;18(3):170–86. https:// doi. org/ 10. 1038/ s41571- 020- 00447-z.  15. Ryall S, Tabori U, Hawkins C. Pediatric low-grade glioma in the  era of molecular diagnostics acta neuropathological communica - tions. BioMed Central. 2020;8(1):1–22. https:// doi. org/ 10. 1186/  s40478- 020- 00902-z.  16. Pignatti F, van den Bent M, Curran D, Debruyne C, Sylvester R,  Therasse P, et al. Prognostic factors for survival in adult patients  with cerebral low-grade glioma. J Clin Oncol. 2002;20(8):2076– 84. https:// doi. org/ 10. 1200/ JCO. 2002. 08. 121.  17. Shaw EG, Berkey B, Coons SW, Bullard D, Brachman D, Buckner  JC, et al. Recurrence following neurosurgeon-determined gross- total resection of adult supratentorial low-grade glioma: results  of a prospective cli
+27a93582-0ae5-4d82-b7c0-7f20d4c44ffb,SEOM_2023_gliomas.pdf,10. 1136/ bmj. b3016.  42. Zeng L, Mei Q, Li H, Ke C, Yu J, Chen J. A survival analysis of  surgically treated incidental low-grade glioma patients. Sci Rep.  2021;11(1):8522. https:// doi. org/ 10. 1038/ s41598- 021- 88023-y.  43. Riva M, Bello L. Low-grade glioma management: a contemporary  surgical approach. Curr Opin Oncol. 2014;26(6):615–21. https://   doi. org/ 10. 1097/ CCO. 00000 00000 000120.  44. Karim ABMF, Afra D, Cornu P, Bleehan N, Schraub S, De Witte  O, et al. Randomized trial on the efficacy of radiotherapy for cer - ebral low-grade glioma in the adult: European Organization for  Research and Treatment of Cancer Study 22845 with the medical  research council study BRO4: an interim analysis. Int J Radiat  Oncol Biol Phys. 2022;52(2):316–24. https://  doi. org/ 10. 1016/  s0360- 3016(01) 02692-x.  45. Shaw E, Arusell R, Scheithauer B, O’Fallon J, O’Neill B, Dinapoli  R, et al. Prospective randomized trial of low- versus high-dose  radiation therapy in adults with supratentorial low-grade glioma:  initial report of a North Central Cancer Treatment Group/Radia- tion Therapy Oncology Group/Eastern Cooperative Oncology  Group Study. J Clin Oncol. 2002;20(9):2267–76. http
+
+Reminders:
+- Do not mention entities and relationships directly; they are internal concepts.
+- For any images or links your answer must include caption and source.
+- Read the sources carefully and use them to answer the question.
+- If the data is not there, explain that the data is not available for the specific requirement.
+- Use only data explicitly available in Entities, Relationships, and Sources.
+- If not sure about a reference, consult the user for clarification.
+- You MUST use only the information provided in the data tables above.
+- If the question is not related to the data tables or instructions, explain that the question is out of scope.
+
+You are now ready to answer the user queries based on the data tables provided.
+```
+
+---
+
+## User Message
+
+```
+What is the role of IDH mutations?
+```
+
+---
+
+## Response
+
+
+
+Based on the provided document, IDH mutations (specifically in the IDH1 and IDH2 genes) play several critical roles in the diagnosis, prognosis, and treatment of gliomas:
+
+* **Diagnostic & Classification Marker:** They are defining molecular characteristics used to classify specific glioma subtypes, such as IDH-mutant astrocytomas and grade 2 IDH-mutant gliomas.
+* **Prognostic & Predictive Biomarker:** The presence of these mutations is associated with longer overall survival and improved progression-free survival. They also serve as predictive biomarkers that indicate a higher likelihood of a positive response to temozolomide chemotherapy.
+* **Risk Stratification:** IDH mutation status is routinely assessed in newly diagnosed low-grade glioma (LGG) patients to guide risk assessment. Post-surgical low-risk LGG patients are typically defined by the presence of an IDH mutation (often alongside 1p19q co-deletion), while the absence of an IDH mutation generally places patients in a higher-risk category that may benefit from adjuvant therapy.
+* **Therapeutic Target:** These mutations act as direct molecular targets for targeted therapies. Vorasidenib, a dual inhibitor of mutant IDH1/2 enzymes, is specifically indicated for grade 2 IDH-mutant gliomas and has demonstrated significant improvements in progression-free survival. Olutasidenib is also utilized for IDH1-mutant gliomas.
+* **Guiding Surveillance & Management:** The mutation status helps clinicians determine appropriate MRI monitoring intervals and follow-up strategies, allowing for more personalized surveillance based on the tumor's molecular profile and risk level.

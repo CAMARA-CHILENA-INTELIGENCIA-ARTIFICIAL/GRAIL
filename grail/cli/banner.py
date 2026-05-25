@@ -273,6 +273,7 @@ def print_query_panel(
     question: str,
     mode: str,
     document: str | None = None,
+    rerank: bool | None = None,
 ) -> None:
     table = Table(show_header=False, box=None, padding=(0, 2), expand=False)
     table.add_column("key", style="dim bold", min_width=12)
@@ -295,6 +296,13 @@ def print_query_panel(
 
     if document:
         table.add_row("Document", f"[bold]{document}[/bold]")
+
+    rerank_active = rerank if rerank is not None else config.reranker.enabled
+    if rerank_active:
+        table.add_row(
+            "Reranker",
+            f"[green]ON[/green] [dim]·[/dim] {config.reranker.endpoint} [dim]·[/dim] {config.reranker.model}",
+        )
 
     q_display = question if len(question) <= 60 else question[:57] + "..."
     table.add_row("Question", f"[italic]{q_display}[/italic]")

@@ -13,12 +13,14 @@ from grail.query.retrieval import (
     load_artifacts_for_search,
     map_query_to_entities,
 )
+from grail.query.trace import QueryTracer
 
 __all__ = [
     "AgentSearch",
     "DocumentSearch",
     "GlobalSearch",
     "LocalSearch",
+    "QueryTracer",
     "build_community_context",
     "build_relationship_context",
     "build_text_unit_context",
