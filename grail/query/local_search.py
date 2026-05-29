@@ -44,14 +44,14 @@ class LocalSearch:
     artifacts: Optional[SearchArtifacts] = None
     vector_store: Optional[BaseVectorStore] = None
     output_folder: str = "output"
-    max_tokens: int = 12_000
+    max_tokens: int = 32_000
     top_k_entities: int = 10
     top_k_relationships: int = 10
     text_unit_prop: float = 0.5
     community_prop: float = 0.1
     use_community_summary: bool = False
     conversation_history_max_turns: int = 5
-    response_max_tokens: int = 2048
+    response_max_tokens: int = 16_384
     response_temperature: float = 0.0
     endpoint: Optional[str] = None
     model: Optional[str] = None
@@ -71,6 +71,7 @@ class LocalSearch:
         include_entity_names: Optional[list[str]] = None,
         exclude_entity_names: Optional[list[str]] = None,
         use_reranker: Optional[bool] = None,
+        context_only: bool = False,
     ) -> SearchResult:
         started = time.perf_counter()
         self.reporter.info("Loading indexed artifacts…")
@@ -177,6 +178,15 @@ class LocalSearch:
             "reports": comm_rows,
             "sources": source_rows,
         }
+
+        if context_only:
+            return SearchResult(
+                response="",
+                context_data=context_data,
+                context_text=context_data_text,
+                completion_time=time.perf_counter() - started,
+                llm_calls=0,
+            )
 
         self.reporter.info("Generating response…")
         messages = self.prompts.build(

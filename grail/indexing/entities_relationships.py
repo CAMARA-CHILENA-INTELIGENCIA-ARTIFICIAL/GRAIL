@@ -44,6 +44,7 @@ class _Entity:
     name: str
     type: str
     descriptions: list[str] = field(default_factory=list)
+    retrieval_queries: list[str] = field(default_factory=list)
     text_unit_ids: set[str] = field(default_factory=set)
     document_ids: set[str] = field(default_factory=set)
 
@@ -76,8 +77,15 @@ class EntityRelationshipExtractor:
     extraction_temperature: float = 0.0
     extraction_concurrency: Optional[int] = None
     summarization_concurrency: Optional[int] = None
+    summarization_max_tokens: int = 8192
+    summarization_batch_size: int = 10
     output_folder: str = "output"
     delimiters: dict[str, str] = field(default_factory=lambda: dict(_entity_relation_prompt.DEFAULT_DELIMITERS))
+    deduplicate_entities: bool = True
+    dedup_similarity_threshold: float = 0.90
+    dedup_endpoint: Optional[str] = None
+    dedup_model: Optional[str] = None
+    dedup_max_entities_per_call: int = 50
     reporter: Reporter = field(default_factory=NullReporter)
 
     def __post_init__(self) -> None:
@@ -87,6 +95,8 @@ class EntityRelationshipExtractor:
                 prompts=self.prompts,
                 endpoint=self.summarization_endpoint or self.extraction_endpoint,
                 model=self.summarization_model or self.extraction_model,
+                max_output_tokens=self.summarization_max_tokens,
+                batch_size=self.summarization_batch_size,
             )
 
     # ------------------------------------------------------------------ run
@@ -139,10 +149,48 @@ class EntityRelationshipExtractor:
             k: v for k, v in rels_by_pair.items() if v.source in entities_by_name and v.target in entities_by_name
         }
 
-        # Embed entity descriptions.
         entity_names = list(entities_by_name.keys())
         descriptions = [entities_by_name[n].descriptions[0] for n in entity_names]
-        embeddings = await self.embeddings.embed_safe(descriptions, tag="entity_embedding")
+        queries = [" ".join(entities_by_name[n].retrieval_queries) for n in entity_names]
+        embedding_texts = [
+            f"{n}: {d} {q}".strip() for n, d, q in zip(entity_names, descriptions, queries)
+        ]
+        embeddings = await self.embeddings.embed_safe(embedding_texts, tag="entity_embedding")
+
+        # Deduplicate entities via name-embedding similarity + LLM judge.
+        if self.deduplicate_entities and len(entity_names) > 1:
+            from grail.indexing.entity_dedup import apply_merges, find_duplicates
+
+            types = [entities_by_name[n].type for n in entity_names]
+            name_embeddings = await self.embeddings.embed_safe(
+                entity_names, tag="entity_name_embedding"
+            )
+            merge_groups = await find_duplicates(
+                entity_names,
+                types,
+                descriptions,
+                name_embeddings,
+                llm=self.llm,
+                prompts=self.prompts,
+                similarity_threshold=self.dedup_similarity_threshold,
+                max_entities_per_call=self.dedup_max_entities_per_call,
+                endpoint=self.dedup_endpoint or self.extraction_endpoint,
+                model=self.dedup_model or self.extraction_model,
+                reporter=self.reporter,
+            )
+            if merge_groups:
+                entities_by_name, rels_by_pair = apply_merges(
+                    entities_by_name, rels_by_pair, merge_groups
+                )
+                entity_names = list(entities_by_name.keys())
+                descriptions = [entities_by_name[n].descriptions[0] for n in entity_names]
+                queries = [" ".join(entities_by_name[n].retrieval_queries) for n in entity_names]
+                embedding_texts = [
+                    f"{n}: {d} {q}".strip() for n, d, q in zip(entity_names, descriptions, queries)
+                ]
+                embeddings = await self.embeddings.embed_safe(
+                    embedding_texts, tag="entity_embedding"
+                )
 
         entities_df = self._build_entities_df(entity_names, entities_by_name, embeddings)
         relationships_df = self._build_relationships_df(rels_by_pair, entities_df)
@@ -164,7 +212,7 @@ class EntityRelationshipExtractor:
         tup = re.escape(self.delimiters["tuple_delimiter"])
         rec = re.escape(self.delimiters["record_delimiter"])
         comp = re.escape(self.delimiters["completion_delimiter"])
-        start = self.delimiters.get("start_delimiter", "<|START_OUTPUT|>")
+        start = self.delimiters.get("start_delimiter", "<extracted_data>")
 
         for (_, row), response in zip(text_units_df.iterrows(), responses):
             if not response:
@@ -194,14 +242,17 @@ class EntityRelationshipExtractor:
                 kind = fields[0].lower()
                 if kind == "entity" and len(fields) >= 4:
                     name = fields[1].upper().strip()
-                    # Keep entity type in UPPER_SNAKE_CASE to match the contract from
-                    # IndexingConfig.entity_types and stay readable in parquet output.
                     etype = "_".join(fields[2].strip().upper().split())
                     desc = fields[3].strip()
                     if not name or not desc:
                         continue
+                    queries_raw = fields[4].strip() if len(fields) >= 5 else ""
                     ent = entities.setdefault(name, _Entity(name=name, type=etype))
                     ent.descriptions.append(desc)
+                    if queries_raw:
+                        ent.retrieval_queries.extend(
+                            q.strip() for q in queries_raw.split(";") if q.strip()
+                        )
                     if not ent.type and etype:
                         ent.type = etype
                     ent.text_unit_ids.add(tu_id)
@@ -280,12 +331,13 @@ class EntityRelationshipExtractor:
                     "title": name,
                     "type": ent.type,
                     "description": ent.descriptions[0] if ent.descriptions else "",
+                    "retrieval_queries": ent.retrieval_queries,
                     "human_readable_id": i,
                     "graph_embedding": None,
                     "text_unit_ids": sorted(ent.text_unit_ids),
                     "document_ids": sorted(ent.document_ids),
                     "description_embedding": embedding,
-                    "degree": 0,  # filled in once relationships are built
+                    "degree": 0,
                 }
             )
         return pd.DataFrame(rows)
@@ -531,6 +583,11 @@ class EntityRelationshipExtractor:
                 old_docs = set(existing.get("document_ids") or [])
                 existing["text_unit_ids"] = sorted(old_tus | ent.text_unit_ids)
                 existing["document_ids"] = sorted(old_docs | ent.document_ids)
+                old_rq = existing.get("retrieval_queries") or []
+                if isinstance(old_rq, str):
+                    old_rq = [q.strip() for q in old_rq.split(";") if q.strip()]
+                merged_rq = list(dict.fromkeys(old_rq + ent.retrieval_queries))
+                existing["retrieval_queries"] = merged_rq
             else:
                 max_hrid += 1
                 existing_by_name[name] = {
@@ -539,6 +596,7 @@ class EntityRelationshipExtractor:
                     "title": name,
                     "type": ent.type,
                     "description": ent.descriptions[0] if ent.descriptions else "",
+                    "retrieval_queries": ent.retrieval_queries,
                     "human_readable_id": max_hrid,
                     "graph_embedding": None,
                     "text_unit_ids": sorted(ent.text_unit_ids),
@@ -559,8 +617,13 @@ class EntityRelationshipExtractor:
 
         # Batch re-embed affected entities (incremental updates).
         if names_to_reembed:
-            descs = [existing_by_name[n]["description"] for n in names_to_reembed]
-            embeddings = await self.embeddings.embed_safe(descs, tag="entity_embedding")
+            embed_texts = []
+            for n in names_to_reembed:
+                desc = existing_by_name[n]["description"]
+                rq = existing_by_name[n].get("retrieval_queries") or []
+                rq_text = " ".join(rq) if isinstance(rq, list) else str(rq)
+                embed_texts.append(f"{n}: {desc} {rq_text}".strip())
+            embeddings = await self.embeddings.embed_safe(embed_texts, tag="entity_embedding")
             for name, emb in zip(names_to_reembed, embeddings):
                 existing_by_name[name]["description_embedding"] = emb
 

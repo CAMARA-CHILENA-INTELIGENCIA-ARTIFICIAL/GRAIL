@@ -58,7 +58,7 @@ class RAGBaseline:
     embeddings: EmbeddingClient
     output_folder: str = "output"
     top_k: int = 10
-    response_max_tokens: int = 2048
+    response_max_tokens: int = 16_384
     response_temperature: float = 0.0
     endpoint: Optional[str] = None
     model: Optional[str] = None

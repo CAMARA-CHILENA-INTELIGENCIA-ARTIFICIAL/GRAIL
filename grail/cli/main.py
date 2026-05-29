@@ -499,6 +499,7 @@ def query(
     # Extract context stats from the result for display.
     context_stats: dict[str, int] = {}
     entities_used: list[str] = []
+    sources_used: list[dict[str, str]] = []
     if isinstance(result.context_data, dict):
         for key in ("entities", "relationships", "reports", "sources"):
             df = result.context_data.get(key)
@@ -507,6 +508,14 @@ def query(
         ent_df = result.context_data.get("entities")
         if ent_df is not None and hasattr(ent_df, "empty") and not ent_df.empty and "name" in ent_df.columns:
             entities_used = ent_df["name"].tolist()
+
+        from grail.query.retrieval import extract_source_references, load_artifacts_for_search
+        artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+        sources_used = extract_source_references(
+            result.context_data,
+            documents=artifacts.documents,
+            mapping=artifacts.mapping,
+        )
 
     cost_display = grail.cost_tracker.render_total_cost() if grail.cost_tracker.records else None
 
@@ -519,6 +528,7 @@ def query(
                     "llm_calls": result.llm_calls,
                     "context_stats": context_stats,
                     "entities_used": entities_used,
+                    "sources": sources_used,
                     "cost": cost_display,
                     "trace_path": str(trace_path) if trace_path is not None else None,
                 },
@@ -971,6 +981,183 @@ def viz(
         rprint(f"[dim]Open in a browser:[/dim] file://{out_path.resolve()}")
 
 
+# ================================================================ export-neo4j
+
+
+@app.command("export-neo4j")
+def export_neo4j(
+    project_dir: Path = typer.Argument(
+        ...,
+        help="Path to an indexed GRAIL project.",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    uri: Optional[str] = typer.Option(
+        None, "--uri",
+        help="Neo4j Bolt URI (e.g. neo4j+s://xxx.databases.neo4j.io). Falls back to NEO4J_URI env var.",
+    ),
+    username: Optional[str] = typer.Option(
+        None, "--username", "-u",
+        help="Neo4j username. Falls back to NEO4J_USERNAME env var. Default: 'neo4j'.",
+    ),
+    password: Optional[str] = typer.Option(
+        None, "--password", "-p",
+        help="Neo4j password. Falls back to NEO4J_PASSWORD env var.",
+    ),
+    database: str = typer.Option(
+        "", "--database", "-d",
+        help="Target Neo4j database name. Leave empty for Aura Free (uses server default).",
+    ),
+    clear: bool = typer.Option(
+        False, "--clear",
+        help="Wipe the target database before importing (DETACH DELETE all nodes).",
+    ),
+    no_apoc: bool = typer.Option(
+        False, "--no-apoc",
+        help="Skip APOC procedures (dynamic entity type labels won't be created).",
+    ),
+    batch_size: int = typer.Option(
+        500, "--batch-size",
+        help="Rows per Cypher transaction.",
+    ),
+) -> None:
+    """Export the knowledge graph to a Neo4j database for visualization.
+
+    Pushes entities, relationships, text units, documents, communities, and
+    community reports into Neo4j using MERGE statements.  Use the free Neo4j
+    Aura tier to get a cloud-hosted instance with the Neo4j Browser for
+    interactive graph exploration.
+
+    \b
+    Required credentials (via flags or environment variables):
+      NEO4J_URI        Bolt URI (e.g. neo4j+s://xxx.databases.neo4j.io)
+      NEO4J_USERNAME   Username (default: neo4j)
+      NEO4J_PASSWORD   Password
+
+    \b
+    Setup guide:
+      1. Create a free Neo4j Aura instance at https://neo4j.com/cloud/aura-free/
+      2. Copy the connection URI and password from the dashboard
+      3. Add to your project's .env file:
+           NEO4J_URI=neo4j+s://xxxxxxxx.databases.neo4j.io
+           NEO4J_USERNAME=neo4j
+           NEO4J_PASSWORD=your-password
+      4. Run: grail export-neo4j <project>
+      5. Open the Neo4j Browser from your Aura dashboard to explore the graph
+    """
+    console = Console()
+    _autoload_env(project_dir)
+
+    print_banner(console)
+
+    resolved_uri = uri or os.environ.get("NEO4J_URI", "")
+    resolved_username = username or os.environ.get("NEO4J_USERNAME", "neo4j")
+    resolved_password = password or os.environ.get("NEO4J_PASSWORD", "")
+
+    if not resolved_uri:
+        rprint()
+        rprint("[bold red]✗ Neo4j URI not configured[/bold red]")
+        rprint()
+        rprint("To export your graph to Neo4j you need connection credentials.")
+        rprint()
+        rprint("[bold]Quick setup:[/bold]")
+        rprint()
+        rprint("  [dim]1.[/dim] Create a free Neo4j Aura instance at [cyan]https://neo4j.com/cloud/aura-free/[/cyan]")
+        rprint("  [dim]2.[/dim] Copy the connection URI and password from the dashboard")
+        rprint("  [dim]3.[/dim] Add them to your project's [bold].env[/bold] file:")
+        rprint()
+        rprint("     [green]NEO4J_URI[/green]=neo4j+s://xxxxxxxx.databases.neo4j.io")
+        rprint("     [green]NEO4J_USERNAME[/green]=neo4j")
+        rprint("     [green]NEO4J_PASSWORD[/green]=your-password")
+        rprint()
+        rprint(f"  [dim]4.[/dim] Run again: [bold]grail export-neo4j <project>[/bold]")
+        rprint()
+        rprint("[dim]Or pass credentials directly:[/dim]")
+        rprint(f"  grail export-neo4j <project> --uri neo4j+s://xxx.databases.neo4j.io --password YOUR_PASSWORD")
+        rprint()
+        raise typer.Exit(1)
+
+    if not resolved_password:
+        rprint()
+        rprint("[bold red]✗ Neo4j password not configured[/bold red]")
+        rprint()
+        rprint("Set [green]NEO4J_PASSWORD[/green] in your .env file or pass [bold]--password[/bold].")
+        rprint()
+        raise typer.Exit(1)
+
+    try:
+        from grail.export.neo4j import export_to_neo4j
+    except ImportError:
+        rprint()
+        rprint("[bold red]✗ Missing dependency: neo4j[/bold red]")
+        rprint()
+        rprint("Install the Neo4j Python driver:")
+        rprint("  [bold]pip install neo4j[/bold]")
+        rprint()
+        raise typer.Exit(1)
+
+    from grail.query.retrieval import load_artifacts_for_search
+    from grail.storage import LocalStorage
+    from grail.indexing.run_manifest import resolve_active_run_folder
+
+    storage = LocalStorage(project_dir)
+    base_output = "output"
+    output_folder = resolve_active_run_folder(storage, base_output)
+    artifacts = load_artifacts_for_search(storage, output_folder)
+
+    reporter = _StyledReporter(console)
+
+    rprint()
+    console.print(f"  [dim]URI:[/dim]       {resolved_uri}")
+    console.print(f"  [dim]User:[/dim]      {resolved_username}")
+    console.print(f"  [dim]Database:[/dim]  {database or '(server default)'}")
+    console.print(f"  [dim]Clear:[/dim]     {'yes' if clear else 'no'}")
+    console.print(f"  [dim]APOC:[/dim]      {'disabled' if no_apoc else 'enabled'}")
+    rprint()
+
+    try:
+        result = export_to_neo4j(
+            uri=resolved_uri,
+            username=resolved_username,
+            password=resolved_password,
+            database=database,
+            entities=artifacts.entities,
+            relationships=artifacts.relationships,
+            text_units=artifacts.text_units,
+            documents=artifacts.documents,
+            communities=artifacts.communities,
+            community_reports=artifacts.community_reports,
+            batch_size=batch_size,
+            clear_graph=clear,
+            use_apoc=not no_apoc,
+            reporter=reporter,
+        )
+    except ConnectionError as exc:
+        rprint()
+        rprint(f"[bold red]✗ Connection failed[/bold red]")
+        rprint(f"  {exc}")
+        rprint()
+        raise typer.Exit(1)
+    except ImportError as exc:
+        rprint(f"[bold red]✗[/bold red] {exc}")
+        raise typer.Exit(1)
+
+    rprint()
+    console.print("[bold green]Export summary[/bold green]")
+    console.print(f"  Documents:         {result.documents}")
+    console.print(f"  Text units:        {result.text_units}")
+    console.print(f"  Entities:          {result.entities}")
+    console.print(f"  Relationships:     {result.relationships}")
+    console.print(f"  Communities:        {result.communities}")
+    console.print(f"  Community reports:  {result.community_reports}")
+    console.print(f"  Time:              {result.elapsed:.1f}s")
+    rprint()
+    rprint("[dim]Open the Neo4j Browser from your Aura dashboard to explore the graph.[/dim]")
+    rprint()
+
+
 # ================================================================ ui
 
 
@@ -992,6 +1179,9 @@ def ui(
     ),
     dev: bool = typer.Option(
         False, "--dev", help="Enable dev mode (CORS for Vite dev server on :5173)."
+    ),
+    debug: bool = typer.Option(
+        False, "--debug", help="Print every LLM prompt and response with colored output."
     ),
 ) -> None:
     """Launch the GRAIL chat web interface."""
@@ -1019,9 +1209,65 @@ def ui(
         console.print(
             f"  [dim bold]{'Dev mode':>10}[/dim bold]  [yellow]ON[/yellow] — CORS enabled for localhost:5173"
         )
+    if debug:
+        console.print(
+            f"  [dim bold]{'Debug':>10}[/dim bold]  [magenta]ON[/magenta] — LLM prompts and responses will be printed below"
+        )
     console.print()
 
-    run_server(project_dir=project_dir, host=host, port=port, dev=dev)
+    run_server(project_dir=project_dir, host=host, port=port, dev=dev, debug=debug)
+
+
+# ================================================================ chat
+
+
+@app.command()
+def chat(
+    project_dir: Path = typer.Argument(
+        ...,
+        help="Path to an indexed GRAIL project (must contain output/ with artifacts).",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    mode: str = typer.Option(
+        "agent", "--mode", "-m",
+        help="Initial search mode: agent | local | cascade | global | document.",
+    ),
+    session: Optional[str] = typer.Option(
+        None, "--session", "-s",
+        help="Resume a specific session by id prefix (or use /resume inside).",
+    ),
+    db: Optional[Path] = typer.Option(
+        None, "--db",
+        help="Override SQLite path (default: <project>/.grail/chat.db).",
+    ),
+) -> None:
+    """Interactive terminal chat with the GRAIL agent.
+
+    Streams responses, renders tool calls, supports slash commands, and
+    persists sessions to SQLite.  Each launch starts a NEW session by default;
+    use /resume inside to list past chats and pick one (or pass --session).
+    Type /help inside the chat for a full list of slash commands.
+    """
+    _autoload_env(project_dir)
+
+    valid_modes = {"agent", "local", "cascade", "global", "document"}
+    if mode not in valid_modes:
+        rprint(f"[red]Invalid mode '{mode}'.[/red] Valid: {', '.join(sorted(valid_modes))}")
+        raise typer.Exit(1)
+
+    try:
+        from grail.apps.cli_chat import run_chat
+    except ImportError as exc:
+        rprint(
+            f"[red]Missing dependencies for the chat TUI.[/red] "
+            f"Install with: [bold]pip install textual[/bold]\n{exc}"
+        )
+        raise typer.Exit(1)
+
+    run_chat(project_dir=project_dir, mode=mode, session_id=session, db_path=db)
 
 
 if __name__ == "__main__":  # pragma: no cover

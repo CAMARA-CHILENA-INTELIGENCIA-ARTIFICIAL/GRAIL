@@ -1,0 +1,572 @@
+[
+  {
+    "qid": "Q01",
+    "question": "¿Cuál es el objeto de la Ley 20.850?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "gold_answer": "Crear un Sistema de Protección Financiera para el otorgamiento de diagnósticos y tratamientos de alto costo declarados por decreto supremo del Ministerio de Salud.  Forma parte del Régimen General de Garantías en Salud.\n",
+    "grail": {
+      "response": "Según el **Artículo 1º de la Ley 20.850**, su objeto es:\n\n> *\"Créase un **Sistema de Protección Financiera** para el otorgamiento de aquellos **diagnósticos y tratamientos de alto costo** que declare el decreto supremo del Ministerio de Salud, a que hace referencia el artículo 5º, y formará parte del Régimen General de Garantías en Salud.\"*\n\nEn síntesis, la ley tiene los siguientes propósitos principales:\n\n1. **Crear el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo**, que garantiza que el Fondo Nacional de Salud (FONASA) asegure esta protección a todos los beneficiarios de los sistemas previsionales de salud de Chile.\n\n2. **Establecer la protección financiera integral**, que consiste en la cobertura del valor total de las prestaciones de confirmación diagnóstica y tratamientos de alto costo, evitando que los gastos impacten catastróficamente en el gasto de los beneficiarios.\n\n3. **Crear el Fondo para Diagnósticos y Tratamientos de Alto Costo** (Artículo 19), destinado al financiamiento total o parcial de estas prestaciones, con aportes fiscales anuales de hasta 100 mil millones de pesos.\n\n4. **Regular la continuidad de tratamientos**, los ensayos clínicos y las responsabilidades por desabastecimiento de productos sanitarios.\n\n5. **Establecer exclusiones**: se excluyen las prestaciones cubiertas por la Ley 16.744 (accidentes del trabajo), la Ley 18.490 (seguro de accidentes de tránsito) y la Cobertura Adicional para Enfermedades Catastróficas (CAEC) del contrato de salud previsional.\n\n6. **Rendir homenaje póstumo a Don Luis Ricarte Soto Gallegos**, figura histórica cuya enfermedad motivó la iniciativa.\n\nLos beneficiarios pueden exigir el cumplimiento de estas garantías ante FONASA y la Superintendencia de Salud a través de la Intendencia de Fondos y Seguros Previsionales de Salud.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "Ley 20.850 objeto propósito finalidad norma legal"
+      ],
+      "ctx": [
+        11409
+      ],
+      "calls": 2,
+      "time": 17.55505758401705
+    },
+    "rag": {
+      "response": "",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "Ley 20.850 objeto finalidad"
+      ],
+      "ctx": [
+        4484
+      ],
+      "calls": 3,
+      "time": 90.2436586249969
+    }
+  },
+  {
+    "qid": "Q02",
+    "question": "¿Cuántos miembros tiene la Comisión de Recomendación Priorizada y quién la preside?\n",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "gold_answer": "12 miembros de reconocida idoneidad en medicina, salud pública, economía, bioética, derecho sanitario, y expertos en fármacos, elementos de uso médico y alimentos.  Es presidida por el Subsecretario de Salud Pública.\n",
+    "grail": {
+      "response": "Según el **Artículo 8º de la Ley Nº 20.850**, la **Comisión de Recomendación Priorizada** está conformada por **12 miembros** de reconocida idoneidad en los campos de la medicina, salud pública, economía, bioética, derecho sanitario y expertos en fármacos, elementos de uso médico y alimentos.\n\nLa Comisión es **presidida por el Subsecretario de Salud Pública**.\n\nAdemás, dentro de estos 12 miembros, la sociedad civil participa a través de **dos representantes de las agrupaciones de pacientes** registradas conforme al artículo 30 de la ley, elegidos por las propias agrupaciones. Los demás miembros son designados por el Ministro de Salud, previa convocatoria pública.",
+      "tools": [
+        "local_search"
+      ],
+      "queries": [
+        "Comisión de Recomendación Priorizada composición miembros número integrantes preside presidente"
+      ],
+      "ctx": [
+        11088
+      ],
+      "calls": 2,
+      "time": 5.038264125003479
+    },
+    "rag": {
+      "response": "Según el Artículo 8º de la Ley 20.850 (Ley de Garantías Explícitas en Salud de Chile):\n\n*   **Número de miembros:** La Comisión de Recomendación Priorizada está conformada por **12 miembros** de reconocida idoneidad en campos como la medicina, salud pública, economía, bioética, derecho sanitario y expertos en fármacos, elementos de uso médico y alimentos. Dentro de estos 12 miembros, dos son representantes de la sociedad civil (agrupaciones de pacientes).\n*   **Presidente:** La Comisión es presidida por el **Subsecretario de Salud Pública**.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "Comisión de Recomendación Priorizada miembros presidente"
+      ],
+      "ctx": [
+        4117
+      ],
+      "calls": 3,
+      "time": 12.612518957990687
+    }
+  },
+  {
+    "qid": "Q03",
+    "question": "¿Cada cuántos años se fija el umbral nacional de costo para determinar si un diagnóstico o tratamiento es de alto costo?\n",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "gold_answer": "Cada tres años, mediante decreto supremo de los Ministerios de Salud y de Hacienda, tomando en cuenta el 40% de los ingresos familiares anuales promedio una vez cubiertos los gastos básicos de subsistencia.\n",
+    "grail": {
+      "response": "El umbral nacional de costo se fija **cada tres años**.\n\nSegún la normativa del Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo (Ley Nº 20.850), el **Umbral Nacional de Costo Anual** es un límite monetario establecido periódicamente cada tres años que determina universalmente si un diagnóstico o tratamiento se considera de alto costo.\n\nEste umbral se calcula tomando en cuenta el **40% de los ingresos familiares anuales promedio**, y su fijación corresponde a los Ministerios de Salud y de Hacienda. Cualquier diagnóstico o tratamiento cuyo costo sea igual o superior a este umbral queda automáticamente incluido en el sistema de protección financiera, garantizando la cobertura total de las prestaciones para los beneficiarios.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "umbral nacional de costo fijar cada cuántos años determinar diagnóstico tratamiento alto costo"
+      ],
+      "ctx": [
+        11439
+      ],
+      "calls": 2,
+      "time": 16.237197875016136
+    },
+    "rag": {
+      "response": "Según el **Artículo 6º de la Ley N° 20.850**, el umbral nacional de costo anual para determinar si un diagnóstico o tratamiento es de alto costo se fija **cada tres años**.\n\nEsta determinación se realiza mediante un decreto supremo suscrito por los Ministros de Salud y de Hacienda, tomando en cuenta el cuarenta por ciento de los ingresos familiares anuales promedio una vez cubiertos los gastos básicos de subsistencia.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "umbral nacional de costo alto costo diagnóstico tratamiento años frecuencia"
+      ],
+      "ctx": [
+        4282
+      ],
+      "calls": 3,
+      "time": 18.22175625001546
+    }
+  },
+  {
+    "qid": "Q04",
+    "question": "¿Cuál es el plazo de prescripción de las infracciones y sanciones del Título IV (obligatoriedad del otorgamiento) de la Ley 20.850?\n",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "gold_answer": "Las infracciones y sanciones del Título IV prescriben en el plazo de dos años.\n",
+    "grail": {
+      "response": "El plazo de prescripción de las infracciones y sanciones del **Título IV** (De la obligatoriedad del otorgamiento) de la **Ley 20.850** es de **cuatro años**.\n\nEste plazo está establecido en el **Artículo 12** de la Ley, que regula las infracciones a las normas de dicho título. El artículo establece que:\n\n> *\"El plazo de prescripción de la infracción, así como de la sanción será de cuatro años.\"*\n\nAdemás, el Artículo 12 señala que:\n\n- Las infracciones se refieren a quienes, por medios o maniobras ilegítimas, induzcan o incentiven a pacientes o personas a solicitar, prescribir o recomendar diagnósticos o tratamientos de alto costo por motivos distintos a los regulados en la ley.\n- Las sanciones incluyen multas de **100 a 10.000 unidades tributarias mensuales** (o el monto del beneficio económico obtenido si es superior), pudiendo duplicarse en caso de reincidencia.\n- Si las infracciones son cometidas por personas naturales o jurídicas del área de la salud, pueden sancionarse además con la **cancelación de la autorización de funcionamiento** o la eliminación del registro.\n- El procedimiento administrativo sancionatorio se rige por las reglas del **Libro Décimo del Código Sanitario** y será sustanciado y resuelto por la autoridad sanitaria respectiva.\n- Las resoluciones que establezcan las infracciones y multas tendrán **mérito ejecutivo** y se harán efectivas conforme a los artículos 434 y siguientes del Código de Procedimiento Civil.",
+      "tools": [
+        "cascade_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "plazo prescripción infracciones sanciones Título IV obligatoriedad otorgamiento Ley 20.850",
+        "Título IV Ley 20.850 obligatoriedad otorgamiento prescripción infracciones sanciones Libro Décimo Código Sanitario"
+      ],
+      "ctx": [
+        11297,
+        11710
+      ],
+      "calls": 3,
+      "time": 24.645597166992957
+    },
+    "rag": {
+      "response": "De acuerdo con la **Ley N° 20.850** (que crea un Sistema de Protección Financiera para diagnósticos y tratamientos de alto costo), el plazo de prescripción es el siguiente:\n\nEl plazo de prescripción de la infracción, así como de la sanción, será de **cuatro años**.\n\nEsta disposición se encuentra establecida en el **Artículo 12** de la ley, el cual regula las infracciones a las normas del Título IV (referente a la obligatoriedad del otorgamiento y las sanciones por inducir o incentivar acciones ilegítimas para solicitar diagnósticos o tratamientos de alto costo).\n\n**Referencia legal:**\n> *Artículo 12.- De la infracción a las normas de este Título.* [...]\n> \"El plazo de prescripción de la infracción, así como de la sanción será de cuatro años.\"",
+      "tools": [
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "Ley 20.850 Título IV prescripción infracciones sanciones",
+        "\"Título IV\" Ley 20.850"
+      ],
+      "ctx": [
+        4327,
+        4484
+      ],
+      "calls": 5,
+      "time": 35.757847750006476
+    }
+  },
+  {
+    "qid": "Q05",
+    "question": "¿Qué datos mínimos debe registrar un prestador de salud por cada beneficiario de la Ley 20.850 según el Decreto 54?\n",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "gold_answer": "Según el Artículo 8 del Decreto 54, los prestadores deben registrar al menos: (a) nombre completo y RUT del paciente, (b) domicilio incluyendo ciudad y comuna, (c) situación previsional en materia de salud, (d) motivo de consulta, (e) diagnóstico probable, (f) fecha y hora de la atención, (g) prestación garantizada correspondiente, (h) nombre completo y RUT del profesional.\n",
+    "grail": {
+      "response": "Según el **Artículo 8º del Decreto 54 de Salud (2015)**, los prestadores de salud deben registrar, al menos, los siguientes antecedentes por cada beneficiario de la Ley Nº 20.850:\n\n1. **Nombre completo y RUT del paciente**\n2. **Domicilio**, incluyendo ciudad y comuna\n3. **Situación previsional en materia de salud**\n4. **Motivo de consulta**\n5. **Diagnóstico probable**\n6. **Fecha y hora de la atención**\n7. **Prestación garantizada correspondiente**\n8. **Nombre completo y RUT del profesional**\n\nEsta información se debe ingresar a la **Ficha Clínica**, a la hoja de Atención u otro documento similar que sea habitualmente utilizado para fines de identificación, y registrarse en el sistema de información establecido por el Fondo Nacional de Salud (artículo 7º del mismo reglamento).\n\nAdicionalmente, el Decreto 54 establece que:\n- Los medios de registro deberán ajustarse al **Decreto Nº 41 de 2012** del Ministerio de Salud (reglamento sobre ficha clínica) o a la normativa que lo reemplace.\n- Deberán ser **comunicados a la Superintendencia de Salud**.\n- El manejo de estos datos queda sujeto a las disposiciones de la **Ley Nº 19.628**, sobre protección de la vida privada.",
+      "tools": [
+        "document_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "datos mínimos registro beneficiario Ley 20.850 prestador de salud",
+        "datos mínimos registro beneficiario Ley 20.850 prestador salud Decreto 54"
+      ],
+      "ctx": [
+        19,
+        11469
+      ],
+      "calls": 3,
+      "time": 13.075508958980208
+    },
+    "rag": {
+      "response": "Según el **Artículo 8º del Decreto 54** (que reglamenta la Ley 20.850), los prestadores de salud deben registrar, al menos, los siguientes antecedentes por cada beneficiario:\n\n1.  **Nombre completo y RUT del paciente.**\n2.  **Domicilio**, incluyendo ciudad y comuna.\n3.  **Situación previsional en materia de salud.**\n4.  **Motivo de consulta.**\n5.  **Diagnóstico probable.**\n6.  **Fecha y hora de la atención.**\n7.  **Prestación garantizada correspondiente.**\n8.  **Nombre completo y RUT del profesional.**\n\nEsta información debe ser ingresada en la Ficha Clínica, la hoja de Atención u otro documento similar que sea habitualmente utilizado para fines de identificación y registrado en el sistema de información correspondiente.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "Decreto 54 Ley 20.850 datos mínimos registro beneficiario prestador salud"
+      ],
+      "ctx": [
+        4216
+      ],
+      "calls": 3,
+      "time": 13.52801091602305
+    }
+  },
+  {
+    "qid": "Q06",
+    "question": "¿Cuáles son las condiciones copulativas que debe cumplir un diagnóstico o tratamiento para ser incorporado al decreto de alto costo?\n",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "gold_answer": "Según el Artículo 5 de la Ley 20.850, se requieren cuatro condiciones copulativas: (a) que el costo sea igual o superior al umbral del Artículo 6, (b) que hayan sido objeto de una favorable evaluación científica de la evidencia conforme al Artículo 7, (c) que hayan sido recomendados de acuerdo al Artículo 8, y (d) que se haya decidido su incorporación conforme al Artículo 9.\n",
+    "grail": {
+      "response": "De acuerdo con el **artículo 5º de la Ley Nº 20.850**, los diagnósticos y tratamientos de alto costo con sistema de protección financiera (para condiciones como enfermedades oncológicas, inmunológicas y raras o poco frecuentes) deben cumplir las siguientes **cuatro condiciones copulativas** para ser incorporados al decreto del Ministerio de Salud:\n\n---\n\n### 1. Umbral de costo (Art. 6º)\nQue el costo del diagnóstico o tratamiento sea **igual o superior al umbral nacional de costo anual** determinado en el artículo 6º. Este umbral se fija cada tres años mediante decreto supremo de los Ministerios de Salud y Hacienda, tomando en cuenta el 40% de los ingresos familiares anuales promedio una vez cubiertos los gastos básicos de subsistencia.\n\n### 2. Evaluación científica favorable (Art. 7º)\nQue los diagnósticos y tratamientos hayan sido objeto de una **favorable evaluación científica de la evidencia**, conforme al artículo 7º. Este proceso, iniciado de oficio por el Ministerio de Salud a través de la Subsecretaría de Salud Pública, debe comprender, a lo menos:\n- Eficacia y efectividad relativas\n- Seguridad\n- Evaluación económica\n- Impacto presupuestario\n- Efectos en las redes asistenciales\n- Repercusiones éticas, jurídicas y sociales\n- Alcance y plazo de revisión\n\n### 3. Recomendación (Art. 8º)\nQue los diagnósticos y tratamientos hayan sido **recomendados** de acuerdo a lo dispuesto en el artículo 8º de la ley.\n\n### 4. Decisión de incorporación (Art. 9º)\nQue se haya **decidido la incorporación** de los diagnósticos y tratamientos, conforme a lo señalado en el artículo 9º.\n\n---\n\nEstas condiciones son **copulativas**, lo que significa que **todas deben cumplirse simultáneamente** para que un diagnóstico o tratamiento pueda ser incorporado al decreto. El decreto supremo que determina la incorporación debe ser suscrito tanto por el Ministro de Salud como por el Ministro de Hacienda.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "condiciones copulativas diagnóstico tratamiento incorporado decreto alto costo criterios epidemiológicos carga enfermedad evaluaciones económicas costo efectividad"
+      ],
+      "ctx": [
+        12607
+      ],
+      "calls": 2,
+      "time": 18.92927745799534
+    },
+    "rag": {
+      "response": "Según el **artículo 5 de la Ley N° 20.850**, para que un diagnóstico o tratamiento de alto costo sea incorporado al decreto correspondiente, debe cumplir de manera obligatoria (condiciones copulativas) con los siguientes cuatro requisitos:\n\n1.  **Umbral de Costo:** El costo del diagnóstico o tratamiento debe ser igual o superior al umbral nacional de costo anual determinado por los Ministerios de Salud y de Hacienda (según lo establecido en el artículo 6).\n2.  **Evaluación Científica:** Debe haber sido objeto de una **favorable evaluación científica de la evidencia**, realizada por el Ministerio de Salud (según lo establecido en el artículo 7).\n3.  **Recomendación:** Debe haber sido **recomendado** de acuerdo a lo dispuesto en el artículo 8 de la ley.\n4.  **Decisión de Incorporación:** Se debe haber tomado la decisión formal de incorporar el diagnóstico o tratamiento, conforme a lo señalado en el artículo 9.\n\nEstos requisitos buscan garantizar que solo se cubran prestaciones que sean costo-efectivas, científicamente validadas y que superen un nivel de gasto que impacte catastróficamente en el bolsillo del paciente.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "condiciones copulativas diagnóstico tratamiento decreto alto costo"
+      ],
+      "ctx": [
+        4271
+      ],
+      "calls": 3,
+      "time": 15.861387000011746
+    }
+  },
+  {
+    "qid": "Q07",
+    "question": "Describe el proceso completo desde que se inicia la evaluación científica de un tratamiento hasta la decisión final de incorporarlo al Sistema de Protección Financiera.\n",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "gold_answer": "El proceso tiene tres fases: (1) Evaluación científica (Art. 7): la Subsecretaría de Salud Pública inicia de oficio la evaluación basada en la evidencia disponible, considerando eficacia, seguridad, evaluación económica, impacto presupuestario, alternativas, y repercusiones éticas/jurídicas/sociales. (2) Recomendación priorizada (Art. 8): la Comisión de 12 miembros delibera sobre el valor científico, económico y social, y emite una recomendación con propuesta de contenido y plazo de revisión. (3) Decisión (Art. 9): los Ministerios de Salud y Hacienda determinan mediante decreto supremo fundado los diagnósticos y tratamientos cubiertos, asegurando que el costo anual esperado sea ≤80% del valor esperado de los recursos del Fondo al 1 de enero siguiente.\n",
+    "grail": {
+      "response": "Basado en la Ley Nº 20.850 y su reglamento (Decreto 54), el proceso completo para incorporar un tratamiento al **Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo** consta de las siguientes etapas:\n\n---\n\n## 1. Inicio del Proceso\n\nEl proceso se inicia **de oficio por el Ministerio de Salud**, a través de la **Subsecretaría de Salud Pública**. Al inicio, la Subsecretaría toma especialmente en cuenta las opiniones y recomendaciones que realicen:\n- Las **Comisiones Técnicas Asesoras** del Ministerio.\n- Las **Agrupaciones de Pacientes** inscritas conforme al artículo 30 de la ley.\n\nSolo podrán ser objeto de evaluación aquellos diagnósticos y tratamientos cuyo costo sea igual o superior al **umbral nacional de costo anual** (fijado cada tres años por los Ministerios de Salud y Hacienda, equivalente al 40% de los ingresos familiares anuales promedio). Cuando no sea posible establecer el valor estimado en esta instancia, la Subsecretaría puede autorizar el inicio del proceso por resolución fundada.\n\n---\n\n## 2. Evaluación Científica de la Evidencia (Artículo 7º)\n\nLa Subsecretaría de Salud Pública realiza una evaluación científica integral basada en la evidencia disponible, que puede encargar total o parcialmente a instituciones públicas o privadas. La evaluación debe comprender, **a lo menos**:\n\n- **Eficacia y efectividad** relativas del tratamiento.\n- **Seguridad** del mismo.\n- **Evaluación económica** (relación costo-efectividad).\n- **Impacto presupuestario** y efectos en las redes asistenciales.\n- **Implementación** y condiciones de pago (mecanismo de riesgo compartido).\n- **Alternativas disponibles** (si existen).\n- **Precio máximo industrial**.\n- **Repercusiones éticas, jurídicas y sociales**.\n- **Alcance y plazo de revisión** de la evaluación.\n\nPara considerar los efectos en las redes asistenciales, se requiere un informe de la **Subsecretaría de Redes Asistenciales**. La evaluación concluye con un **informe público** (no recurrible) que se publica en el sitio electrónico del Ministerio de Salud **a lo menos 15 días antes** del inicio del proceso de recomendación.\n\n---\n\n## 3. Elaboración de Recomendación Priorizada (Artículo 8º)\n\nLa evaluación técnica es analizada y priorizada por la **Comisión de Recomendación Priorizada**, órgano creado por resolución del Ministerio de Salud, conformado por **12 miembros** de reconocida idoneidad en:\n- Medicina\n- Salud pública\n- Economía\n- Bioética\n- Derecho sanitario\n- Expertos en fármacos y elementos médicos\n\nLa Comisión incluye **2 representantes de la sociedad civil** (elegidos por las agrupaciones de pacientes) y es presidida por el **Subsecretario de Salud Pública**.\n\nLa Comisión deliberará sobre la base del **valor científico, económico y social** del tratamiento y emitirá una **recomendación** que contenga:\n- La propuesta de contenido para el decreto de incorporación.\n- El plazo de revisión de la decisión.\n\nLa Comisión puede considerar **ofertas formales de precio** de proveedores (confidenciales a solicitud). De lo obrado se levanta un **acta pública** que puede ser impugnada por cualquier interesado dentro de **5 días hábiles**.\n\n---\n\n## 4. Decisión Final de Incorporación (Artículo 9º)\n\nLa decisión final corresponde al **Ministro de Salud**, quien, mediante **decreto supremo suscrito también por el Ministro de Hacienda**, determina los diagnósticos y tratamientos de alto costo que se incorporan al Sistema de Protección Financiera.\n\nEste decreto debe indicar, para cada diagnóstico y tratamiento, el **momento a partir del cual** los beneficiarios tendrán derecho a la protección financiera.\n\n---\n\n## Condiciones Copulativas (Artículo 5º)\n\nPara que un tratamiento sea incorporado, debe cumplir **todas** las siguientes condiciones:\n\n| Condición | Descripción |\n|-----------|-------------|\n| **a) Umbral de costo** | Costo igual o superior al umbral nacional fijado |\n| **b) Evaluación científica favorable** | Evaluación científica de la evidencia concluyente |\n| **c) Recomendación** | Recomendación de la Comisión de Recomendación Priorizada |\n| **d) Decisión de incorporación** | Decreto supremo del Ministerio de Salud y Hacienda |\n\n---\n\n## 5. Implementación y Otorgamiento (Artículo 13º)\n\nUna vez incorporado, el **Fondo Nacional de Salud** debe dar cumplimiento obligatorio al sistema. Los prestadores deben:\n- Estar **acreditados en la Superintendencia de Salud**.\n- Contar con la **aprobación del Ministerio de Salud**.\n- Suscribir un **convenio con el Fondo Nacional de Salud**.\n\nLos prestadores forman parte de la **Red de Prestadores** definida por decreto del Ministerio de Salud.\n\n---\n\nEn resumen, el proceso es un **flujo técnico-científico con participación multisectorial** que va desde la evaluación de evidencia hasta la decisión política, pasando por una deliberación priorizada que considera valor científico, económico y social, garantizando transparencia y legitimidad en la incorporación de tratamientos al sistema de protección financiera.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "proceso evaluación científica tratamiento incorporación Sistema de Protección Financiero garantías explícitas Ministerio de Salud comisiones criterios epidemiológicos costo-efectividad"
+      ],
+      "ctx": [
+        11170
+      ],
+      "calls": 2,
+      "time": 13.613631209009327
+    },
+    "rag": {
+      "response": "",
+      "tools": [
+        "rag_search",
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "proceso evaluación científica tratamiento incorporación Sistema de Protección Financiera",
+        "Artículo 8 recomendación Artículo 9 decisión incorporación Ley 20850",
+        "Artículo 8 Comisión Ciudadana recomendación Artículo 9 decisión final"
+      ],
+      "ctx": [
+        4260,
+        4509,
+        4242
+      ],
+      "calls": 7,
+      "time": 52.85287524998421
+    }
+  },
+  {
+    "qid": "Q08",
+    "question": "¿Qué ocurre con la protección financiera cuando un paciente en urgencia vital es atendido fuera de la Red de Prestadores?\n",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "gold_answer": "Según el Artículo 3 de la Ley 20.850, el paciente mantiene la protección financiera hasta que pueda ser trasladado a un prestador aprobado.  Los costos son reembolsados por FONASA con cargo al Fondo. Si el paciente (o su representante) opta por quedarse fuera de la red, los copagos desde ese momento no se cubren.  Si opta por trasladarse a un establecimiento fuera de la red, también pierde cobertura.  Si opta por trasladarse a uno de la red, la protección continúa.  El médico tratante determina cuándo el paciente está en condiciones de ser trasladado.\n",
+    "grail": {
+      "response": "Cuando un paciente en **urgencia vital** (o con **secuela funcional grave**) es atendido fuera de la Red de Prestadores aprobados, la protección financiera **sí se mantiene**, pero con condiciones específicas establecidas en el **artículo 3º de la Ley Nº 20.850**:\n\n## Reglas de la protección financiera en urgencia vital\n\n### 1. Cobertura mantenido hasta el traslado\nEl beneficiario tiene derecho a las prestaciones incluidas en el Sistema de Protección Financiera **hasta que el paciente se encuentre en condiciones de ser trasladado** a un prestador aprobado por el Ministerio de Salud.\n\n### 2. Determinación del momento del traslado\nEl **médico tratante** del establecimiento donde se atiende al paciente es quien determina cuándo este se encuentra en condiciones de ser trasladado. A partir de ese momento, se aplican las siguientes reglas:\n\n- **Si se mantiene en el establecimiento fuera de la red:** Los copagos que se devenguen a partir de ese momento **NO** se encuentran cubiertos por el Sistema de Protección Financiera.\n  \n- **Si se traslada a otro establecimiento fuera de la red:** Se aplica la misma regla anterior (no hay cobertura).\n\n- **Si se traslada a un establecimiento de la red de prestadores aprobados:** **Continúa la protección financiera** de la ley.\n\n### 3. Reembolso de costos\nLos costos de los tratamientos cubiertos que sean proporcionados por el prestador de urgencia (fuera de la red) **les serán reembolsados por el Fondo Nacional de Salud**, con cargo al Fondo de Tratamientos de Alto Costo.\n\n### 4. Obligación de informar\nLos establecimientos que reciban personas en esta situación **deberán informar** a la Intendencia de Fondos y Seguros Previsionales y al Fondo Nacional de Salud **dentro de las 24 horas siguientes**, señalando la identidad de los pacientes.\n\n### 5. Discrepancias\nEn caso de discrepancia sobre si una situación constituye o no urgencia vital o secuela funcional grave, la resolución corresponde a la **Superintendencia de Salud** (o al Fondo Nacional de Salud, según el caso).\n\n### 6. Reinicio del cómputo\nSi con posterioridad el paciente decide ingresar a la red de prestadores aprobados, **se iniciará o reiniciará el cómputo** para la protección financiera de la ley.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "protección financiera paciente urgencia vital atendido fuera Red de Prestadores emergencia"
+      ],
+      "ctx": [
+        12608
+      ],
+      "calls": 2,
+      "time": 10.282003917003749
+    },
+    "rag": {
+      "response": "Según lo establecido en la **Ley 20.850** (Artículo 3º), cuando un paciente en **urgencia vital** (o con secuela funcional grave) requiere hospitalización inmediata e impostergable en un establecimiento que **no forma parte de la Red de Prestadores**, la protección financiera **sí se mantiene**, pero con las siguientes condiciones:\n\n1.  **Derecho a la cobertura:** El beneficiario tiene derecho a las prestaciones incluidas en el Sistema de Protección Financiera (confirmación diagnóstica y tratamientos de alto costo) mientras dure la situación de urgencia.\n2.  **Duración de la protección:** La cobertura aplica **hasta que el paciente se encuentre en condiciones de ser trasladado** a un prestador aprobado por el Ministerio de Salud.\n3.  **Reembolso de costos:** Los costos de los tratamientos cubiertos que sean proporcionados por el prestador de urgencia (fuera de la red) serán reembolsados por el **Fondo Nacional de Salud (Fonasa)**, con cargo al Fondo de Tratamientos de Alto Costo.\n\n**¿Cuándo se pierde la protección financiera?**\nLa protección financiera **cesará** a partir del momento en que el médico tratante determine que el paciente está clínicamente apto para ser trasladado, si:\n*   La persona autorizada (familiar o representante) decide mantener al paciente en el establecimiento no perteneciente a la red.\n*   Se opta por trasladar al paciente a otro establecimiento que tampoco pertenezca a la red de prestadores aprobados.\n\nEn resumen, la ley garantiza la protección en la fase aguda de la emergencia, pero exige el traslado a la red una vez superada la urgencia inmediata para continuar con la cobertura.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "protección financiera urgencia vital fuera de la red de prestadores"
+      ],
+      "ctx": [
+        4182
+      ],
+      "calls": 3,
+      "time": 22.261905749997823
+    }
+  },
+  {
+    "qid": "Q09",
+    "question": "¿Qué criterios se usan para elaborar la propuesta de Garantías Explícitas en Salud?\n",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "gold_answer": "Según los Artículos 13 y 14 de la Ley 19.966: estudios epidemiológicos, carga de enfermedad, revisiones sistemáticas sobre la efectividad de las intervenciones, evaluaciones económicas, contribución a la calidad de vida, relación costo-efectividad, demanda potencial, y capacidad de oferta del sistema de salud chileno (público y privado).  Se descartarán enfermedades para las que no haya fundamentos de beneficio para la sobrevida o calidad de vida.\n",
+    "grail": {
+      "response": "Según la **Ley 19.966** (específicamente los artículos 12, 13 y 14), la propuesta de Garantías Explícitas en Salud se elabora considerando los siguientes criterios:\n\n## Criterios técnicos y científicos (Artículo 13)\n\nLa elaboración debe considerar:\n\n1. **Situación de salud de la población** — a través de estudios epidemiológicos y de carga de enfermedad.\n2. **Efectividad de las intervenciones** — mediante revisiones sistemáticas sobre la efectividad de tratamientos y prestaciones.\n3. **Contribución a la extensión o calidad de vida** — solo se incluyen prestaciones con fundamentos de que significan un beneficio para la sobrevida o la calidad de vida de los afectados.\n4. **Relación costo-efectividad** — cuando sea posible, se evalúa la eficiencia económica de las intervenciones.\n\n## Estudios que se deben desarrollar (Artículo 13)\n\nPara fundamentar la propuesta, se deben realizar:\n- Estudios epidemiológicos y de **carga de enfermedad**\n- **Revisiones sistemáticas** sobre la efectividad\n- **Evaluaciones económicas**\n- Análisis de **demanda potencial**\n- Evaluación de la **capacidad de oferta** del sistema de salud chileno\n\n## Criterios de priorización (Artículo 14)\n\n- Se confecciona un listado de enfermedades y prestaciones asociadas, descartando aquellas sin evidencia de beneficio.\n- Se estima el **costo de incorporar** cada prestación al Régimen, considerando la capacidad de oferta de los sectores público y privado.\n- Se considera la **experiencia y evidencia científica** nacional y extranjera.\n- Un reglamento establece las variables y el mecanismo de priorización.\n\n## Criterios financieros (Artículo 12)\n\n- El Ministerio de Hacienda fija el **marco de recursos disponibles** para el financiamiento en el Fondo Nacional de Salud.\n- Se establece el valor de la **Prima Universal** (en unidades de fomento).\n- El costo esperado individual promedio de las Garantías no puede ser significativamente diferente de la Prima Universal establecida.\n\n## Verificación de costos (Artículo 15)\n\nLa propuesta se somete a un proceso de **verificación del costo esperado por beneficiario**, dirigido y coordinado por el Ministerio de Salud, con intervención del Fondo Nacional de Salud y las Instituciones de Salud Previsional.\n\nEn resumen, el proceso integra **evidencia epidemiológica, científica y económica**, junto con la **capacidad financiera** del sistema y la **capacidad de oferta** del sistema de salud, para priorizar las prestaciones que maximicen el impacto en salud dentro de los recursos disponibles.",
+      "tools": [
+        "local_search"
+      ],
+      "queries": [
+        "proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas en salud basado en estudios epidemiológicos carga de enfermedad evaluaciones económicas costo-efectividad criterios técnicos"
+      ],
+      "ctx": [
+        10901
+      ],
+      "calls": 2,
+      "time": 8.031321125017712
+    },
+    "rag": {
+      "response": "Según el **Artículo 13** de la Ley 19966 (que establece el Régimen General de Garantías en Salud), la elaboración de la propuesta de Garantías Explícitas en Salud se basa en el desarrollo de estudios para determinar un listado de prioridades y de intervenciones.\n\nLos criterios específicos que deben considerarse son:\n\n1.  **La situación de salud de la población.**\n2.  **La efectividad de las intervenciones.**\n3.  **Su contribución a la extensión o a la calidad de vida.**\n4.  **Su relación costo-efectividad** (cuando sea posible).\n\nPara fundamentar estos criterios, la ley establece que se deben desarrollar estudios específicos, tales como:\n*   Estudios epidemiológicos (por ejemplo, de carga de enfermedad).\n*   Revisiones sistemáticas sobre la efectividad.\n*   Evaluaciones económicas.\n*   Análisis de la demanda potencial.\n*   Análisis de la capacidad de oferta del sistema de salud.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "criterios para elaborar propuesta Garantías Explícitas en Salud"
+      ],
+      "ctx": [
+        4203
+      ],
+      "calls": 3,
+      "time": 17.177702874992974
+    }
+  },
+  {
+    "qid": "Q10",
+    "question": "¿Cómo se financia el Fondo para Diagnósticos y Tratamientos de Alto Costo?  Enumera todas las fuentes.\n",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "gold_answer": "Según el Artículo 20 de la Ley 20.850, el Fondo se financia con: (a) aportes fiscales anuales por un monto de hasta cien mil millones de pesos, reajustados el 1 de enero por el 100% de la variación del IPC; (b) donaciones y herencias que acepte el Ministerio de Hacienda; (c) aportes de la cooperación internacional; (d) la rentabilidad que genere la inversión de los recursos del Fondo.  Los recursos se contemplan en la partida presupuestaria del Tesoro Público.\n",
+    "grail": {
+      "response": "Basado en el **Artículo 20 de la Ley Nº 20.850**, el **Fondo para Diagnósticos y Tratamientos de Alto Costo** se financia con las siguientes fuentes de recursos:\n\n1. **Aportes fiscales anuales**: Un monto de hasta **100.000 millones de pesos**, que se reajusta anualmente el 1 de enero en un 100% de la variación del Índice de Precios al Consumidor (IPC). Estos recursos están contemplados en la partida presupuestaria del Tesoro Público y son asignados mediante la Ley de Presupuestos.\n\n2. **Donaciones**: Aquellas que se realicen al Fondo y que sean aceptadas por el Ministerio de Hacienda (con beneficio de inventario).\n\n3. **Herencias y legados**: Que acepte el Ministerio de Hacienda en beneficio del Fondo.\n\n4. **Cooperación internacional**: Los aportes que se reciban a cualquier título de organismos o entidades de cooperación internacional.\n\n5. **Rentabilidad por inversión**: Los rendimientos que genere la inversión de los recursos del Fondo, la cual podrá realizarse en los instrumentos, operaciones y contratos que establezca el Ministerio de Hacienda.\n\nAdicionalmente, el Fondo transfiere recursos al **Fondo Nacional de Salud** para cubrir el costo de los tratamientos, conforme al reglamento de rendición de cuentas dictado por el Ministerio de Hacienda.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "Fondo para Diagnósticos y Tratamientos de Alto Costo financiamiento fuentes de recursos aportes presupuestarios"
+      ],
+      "ctx": [
+        10765
+      ],
+      "calls": 2,
+      "time": 9.503857832984067
+    },
+    "rag": {
+      "response": "",
+      "tools": [
+        "rag_search",
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "Fondo para Diagnósticos y Tratamientos de Alto Costo financiamiento fuentes",
+        "Ley 20.850 financiamiento del Fondo de Diagnósticos y Tratamientos de Alto Costo fuentes",
+        "artículo 19 Ley 20.850 financiamiento del fondo fuentes de financiamiento"
+      ],
+      "ctx": [
+        4266,
+        4377,
+        4509
+      ],
+      "calls": 7,
+      "time": 47.47304124999209
+    }
+  },
+  {
+    "qid": "Q11",
+    "question": "¿Qué relación existe entre la Ley Ricarte Soto (20.850) y las Garantías Explícitas en Salud de la Ley 19.966?\n",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "gold_answer": "La Ley 20.850 complementa la Ley 19.966: su Sistema de Protección Financiera forma parte del Régimen General de Garantías en Salud (Art. 1, Ley 20.850).  Los beneficiarios de ISAPRE deben primero agotar la Cobertura Adicional para Enfermedades Catastróficas (CAEC) antes de acceder a la Ley 20.850.  Si un diagnóstico o tratamiento de alto costo es incorporado al Régimen de Garantías Explícitas (GES), pasa a regirse por la Ley 19.966, pero la protección financiera continúa vigente para beneficiarios no incorporados al GES mientras subsista su eficacia terapéutica (Art. 10, Ley 20.850). El Decreto 54 operacionaliza esta relación definiendo las normas concretas de otorgamiento y cobertura.\n",
+    "grail": {
+      "response": "La **Ley 20.850 (Ricarte Soto)** y la **Ley 19.966 (Garantías Explícitas en Salud o GES)** son dos normas complementarias que forman parte del mismo marco de protección sanitaria en Chile. Su relación se puede explicar en los siguientes puntos:\n\n---\n\n## 1. Relación jerárquica y de integración\n\nLa Ley 20.850 establece expresamente en su **Artículo 1º** que el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo **\"formará parte del Régimen General de Garantías en Salud\"** al que se refiere la Ley 19.966. Esto significa que el sistema Ricarte Soto no es un régimen independiente, sino que se integra como un componente más del marco normativo de las GES.\n\n## 2. Ámbitos de cobertura complementarios\n\n| **Ley 19.966 (GES)** | **Ley 20.850 (Ricarte Soto)** |\n|---|---|\n| Cubre un conjunto **priorizado** de enfermedades y condiciones de salud (aproximadamente 64 patologías). | Cubre **diagnósticos y tratamientos de alto costo** que no están incluidos en las GES, cuando su costo impide el acceso o genera gasto catastrófico. |\n| Establece un **deducible y copago** (20% del arancel de referencia), con cobertura adicional al 100% tras superar el deducible. | Otorga **protección financiera total** (cobertura del 100% sin copagos) para las prestaciones incorporadas. |\n| Se actualiza cada **tres años** mediante decreto supremo. | Se actualiza de forma **progresiva** mediante decretos del Ministerio de Salud. |\n\n## 3. Garantías compartidas\n\nAmbas leyes reconocen las mismas garantías explícitas:\n\n- **Garantía de Calidad:** Las prestaciones deben ser otorgadas por prestadores registrados o acreditados conforme a la Ley 19.937.\n- **Garantía de Oportunidad:** Se establecen plazos máximos para el otorgamiento de las prestaciones.\n- **Garantía de Protección Financiera:** En el caso de la Ley 20.850, esta garantía es absoluta (cobertura total sin copagos).\n\n## 4. Mecanismos de acceso y fiscalización comunes\n\n- Los beneficiarios deben atenderse en la **red de prestadores** correspondiente (Red Asistencial para la Ley 18.469; Red de Prestadores para la Ley 20.850).\n- La **Superintendencia de Salud** fiscaliza el cumplimiento de ambas normas.\n- El **Fondo Nacional de Salud (Fonasa)** es el encargado de implementar y garantizar el cumplimiento de ambos sistemas.\n- Las **Instituciones de Salud Previsional (Isapres)** tienen obligaciones equivalentes en ambos regímenes.\n\n## 5. Exclusiones y orden de aplicación\n\nLa Ley 20.850 excluye expresamente del sistema:\n- Las prestaciones cubiertas por la **Ley 16.744** (accidentes del trabajo y enfermedades profesionales).\n- Las prestaciones cubiertas por la **Ley 18.490** (seguro obligatorio de accidentes de tránsito).\n- Las prestaciones cubiertas por la **Cobertura Adicional para Enfermedades Catastróficas (CAEC)** en los contratos de salud previsional.\n\nLos beneficiarios de Isapres deben **agotar primero la CAEC** antes de acceder a las garantías de la Ley 20.850.\n\n## 6. Proceso de incorporación de prestaciones\n\nTanto las GES como el sistema Ricarte Soto utilizan un **proceso técnico-científico** para la priorización y evaluación de prestaciones, que incluye:\n- Estudios epidemiológicos y evaluaciones económicas.\n- Deliberación de la **Comisión de Recomendación Priorizada**.\n- Aprobación por el **Consejo Consultivo** y el Presidente de la República mediante decreto supremo.\n\n---\n\n**En síntesis:** La Ley 20.850 (Ricarte Soto) **complementa y amplía** la protección sanitaria establecida por la Ley 19.966 (GES), cubriendo enfermedades de alto costo que no están incluidas en el listado de GES, pero con una protección financiera más robusta (cobertura total sin copagos). Ambas leyes operan bajo el mismo marco del Régimen General de Garantías en Salud, compartiendo mecanismos de fiscalización, acreditación de prestadores y derechos de los pacientes.",
+      "tools": [
+        "local_search",
+        "local_search"
+      ],
+      "queries": [
+        "Ley Ricarte Soto 20.850 Ley 19.966 Garantías Explícitas en Salud GES relación cobertura universal FOSIS FONASA",
+        "Ley 20.850 Ricarte Soto cobertura universal salud gratuita protección financiera deducible copago"
+      ],
+      "ctx": [
+        10951,
+        12005
+      ],
+      "calls": 3,
+      "time": 10.976482791011222
+    },
+    "rag": {
+      "response": "La relación entre la **Ley Ricarte Soto (Ley N° 20.850)** y las **Garantías Explícitas en Salud (GES)** de la **Ley N° 19.966** es de **complementariedad y jerarquía dentro del mismo marco regulatorio**, donde la Ley Ricarte Soto actúa como un mecanismo de protección financiera adicional para patologías de alto costo que no están cubiertas por las GES.\n\nA continuación, se detallan los puntos clave de esta relación:\n\n### 1. La Ley Ricarte Soto forma parte del Régimen General de Garantías en Salud\nEl **Artículo 1° de la Ley 20.850** establece explícitamente que el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo (conocido como Ley Ricarte Soto) **\"formará parte del Régimen General de Garantías en Salud\"**. Esto significa que no es un sistema aislado, sino que integra el conjunto de garantías que el Estado debe proveer a los beneficiarios de los sistemas de salud (Fonasa e Isapres).\n\n### 2. Cobertura de patologías no incluidas en las GES\n*   **GES (Ley 19.966):** Cubre un conjunto priorizado de enfermedades y condiciones de salud (actualmente más de 80 patologías) con garantías de acceso, calidad, protección financiera y oportunidad.\n*   **Ley Ricarte Soto (Ley 20.850):** Cubre **diagnósticos y tratamientos de alto costo** para enfermedades que **no están incluidas** en el listado de las GES. Su objetivo es evitar que el gasto catastrófico en salud impida el acceso a tratamientos necesarios para patologías graves (como ciertos cánceres, enfermedades raras, etc.) que, por su complejidad o costo, no fueron priorizadas en el listado inicial de GES.\n\n### 3. Protección Financiera Total (Cobertura del 100%)\nUna diferencia fundamental en la relación entre ambas es la protección financiera:\n*   **GES:** Establece un copago máximo (generalmente 10% de la renta familiar o un tope mensual) para las prestaciones garantizadas.\n*   **Ley Ricarte Soto:** Otorga **protección financiera total**, es decir, cubre el **100% del costo** de los diagnósticos y tratamientos de alto costo declarados. No hay copago para el beneficiario.\n\n### 4. Orden de aplicación y exclusión\nLa relación operativa entre ambas leyes se rige por los siguientes principios:\n*   **Prioridad de la GES:** Si una enfermedad está dentro del listado de GES, se aplica el régimen de GES.\n*   **Complementariedad:** Si una enfermedad **no** está en el listado de GES, pero el diagnóstico o tratamiento es de alto costo y está declarado por el Ministerio de Salud, se aplica la Ley Ricarte Soto.\n*   **Exclusión de la CAEC:** La Ley Ricarte Soto excluye las prestaciones cubiertas por la **Cobertura Adicional para Enfermedades Catastróficas (CAEC)** de las Isapres. Es decir, si un beneficiario de Isapre tiene un plan que incluye CAEC y la enfermedad está cubierta por ella, debe agotar esa cobertura antes de acceder a la Ley Ricarte Soto. Si no tiene CAEC o la enfermedad no está cubierta por su plan, accede directamente a la Ley Ricarte Soto.\n\n### 5. Derechos exigibles\nTanto las GES como la Ley Ricarte Soto otorgan derechos constitutivos para los beneficiarios. El cumplimiento de ambas garantías puede ser exigido ante el Fondo Nacional de Salud (Fonasa), las Instituciones de Salud Previsional (Isapres) y fiscalizado por la Superintendencia de Salud.\n\n### En resumen:\nLa **Ley Ricarte Soto** es el **piso de protección financiera** para enfermedades de alto costo que **no están cubiertas por las GES**. Juntas, forman un sistema integral de garantías en salud donde las GES cubren un conjunto priorizado con copagos, y la Ley Ricarte Soto cubre el resto de las patologías de alto costo con cobertura total, asegurando que ningún beneficiario quede desprotegido frente a gastos catastróficos en salud.",
+      "tools": [
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "relación Ley Ricarte Soto 20.850 Garantías Explícitas en Salud GES Ley 19.966",
+        "Ley Ricarte Soto 20.850 relación con GES Garantías Explícitas en Salud"
+      ],
+      "ctx": [
+        4320,
+        4440
+      ],
+      "calls": 5,
+      "time": 40.53261629099143
+    }
+  },
+  {
+    "qid": "Q12",
+    "question": "Un paciente con cáncer al que le niegan un tratamiento de alto costo: ¿ante qué instituciones puede reclamar?\n",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "gold_answer": "Puede reclamar ante: (1) la Intendencia de Fondos y Seguros Previsionales de la Superintendencia de Salud, según el procedimiento de los artículos 117 y siguientes del DFL N°1/2005 del Ministerio de Salud (Ley 20.850 Art. 13, Decreto 54 Art. 6).  (2) La Superintendencia de Salud puede iniciar procedimientos de oficio (Ley 20.850 Art. 13).  (3) Bajo la Ley 19.966, si hay incumplimiento de las Garantías Explícitas, puede reclamar ante la Superintendencia de Salud (Art. 24) que puede sancionar con amonestación o suspensión de hasta 180 días.  (4) Para daños por falta de servicio de prestadores públicos, existe la vía de mediación ante el Consejo de Defensa del Estado (Ley 19.966, Art. 43).\n",
+    "grail": {
+      "response": "Basado en la normativa chilena (Ley Nº 20.850 y Decreto 54), un paciente con cáncer al que le niegan un tratamiento de alto costo puede reclamar ante las siguientes instituciones:\n\n## 1. Superintendencia de Salud (Intendencia de Fondos y Seguros Previsionales)\n\nEs la **instancia principal de reclamo**. Según el **Artículo 13 de la Ley 20.850**, en caso de incumplimiento del FONASA o de los prestadores de salud respecto a las coberturas y beneficios del Sistema de Protección Financiera, el afectado o su representante puede presentar un reclamo ante la **Intendencia de Fondos y Seguros Previsionales de la Superintendencia de Salud**, la cual debe resolver la controversia conforme al procedimiento establecido en los artículos 117 y siguientes del DFL Nº 1 de 2005.\n\nLa Superintendencia de Salud puede aplicar sanciones por incumplimiento, que incluyen:\n- **Amonestación**\n- **Multa de 10 a 1.000 unidades tributarias mensuales**\n- En establecimientos públicos, puede solicitar la instrucción de un **sumario administrativo**\n\n## 2. Comisión Ciudadana de Vigilancia y Control del Sistema de Protección Financiera\n\nEs un **órgano de control ciudadano** encargado de vigilar el cumplimiento del sistema de protección financiera de alto costo. Recibe información del Fondo Nacional de Salud y ejerce supervisión directa sobre el sistema.\n\n## 3. Fondo Nacional de Salud (FONASA)\n\nComo entidad responsable de **garantizar el otorgamiento** de las prestaciones del sistema, el paciente puede presentar su reclamo directamente ante el FONASA, solicitando el cumplimiento de su obligación legal.\n\n## 4. Instituto de Salud Pública\n\nTiene facultades para recibir reclamos en materias específicas relacionadas con productos sanitarios y ensayos clínicos.\n\n---\n\n**Recomendación práctica:** El reclamo debe presentarse ante la **Intendencia de Fondos y Seguros Previsionales de la Superintendencia de Salud**, que es la instancia resolutiva con facultades para ordenar el otorgamiento del tratamiento y aplicar sanciones a los responsables del incumplimiento.",
+      "tools": [
+        "local_search"
+      ],
+      "queries": [
+        "instituciones y mecanismos de reclamo para pacientes que les niegan tratamientos de alto costo, instancias de protección del paciente, comisiones de vigilancia y control, consejos consultivos"
+      ],
+      "ctx": [
+        12565
+      ],
+      "calls": 2,
+      "time": 6.661231415986549
+    },
+    "rag": {
+      "response": "Basado en la normativa chilena (Ley N° 20.850 y su reglamento), un paciente con cáncer al que se le niega un tratamiento de alto costo cubierto por el sistema de protección financiera puede reclamar ante las siguientes instituciones:\n\n**1. Superintendencia de Salud (Principal instancia de reclamo)**\nEs la autoridad encargada de resolver las controversias y garantizar el derecho a la salud. Específicamente, el reclamo debe dirigirse a la **Intendencia de Fondos y Seguros Previsionales**.\n*   **Fundamento:** Según el artículo 3 de la Ley 20.850 y el artículo 6 del Decreto 54, si hay discrepancia sobre la calificación de una situación como de urgencia vital, secuela funcional grave, o si se niega el tratamiento, el paciente o su representante puede requerir que la Superintendencia de Salud resuelva la controversia.\n*   **Acciones:** La Superintendencia puede ordenar la entrega de la prestación y, en caso de infracción, aplicar multas a los prestadores o a los fondos de salud.\n\n**2. El Fondo Nacional de Salud (Fonasa) o la Isapre correspondiente**\nAntes o simultáneamente a la Superintendencia, el paciente debe agotar los recursos administrativos internos:\n*   **Recurso de Calificación:** Si la negativa proviene de la Isapre o de Fonasa, se debe interponer un recurso de calificación ante la propia institución.\n*   **Recurso de Reclamación:** Si el recurso de calificación es desestimado, se puede interponer un recurso de reclamación ante la misma institución.\n*   **Nota:** Si la negativa es por parte del **prestador** (hospital o clínica) y no del fondo, el reclamo directo es ante la Superintendencia de Salud.\n\n**3. Defensoría de los Pacientes**\n*   Esta institución puede asesorar al paciente sobre sus derechos, ayudarle a redactar los reclamos y, en algunos casos, mediar entre el paciente y el sistema de salud. No tiene poder para ordenar el tratamiento, pero su intervención puede agilizar el proceso.\n\n**4. Juzgados de Letras del Trabajo o Tribunales de Familia (Vía Judicial)**\n*   Si los reclamos administrativos (Fondo/Isapre y Superintendencia) no resuelven el problema, el paciente puede demandar por la violación de sus derechos fundamentales a la salud y a la vida.\n*   En casos de urgencia vital, se puede solicitar una **Medida Cautelar** para que el tribunal ordene la entrega inmediata del tratamiento mientras se resuelve el juicio.\n\n**Recomendaciones para el reclamo:**\n1.  **Obtener la negativa por escrito:** Es fundamental contar con el documento donde el médico o la institución niegan el tratamiento.\n2.  **Verificar si el tratamiento está en el Decreto de Alto Costo:** La Ley 20.850 cubre tratamientos de alto costo para enfermedades oncológicas, inmunológicas y raras, siempre que estén incluidos en el decreto supremo correspondiente y cumplan con los criterios de costo y evidencia científica.\n3.  **Interponer el reclamo ante la Superintendencia de Salud:** Es la vía más efectiva y rápida para garantizar el acceso a tratamientos de alto costo no entregados.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "negativa tratamiento alto costo cáncer reclamo instituciones"
+      ],
+      "ctx": [
+        4258
+      ],
+      "calls": 3,
+      "time": 18.43411983299302
+    }
+  },
+  {
+    "qid": "Q13",
+    "question": "¿Qué requisitos debe cumplir un prestador para otorgar prestaciones bajo la Ley 20.850 y cómo se operacionaliza según el Decreto 54?\n",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "gold_answer": "La Ley 20.850 (Art. 13) exige que los prestadores estén acreditados en la Superintendencia de Salud según la Ley 19.966 Art. 4 letra b), y cuenten con aprobación del Ministerio de Salud.  El Decreto 54 detalla el proceso: la Subsecretaría de Redes Asistenciales inicia la evaluación de oficio o a solicitud (Art. 13°); la Comisión Asesora para la Evaluación de Prestadores analiza el cumplimiento de estándares técnicos pudiendo verificar en terreno (Art. 13°, 14°); recomienda al Ministro de Salud la aprobación o rechazo; el Ministro decide por decreto (Art. 13°); el prestador aprobado suscribe convenio con FONASA en 10 días hábiles (Art. 17°); FONASA publica el listado de prestadores aprobados en su sitio web.\n",
+    "grail": {
+      "response": "Basado en la **Ley Nº 20.850** y su reglamento, el **Decreto 54 de Salud (2015)**, los requisitos y la operacionalización para que un prestador otorgue prestaciones bajo este sistema son los siguientes:\n\n---\n\n## 1. Requisitos Previos para ser Prestador del Sistema\n\n### A) Acreditación ante la Superintendencia de Salud\nSegún el **artículo 11º del Decreto 54**, los prestadores (públicos o privados) deben estar **acreditados en la Superintendencia de Salud**, conforme a lo establecido en la **Ley Nº 19.966** (artículo 4º, letra b) y la **Ley Nº 19.937** (que regula el registro y acreditación de prestadores). Esta acreditación es el requisito fundamental para garantizar la **Garantía Explícita de Calidad**.\n\n### B) Aprobación del Ministerio de Salud\nAdemás de la acreditación, el prestador debe contar con la **aprobación ministerial** para formar parte de la **Red de Prestadores**, conforme al procedimiento establecido en el Decreto 54.\n\n### C) Cumplimiento de Normas Técnicas Específicas\nSegún el **artículo 12º**, el Ministerio de Salud aprueba mediante decreto **Normas Técnicas** que fijan estándares específicos para cada diagnóstico o tratamiento de alto costo. Estos estándares deben orientarse al menos a garantizar:\n- **Probidad y transparencia** del prestador.\n- **Suficiencia técnica** y **capacidad resolutiva y tecnológica**.\n- **Presencia territorial** (a través de telemedicina u otros medios).\n- **Integralidad de la cartera de prestaciones**, cuando corresponda.\n\nLos prestadores pueden aprobarse para **una, algunas o todas las etapas** de atención:\n1. Etapa de confirmación diagnóstica.\n2. Etapa de entrega o dispensación del tratamiento.\n3. Etapa de seguimiento.\n\n---\n\n## 2. Procedimiento de Aprobación (Operacionalización según Decreto 54)\n\nEl proceso se regula en los **artículos 13º al 16º** del Decreto 54:\n\n### Paso 1: Iniciación del Proceso\nLa **Subsecretaría de Redes Asistenciales**, de oficio o a solicitud del prestador, inicia el proceso de evaluación y remite los antecedentes a la **Comisión Asesora para la Evaluación de Prestadores**. Debe constar al menos la **voluntad del prestador** de participar.\n\n### Paso 2: Evaluación de Antecedentes por la Comisión\nLa Comisión Asesora analiza si los antecedentes son suficientes y emite un informe con su propuesta. Si son insuficientes, la Subsecretaría solicita al prestador completar la documentación en **10 días**, bajo apercibimiento de tener por no presentada la solicitud.\n\n### Paso 3: Verificación en Terreno\nLa Comisión puede verificar **en terreno** (por sí o a través del Departamento de Auditoría del Ministerio de Salud) la veracidad de los estándares declarados y su cumplimiento.\n\n### Paso 4: Recomendación al Ministro de Salud\nFinalizado el análisis, la Comisión recomienda al Ministro de Salud la **aprobación o rechazo** del prestador, levantando un acta que debe ser **publicada en el sitio electrónico del Ministerio** dentro de los 15 días siguientes.\n\n### Paso 5: Resolución Ministerial\nSobre la base de la recomendación, el **Ministro de Salud aprueba o rechaza** la incorporación del prestador a la Red mediante decreto.\n\n### Paso 6: Suscripción del Convenio con FONASA\nObtenida la aprobación, el prestador debe **suscribir el convenio con el Fondo Nacional de Salud (FONASA)** para el otorgamiento de las prestaciones. FONASA publica en su sitio electrónico el listado de prestadores aprobados con convenio suscrito.\n\n---\n\n## 3. Composición de la Comisión Asesora (Artículo 14º)\n\nLa Comisión está conformada por:\n- **2 representantes** de la Subsecretaría de Salud Pública.\n- **2 representantes** de la Subsecretaría de Redes Asistenciales (preside la Comisión).\n- **2 representantes** del Ministro de Salud.\n- **1 representante** del FONASA.\n- **1 representante** de la Superintendencia de Salud.\n- **1 representante** del Instituto de Salud Pública.\n\nSesiona con **quórum mínimo de 5 miembros** y sus acuerdos se adoptan por **mayoría simple**.\n\n---\n\n## 4. Obligaciones de los Prestadores Aprobados\n\n### Deber de Informar (Artículo 4º)\nLos prestadores deben informar a los beneficiarios:\n- Que tienen derecho a la protección financiera del sistema.\n- El momento a partir del cual tienen derecho a las garantías.\n- Que deben atenderse a través de la **Red de Prestadores** para tener derecho al sistema.\n\n### Contenido Mínimo de la Información (Artículo 5º)\nLos prestadores deben dejar constancia escrita de, al menos:\n- Las garantías de **oportunidad, calidad y protección financiera**.\n- El diagnóstico o tratamiento garantizado.\n- La exigencia de atenderse en la red de prestadores.\n- La **no existencia de copagos** por las prestaciones cubiertas.\n- El **plazo máximo** dentro del cual deberá ser otorgada la prestación.\n\n---\n\n## 5. Pérdida de la Condición de Prestador Aprobado (Artículo 16º)\n\nEl Ministerio de Salud puede **revocar la aprobación** mediante resolución fundada cuando concurra alguna de las siguientes circunstancias:\n1. **Pérdida de las cualidades** exigidas en el estándar técnico específico.\n2. **Incumplimiento grave** de las obligaciones del convenio con FONASA.\n3. **No obtener la acreditación o reacreditación** en la Superintendencia de Salud.\n\n---\n\n## 6. Excepción Calificada (Artículo 11º, inciso 2º)\n\nEn circunstancias calificadas (cuando no exista otro prestador aprobado que ponga en riesgo la continuidad de los tratamientos), la **Subsecretaría de Salud Pública** puede autorizar excepcionalmente el otorgamiento de prestaciones a prestadores que no hayan obtenido la acreditación, mediante **decreto supremo fundado**.\n\n---\n\nEn resumen, el sistema opera bajo un modelo de **doble filtro**: primero la **acreditación técnica** por la Superintendencia de Salud (garantía de calidad) y luego la **aprobación ministerial** basada en estándares técnicos específicos por diagnóstico/tratamiento, con supervisión continua y mecanismos de revocación.",
+      "tools": [
+        "local_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "requisitos que debe cumplir un prestador de salud para otorgar prestaciones GES AUGE bajo la Ley 20.850 y Decreto 54, habilitación, acreditación, condiciones técnicas",
+        "Decreto 54 requisitos prestador aprobación red de prestadores Ley 20.850 artículo 13 condiciones oportunidad forma acreditación registro Superintendencia de Salud"
+      ],
+      "ctx": [
+        11939,
+        11999
+      ],
+      "calls": 3,
+      "time": 18.353658207983244
+    },
+    "rag": {
+      "response": "Según el **Decreto 54** que reglamenta la **Ley 20.850** (Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo), los prestadores de salud (públicos o privados) deben cumplir con requisitos específicos para formar parte de la red y otorgar las prestaciones garantizadas.\n\nA continuación, se detallan los requisitos y la forma en que se operacionaliza este sistema:\n\n### 1. Requisitos para ser Prestador Aprobado\n\nPara otorgar las prestaciones de confirmación diagnóstica y tratamientos cubiertos, el prestador debe cumplir con lo siguiente:\n\n*   **Acreditación en la Superintendencia de Salud:** Deben estar acreditados conforme a la forma, condiciones y oportunidad establecidas en la letra b) del artículo 4º de la Ley 19.966.\n*   **Aprobación del Ministerio de Salud (MINSAL):** Deben contar con la aprobación específica del MINSAL para formar parte de la \"Red de Prestadores\".\n*   **Cumplimiento de Estándares Técnicos:** Deben satisfacer los estándares técnicos específicos dictados por el MINSAL para cada diagnóstico o tratamiento. Estos estándares deben garantizar:\n    *   Probidad y transparencia.\n    *   Suficiencia técnica.\n    *   Capacidad resolutiva y tecnológica.\n    *   Presencia territorial (vía telemedicina u otros medios).\n    *   Integralidad de la cartera de prestaciones.\n*   **Aprobación por Etapas:** La aprobación puede ser parcial o total. Un prestador puede ser aprobado para una, algunas o todas las etapas de atención:\n    *   Etapa de confirmación diagnóstica.\n    *   Etapa de entrega o dispensación del tratamiento.\n    *   Etapa de seguimiento.\n\n*Nota:* En circunstancias excepcionales y calificadas (cuando no hay otros prestadores disponibles y se pone en riesgo la continuidad del tratamiento), el MINSAL puede autorizar a prestadores que no tengan la acreditación completa.\n\n### 2. Operacionalización del Sistema\n\nEl Decreto 54 establece cómo se estructura y funciona la prestación de estos servicios:\n\n*   **Definición de la Red de Prestadores:** El MINSAL define, mediante decreto, qué prestadores están aprobados para cada diagnóstico o tratamiento asociado a una condición de salud. Los beneficiarios deben atenderse en esta red para recibir la protección financiera.\n*   **Protocolos Clínicos:** Para cada patología, el MINSAL dicta un protocolo que incluye el manejo clínico, el mapa genérico de la red de prestadores y los antecedentes clínicos requeridos.\n*   **Proceso de Evaluación y Aprobación:**\n    1.  La Subsecretaría de Redes Asistenciales inicia la evaluación (de oficio o a solicitud).\n    2.  La **Comisión Asesora para la Evaluación de Prestadores** analiza el cumplimiento de los estándares y puede realizar auditorías en terreno.\n    3.  La Comisión recomienda al Ministro de Salud la aprobación o rechazo.\n    4.  El Ministro aprueba o rechaza la incorporación mediante decreto.\n*   **Convenio con FONASA:** Una vez aprobado, el prestador debe suscribir un convenio con el **Fondo Nacional de Salud (FONASA)** para el otorgamiento y pago de las prestaciones. FONASA publica el listado de estos prestadores.\n*   **Garantías Explícitas:** El sistema garantiza:\n    *   **Calidad:** Prestaciones otorgadas por un prestador acreditado.\n    *   **Oportunidad:** Plazos máximos definidos para la atención.\n    *   **Protección Financiera:** Cobertura del valor total de las prestaciones.\n*   **Obligación de Informar:** Los prestadores tienen la obligación de informar a los beneficiarios sobre su derecho a la protección financiera y la necesidad de ser atendidos a través de la red aprobada.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "requisitos prestador prestaciones Ley 20.850 Decreto 54 operacionalización"
+      ],
+      "ctx": [
+        4242
+      ],
+      "calls": 3,
+      "time": 34.603767374996096
+    }
+  },
+  {
+    "qid": "Q14",
+    "question": "¿Qué garantías explícitas se definen para los pacientes oncológicos y cómo se complementan entre la Ley 19.966 y la Ley 20.850?\n",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "gold_answer": "La Ley 19.966 (Art. 4) define cuatro Garantías Explícitas en Salud: (a) Acceso — obligación de asegurar el otorgamiento de prestaciones; (b) Calidad — otorgamiento por prestador registrado o acreditado; (c) Oportunidad — plazo máximo para el otorgamiento; (d) Protección Financiera — copago máximo del 20% del valor de referencia.  La Ley 20.850 complementa con cobertura del 100% (sin copago) para diagnósticos y tratamientos que superan el umbral de alto costo, incluyendo enfermedades oncológicas expresamente mencionadas en Art. 5.  Así, un paciente oncológico puede tener doble cobertura: GES para la patología base y Ley Ricarte Soto para tratamientos que exceden el umbral.\n",
+    "grail": {
+      "response": "Basado en la normativa consultada, a continuación se detalla el marco de garantías explícitas para pacientes oncológicos y la complementariedad entre ambas leyes:\n\n---\n\n## Garantías Explícitas para Pacientes Oncológicos\n\nLas condiciones oncológicas están expresamente reconocidas como **enfermedades de alto costo** dentro del Sistema de Protección Financiera. Los pacientes oncológicos tienen derecho a tres garantías explícitas fundamentales:\n\n### 1. Garantía Explícita de Calidad\n- Las prestaciones de confirmación diagnóstica y tratamientos oncológicos deben ser otorgadas **exclusivamente por prestadores registrados o acreditados** conforme a la Ley Nº 19.937.\n- El Ministerio de Salud aprueba una **Red de Prestadores** específica para cada diagnóstico oncológico, con protocolos clínicos que definen el manejo, la población objetivo y el mapa genérico de la red.\n\n### 2. Garantía Explícita de Oportunidad\n- Se fija un **plazo máximo** para el otorgamiento de las prestaciones oncológicas, definido en el decreto que incorpora cada tratamiento.\n- No se considera incumplimiento por fuerza mayor, caso fortuito o causas imputables al beneficiario.\n\n### 3. Garantía Explícita de Protección Financiera\n- **Cobertura del 100% del valor total** de las prestaciones de confirmación diagnóstica y tratamiento oncológico.\n- **No existen copagos** para las prestaciones cubiertas por el Sistema de Protección Financiera.\n- El momento a partir del cual se activa la protección financiera se indica en el decreto correspondiente.\n\n---\n\n## Complementariedad entre Ley 19.966 y Ley 20.850\n\nAmbas leyes forman un **régimen integrado** que se complementa de la siguiente manera:\n\n### Relación estructural\n- La **Ley 20.850** crea el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo, que **formará parte del Régimen General de Garantías en Salud** establecido por la Ley 19.966.\n- La Ley 20.850 **remite a la Ley 19.966** para la regulación de las Garantías Explícitas en Salud y de Calidad, incorporando sus disposiciones para establecer que la atención debe otorgarse dentro de la red de prestadores autorizados.\n\n### Proceso de incorporación progresiva coordinado\nLa complementariedad se materializa en el proceso de decretos:\n\n| Decreto | Contenido | Vigencia |\n|---------|-----------|----------|\n| **Primer decreto** | Tratamientos de alto costo iniciales (sin procedimiento completo de evaluación) | Hasta 31/12/2016 |\n| **Segundo decreto** | Nuevos tratamientos (procedimiento completo excepto artículos 7-9) | 01/01/2017 al 31/12/2017 |\n| **Tercer decreto** | Tratamientos con procedimiento completo | 01/01/2018 al 30/06/2019 |\n| **Cuarto decreto en adelante** | Se dicta **conjuntamente** con el decreto de Garantías Explícitas en Salud (Ley 19.966) | Término señalado en artículo 14 de Ley 20.850 |\n\nA partir del cuarto decreto, los tratamientos de alto costo y las Garantías Explícitas en Salud se **dicterán de forma conjunta**, asegurando coherencia normativa.\n\n### Ámbito de aplicación\n- **Ley 19.966**: Establece el marco general de garantías (acceso, calidad, protección financiera y oportunidad) para un conjunto priorizado de enfermedades y condiciones de salud.\n- **Ley 20.850**: Se enfoca específicamente en **diagnósticos y tratamientos de alto costo** (oncológicos, inmunológicos y enfermedades raras), regulando su financiamiento mediante el **Fondo para Diagnósticos y Tratamientos de Alto Costo**, su proceso de evaluación científica, priorización y decisión.\n\n### Mecanismos complementarios\n- **Continuidad de tratamientos**: La Ley 20.850 establece que los tratamientos ya financiados no pueden suspenderse por el hecho de incorporarse al sistema, ni para pacientes en ensayos clínicos.\n- **Atención fuera de red**: En casos de **urgencia vital o secuela funcional grave**, el paciente tiene derecho a la protección financiera incluso si es atendido fuera de la red aprobada, hasta que pueda ser trasladado a un prestador de la red.\n- **Exclusiones**: No cubre prestaciones por accidentes laborales (Ley 16.744) ni accidentes de tránsito (Ley 18.490).\n- **Requisito previo**: Para acceder, los beneficiarios deben haber agotado la Cobertura Adicional para Enfermedades Catastróficas (CAEC) y su contrato de salud previsional.\n\n### Supervisión compartida\n- La **Superintendencia de Salud** fiscaliza el cumplimiento de ambas leyes.\n- La **Comisión Ciudadana de Vigilancia y Control** (creada por Ley 20.850) ejerce supervisión directa sobre el sistema, con representación de pacientes, asociaciones científicas, académicos y expertos.\n- El **Instituto de Salud Pública** supervisa la investigación clínica y farmacovigilancia asociada a los tratamientos.\n\n---\n\nEn síntesis, la Ley 19.966 establece el **marco general de derechos** (garantías explícitas) y la Ley 20.850 proporciona el **mecanismo específico de financiamiento y protección** para tratamientos de alto costo oncológico, operando ambas de forma integrada y coordinada.",
+      "tools": [
+        "local_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "garantías explícitas Ley 19.966 Ley 20.850 pacientes oncológicos cáncer tratamientos diagnósticos alto costo",
+        "Ley 20.850 Ley 19.966 complementarias oncológicas cáncer tratamientos alto costo diagnóstico protección financiera garantía explícita"
+      ],
+      "ctx": [
+        12047,
+        12671
+      ],
+      "calls": 3,
+      "time": 17.570632332994137
+    },
+    "rag": {
+      "response": "Basado en la normativa chilena consultada, a continuación se detallan las garantías explícitas definidas para los pacientes oncológicos (y en general para enfermedades de alto costo) y cómo se complementan la Ley 19.966 y la Ley 20.850.\n\n### 1. Garantías Explícitas Definidas\n\nTanto la Ley 19.966 (Régimen General de Garantías en Salud - GES) como la Ley 20.850 (Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo) establecen garantías constitutivas de derechos para los pacientes. Las garantías principales son:\n\n#### A. Según la Ley 19.966 (GES)\nEsta ley establece un conjunto priorizado de enfermedades y condiciones de salud (que incluye diversos tipos de cáncer) y garantiza cuatro dimensiones:\n1.  **Acceso:** Obligación de asegurar el otorgamiento de las prestaciones de salud (diagnóstico, tratamiento, rehabilitación, etc.) a los beneficiarios.\n2.  **Calidad:** Las prestaciones deben ser otorgadas por prestadores registrados o acreditados, cumpliendo estándares de atención.\n3.  **Protección Financiera:** Cobertura del valor total de las prestaciones, con copagos máximos establecidos (generalmente 20% o menos, dependiendo del plan y la prestación).\n4.  **Oportunidad:** Plazos máximos definidos para cada etapa del proceso (desde la consulta hasta el inicio del tratamiento). Si no se cumple, existen mecanismos de reparación.\n\n#### B. Según la Ley 20.850\nEsta ley crea un sistema específico para **diagnósticos y tratamientos de alto costo** (que incluye muchos tratamientos oncológicos de última generación o muy costosos que no están en el GES o que superan su cobertura). Sus garantías son:\n1.  **Protección Financiera Total:** Cobertura del **valor total** de las prestaciones de confirmación diagnóstica y tratamiento de alto costo. No aplica copagos al paciente para estas prestaciones específicas una vez acreditado el derecho.\n2.  **Oportunidad:** Plazos máximos para el otorgamiento de las prestaciones, definidos en el decreto que incorpora los tratamientos.\n3.  **Calidad:** Las prestaciones deben ser entregadas por prestadores registrados o acreditados (según Ley 19.937).\n\n### 2. Complementariedad entre la Ley 19.966 y la Ley 20.850\n\nAmbas leyes no son excluyentes, sino que forman un sistema escalonado y complementario para garantizar el acceso a la salud oncológica:\n\n#### A. Jerarquía y Orden de Aplicación\n*   **Primero, la Ley 19.966 (GES):** Si una enfermedad oncológica está incluida en el GES, el paciente tiene derecho a las prestaciones y plazos definidos en ese régimen.\n*   **Segundo, la Ley 20.850:** Si el tratamiento necesario es de \"alto costo\" (por su precio o complejidad) y no está cubierto plenamente por el GES, o si es un tratamiento innovador que se incorpora mediante decreto, se activa la Ley 20.850. Esta ley asegura que el paciente no tenga que pagar de su bolsillo el costo catastrófico del tratamiento.\n\n#### B. Integración en el Régimen General\n*   La Ley 20.850 **forma parte integrante** del Régimen General de Garantías en Salud (artículo 1 de la Ley 20.850). Esto significa que las garantías de la Ley 20.850 se suman al conjunto de garantías explícitas de la Ley 19.966.\n*   El **Fondo Nacional de Salud (Fonasa)** y las **Instituciones de Salud Previsional (Isapre)** deben asegurar ambas garantías.\n\n#### C. Mecanismo de Protección Financiera\n*   **En el GES (Ley 19.966):** El paciente puede tener un copago (ej. 20% del valor de la prestación).\n*   **En la Ley 20.850:** La protección financiera es **total**. Una vez que un diagnóstico o tratamiento es declarado de alto costo y aprobado, el Fondo Nacional de Salud cubre el 100% del valor, eliminando el copago para esa prestación específica. Esto evita el gasto catastrófico.\n\n#### D. Red de Prestadores\n*   Ambas leyes exigen que las prestaciones sean entregadas por prestadores de la **Red de Prestadores Aprobada**.\n*   La Ley 20.850 establece una red específica para diagnósticos y tratamientos de alto costo, que debe ser aprobada por el Ministerio de Salud mediante reglamento (Decreto 54 de 2015).\n\n#### E. Exigencia de Derechos\n*   En ambos casos, el cumplimiento de las garantías es exigible ante el Fondo Nacional de Salud, la Isapre correspondiente y la **Superintendencia de Salud**.\n*   La Ley 20.850 permite exigir el cumplimiento ante la **Intendencia de Fondos y Seguros Previsionales de Salud** de la Superintendencia de Salud.\n\n### Resumen de la Complementariedad\n\n| Característica | Ley 19.966 (GES) | Ley 20.850 (Alto Costo) |\n| :--- | :--- | :--- |\n| **Enfoque** | Enfermedades priorizadas (incluye muchos cánceres comunes). | Diagnósticos y tratamientos de alto costo (incluye terapias oncológicas avanzadas). |\n| **Protección Financiera** | Copago máximo (ej. 20%). | **Cobertura total (100%)**. |\n| **Oportunidad** | Plazos definidos por enfermedad. | Plazos definidos por tratamiento/enfermedad. |\n| **Calidad** | Prestadores acreditados. | Prestadores acreditados (Red específica). |\n| **Relación** | Base del sistema. | Complementa y supera la protección financiera del GES para casos de alto costo. |\n\nEn conclusión, para un paciente oncológico, la **Ley 19.966** garantiza el acceso a tratamientos estándar con plazos y copagos regulados, mientras que la **Ley 20.850** actúa como una red de seguridad adicional que cubre integralmente (sin copago) los tratamientos de mayor complejidad y costo, asegurando que el cáncer no genere ruina financiera.",
+      "tools": [
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "Ley 19.966 Ley 20.850 garantías explícitas pacientes oncológicos",
+        "Ley 20.850 Chile"
+      ],
+      "ctx": [
+        4320,
+        4484
+      ],
+      "calls": 5,
+      "time": 41.763886667002225
+    }
+  },
+  {
+    "qid": "Q15",
+    "question": "¿Cuándo termina la protección financiera de un paciente bajo la Ley Ricarte Soto?  Contrasta con la vigencia de las Garantías Explícitas bajo la Ley 19.966.\n",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "gold_answer": "Bajo la Ley Ricarte Soto (Decreto 54, Art. 10), la protección termina por: (a) alta médica; (b) decisión voluntaria de recibir prestaciones fuera de la Red de Prestadores; (c) rechazo voluntario de la prestación cubierta conforme a la Ley 20.584; (d) muerte del beneficiario.  Bajo la Ley 19.966 (Art. 23), las Garantías Explícitas tienen vigencia de tres años, prorrogables automáticamente por otros tres si no se modifican.  El Presidente puede disponer su modificación antes del plazo en circunstancias especiales.  Las GES son permanentes mientras el decreto esté vigente; la Ley Ricarte Soto es por tratamiento individual hasta su conclusión.\n",
+    "grail": {
+      "response": "",
+      "tools": [
+        "cascade_search",
+        "cascade_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "Ley Ricarte Soto protección financiera paciente termina duración vigencia plazo",
+        "vigencia protección financiera tres años prorrogables Ley 20.850 Ricarte Soto duración vigencia Garantías Explícitas Ley 19.966",
+        "Ley 19.966 artículo 14 vigencia tres años Garantías Explícitas modificación decreto"
+      ],
+      "ctx": [
+        12350,
+        11003,
+        10423
+      ],
+      "calls": 3,
+      "time": 22.8758344159869
+    },
+    "rag": {
+      "response": "Basado en la Ley N° 20.850 (Ley Ricarte Soto) y la Ley N° 19.966 (Ley GES), a continuación se detalla la vigencia de la protección financiera en cada régimen y sus diferencias:\n\n### 1. Protección Financiera bajo la Ley Ricarte Soto (Ley 20.850)\n\nLa protección financiera de la Ley Ricarte Soto **no tiene una fecha de término fija ni un límite de tiempo predeterminado** (como por ejemplo \"5 años\" o \"10 años\").\n\n*   **Vigencia:** La protección financiera es **continua y permanente** mientras el paciente requiera los tratamientos de alto costo para su condición de salud, siempre que estos estén incluidos en el decreto que aprueba la lista de patologías y tratamientos de alto costo.\n*   **Cobertura:** Cubre el **valor total** de las prestaciones de confirmación diagnóstica y tratamiento. El paciente no debe pagar copagos por estas prestaciones específicas (salvo excepciones muy específicas si se atiende fuera de la red en situaciones no urgentes, pero la ley busca la cobertura total).\n*   **Fin de la protección:** La protección termina únicamente cuando:\n    1.  El tratamiento concluye médicamente (el paciente es dado de alta o el tratamiento finaliza).\n    2.  El paciente deja de requerir la prestación.\n    3.  La patología o tratamiento deja de estar incluido en la lista oficial de la Ley Ricarte Soto (lo cual es excepcional, ya que la lista solo se amplía).\n\n> **Nota importante:** La protección financiera de la Ley Ricarte Soto se ejerce **dentro de la Red de Prestadores** aprobada por el Ministerio de Salud. Si el paciente se atiende fuera de esta red (y no es una urgencia vital), pierde la protección financiera y debe asumir los costos.\n\n### 2. Vigencia de las Garantías Explícitas (GES) bajo la Ley 19.966\n\nEn contraste, el sistema de Garantías Explícitas en Salud (GES) tiene plazos de vigencia **estrictamente definidos por ley** para cada garantía.\n\n*   **Vigencia:** Las garantías GES tienen una **duración máxima** establecida para cada patología. Esta duración incluye:\n    *   **Plazo máximo para la confirmación diagnóstica.**\n    *   **Plazo máximo para el inicio del tratamiento.**\n    *   **Plazo máximo para la duración del tratamiento.**\n*   **Límite de tiempo:** Una vez que se ha cumplido el plazo máximo de tratamiento establecido para esa garantía específica, la protección de la Ley GES **termina**, incluso si el paciente aún requiere seguimiento o tratamiento adicional.\n*   **Consecuencia del fin de la vigencia:** Si el tratamiento GES ha terminado y el paciente aún necesita atención, debe pasar a la **Ley Ricarte Soto** (si la patología está incluida en esa lista) o al régimen común (APS o CAEC, según corresponda).\n\n### Contraste Clave\n\n| Característica | Ley Ricarte Soto (20.850) | Ley GES (19.966) |\n| :--- | :--- | :--- |\n| **Duración de la protección** | **Indefinida/Continua:** Mientras se requiera el tratamiento de alto costo. | **Limitada:** Plazos máximos fijos para diagnóstico, inicio y duración del tratamiento. |\n| **Fin de la cobertura** | Al finalizar el tratamiento médicamente necesario. | Al cumplir el plazo máximo legal establecido para esa garantía específica. |\n| **Cobertura financiera** | Cobertura total del valor de la prestación (sin copago). | Cobertura total durante el plazo de la garantía (sin copago). |\n| **Relación entre ambas** | La Ley Ricarte Soto actúa como **respaldo** para pacientes que han agotado sus plazos GES y aún necesitan tratamiento para una patología de alto costo. | Es el primer nivel de garantía. Si se acaba el plazo GES, se transita a Ricarte Soto (si aplica). |\n\n**En resumen:** La protección de la Ley Ricarte Soto termina cuando el tratamiento médico necesario concluye, mientras que la protección GES termina cuando se cumple el plazo máximo legal establecido para esa patología, independientemente de si el tratamiento ha concluido o no.",
+      "tools": [
+        "rag_search",
+        "rag_search"
+      ],
+      "queries": [
+        "Ley Ricarte Soto fin protección financiera vigencia",
+        "Ley 20.850 fin protección financiera vigencia duración tratamiento"
+      ],
+      "ctx": [
+        4295,
+        4427
+      ],
+      "calls": 5,
+      "time": 38.01699312499841
+    }
+  }
+]

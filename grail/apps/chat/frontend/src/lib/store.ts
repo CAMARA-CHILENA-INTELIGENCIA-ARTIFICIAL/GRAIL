@@ -19,6 +19,12 @@ export interface Session {
   message_count?: number;
 }
 
+export interface SourceReference {
+  id: string;
+  title: string;
+  path: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -26,6 +32,7 @@ export interface Message {
   metadata?: {
     completion_time?: number;
     llm_calls?: number;
+    sources?: SourceReference[];
   };
   created_at: string;
 }
@@ -260,10 +267,12 @@ interface ChatState {
   config: AppConfig | null;
   documents: IndexedDocument[];
   showInfo: boolean;
+  draftInput: string | null;
   setMode: (mode: SearchMode) => void;
   setUseRerankerMode: (v: boolean) => void;
   setDocumentScope: (doc: string | null) => void;
   setShowInfo: (v: boolean) => void;
+  setDraftInput: (v: string | null) => void;
   loadConfig: () => Promise<void>;
   loadDocuments: () => Promise<void>;
   sendMessage: (content: string, sessionId: string) => Promise<void>;
@@ -279,11 +288,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   config: null,
   documents: [],
   showInfo: false,
+  draftInput: null,
 
   setMode: (mode) => set({ currentMode: mode }),
   setUseRerankerMode: (v) => set({ useRerankerMode: v }),
   setDocumentScope: (doc) => set({ documentScope: doc }),
   setShowInfo: (v) => set({ showInfo: v }),
+  setDraftInput: (v) => set({ draftInput: v }),
 
   loadConfig: async () => {
     try {
@@ -329,40 +340,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
         use_reranker: useReranker,
       });
 
+      let chunkCount = 0;
       for await (const event of parseSSE(reader)) {
         const data = JSON.parse(event.data);
 
         switch (event.event) {
           case "user_message":
+            console.log("[GRAIL] user_message received", data.id);
             sessionStore.addMessage(data as Message);
             break;
 
           case "status":
+            console.log("[GRAIL] status:", data.status, data.mode);
             set({ statusText: `Searching (${data.mode})...` });
             break;
 
           case "assistant_chunk":
+            chunkCount++;
             set((state) => ({
               streamingContent: state.streamingContent + (data.content || ""),
             }));
             break;
 
           case "assistant_message":
-            // Final complete message -- replace streaming content
+            console.log(`[GRAIL] assistant_message received after ${chunkCount} chunks`);
             set({ streamingContent: "" });
             sessionStore.addMessage(data as Message);
-            // Update session title in the sidebar if it was auto-generated
             if (data.session_title) {
-              set(() => {
-                const ss = useSessionStore.getState();
-                useSessionStore.setState({
-                  sessions: ss.sessions.map((s) =>
-                    s.id === sessionId
-                      ? { ...s, title: data.session_title }
-                      : s,
-                  ),
-                });
-                return {};
+              const ss = useSessionStore.getState();
+              useSessionStore.setState({
+                sessions: ss.sessions.map((s) =>
+                  s.id === sessionId
+                    ? { ...s, title: data.session_title }
+                    : s,
+                ),
               });
             }
             break;
@@ -371,7 +382,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             break;
 
           case "error":
-            console.error("SSE error:", data.detail);
+            console.error("[GRAIL] SSE error:", data.detail);
             break;
         }
       }

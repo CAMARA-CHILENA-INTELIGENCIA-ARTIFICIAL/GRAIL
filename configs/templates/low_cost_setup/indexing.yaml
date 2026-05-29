@@ -53,9 +53,12 @@ entity_types:
 # max_entity_types: 15
 
 # --- Token budgets per LLM call ---
+# These include both thinking tokens (for reasoning models like Qwen3) and
+# visible output. Reasoning models may use 50-80% of the budget on <think>
+# blocks, so set these high enough for the answer to survive.
 extraction_max_tokens: 8192
-entity_discovery_max_tokens: 2048
-max_summarization_tokens: 756
+entity_discovery_max_tokens: 4096
+max_summarization_tokens: 1024
 
 # Per-stage concurrency. null = use global llm.concurrent_requests.
 # extraction_concurrency: null

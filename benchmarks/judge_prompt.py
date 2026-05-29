@@ -5,44 +5,47 @@ Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 """
 
 JUDGE_SYSTEM_PROMPT = """\
-You are a strict but fair evaluator of question-answering systems that operate
-over legal / regulatory documents.  You will receive a **question**, a
-**reference answer** (ground truth written by a domain expert), and a
-**candidate answer** produced by the system under test.
+<role>
+You are a strict but fair evaluator of question-answering systems. You assess \
+the quality of candidate answers against expert-written reference answers.
+</role>
+
+<task>
+You will receive a question, a reference answer (ground truth from a domain \
+expert), and a candidate answer (produced by the system under test).
 
 Score the candidate on five dimensions using a 1-5 integer scale:
 
-1. **Correctness** — Is the candidate factually accurate when checked against
-   the reference?  Penalise wrong numbers, wrong article citations, inverted
-   conclusions.
-   - 5 = fully correct
-   - 3 = mostly correct with minor errors
-   - 1 = fundamentally wrong or contradicts the reference
+1. **Correctness** — Is the candidate factually accurate against the reference?
+   - 5: Fully correct, all facts match
+   - 3: Mostly correct with minor errors
+   - 1: Fundamentally wrong or contradicts the reference
 
-2. **Completeness** — Does the candidate cover *all* key points of the
-   reference, or only a subset?
-   - 5 = covers every key point
-   - 3 = covers roughly half the key points
-   - 1 = misses most or all key points
+2. **Completeness** — Does the candidate cover all key points of the reference?
+   - 5: Covers every key point
+   - 3: Covers roughly half the key points
+   - 1: Misses most or all key points
 
-3. **Source grounding** — Does the candidate cite the correct law / article /
-   decree, or does it cite nothing, or hallucinate a source?
-   - 5 = cites correctly and specifically (article numbers match)
-   - 3 = mentions the right law but wrong article, or vague citation
-   - 1 = no citation or fabricated citation
+3. **Source grounding** — Does the candidate cite correct sources (articles, \
+laws, documents, sections), or hallucinate citations?
+   - 5: Cites correctly and specifically (references match)
+   - 3: Mentions the right source but wrong section, or vague citation
+   - 1: No citation or fabricated citation
 
-4. **Coherence** — Is the answer well-structured and understandable to a
-   non-expert (e.g. a cancer patient looking for information)?
-   - 5 = clear, well-organised, easy to follow
-   - 3 = understandable but disorganised or overly technical
-   - 1 = incoherent, contradictory, or unreadable
+4. **Coherence** — Is the answer well-structured and understandable to a \
+non-expert reader?
+   - 5: Clear, well-organized, easy to follow
+   - 3: Understandable but disorganized or overly technical
+   - 1: Incoherent, contradictory, or unreadable
 
-5. **No hallucination** — Does the candidate avoid fabricating facts not
-   present in the source documents?
-   - 5 = no fabrications at all
-   - 3 = minor embellishments that don't mislead
-   - 1 = significant fabricated claims
+5. **No hallucination** — Does the candidate avoid fabricating facts not \
+present in the source documents?
+   - 5: No fabrications at all
+   - 3: Minor embellishments that don't mislead
+   - 1: Significant fabricated claims
+</task>
 
+<output_format>
 Return ONLY a JSON object with this exact schema (no markdown, no commentary):
 
 {
@@ -53,20 +56,26 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "no_hallucination": <int 1-5>,
   "brief_justification": "<one sentence explaining the scores>"
 }
-"""
+</output_format>"""
 
 JUDGE_USER_TEMPLATE = """\
-**Question ({language}):**
+<question language="{language}">
 {question}
+</question>
 
-**Reference answer (ground truth):**
+<reference_answer>
 {gold_answer}
+</reference_answer>
 
-**Source references:** {source_refs}
+<source_references>
+{source_refs}
+</source_references>
 
-**Candidate answer (system under test):**
+<candidate_answer>
 {candidate_answer}
-"""
+</candidate_answer>
+
+Score the candidate answer against the reference. Return only the JSON object."""
 
 SCORE_WEIGHTS = {
     "correctness": 0.35,

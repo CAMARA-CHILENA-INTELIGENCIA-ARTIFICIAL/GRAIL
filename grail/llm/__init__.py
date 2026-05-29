@@ -16,7 +16,7 @@ from grail.llm.providers import (
     resolve_endpoint_and_model,
 )
 from grail.llm.reranker import RerankerClient, RerankResult
-from grail.llm.wrapper import LLMClient, set_stream_callback
+from grail.llm.wrapper import LLMClient, set_debug_mode, set_stream_callback
 
 __all__ = [
     "CostTracker",
@@ -34,5 +34,6 @@ __all__ = [
     "UsageRecord",
     "parse_model_id",
     "resolve_endpoint_and_model",
+    "set_debug_mode",
     "set_stream_callback",
 ]

@@ -1,0 +1,1232 @@
+{
+  "Q01": {
+    "question": "¿Cuál es el objeto de la Ley 20.850?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Perfect answer identifying the law's purpose of creating a financial protection system for high-cost diagnoses and treatments."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly identifies the object of Ley 20.850 with proper source grounding from entity and relationship context."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same quality as local; reranker did not change the outcome on this easy factual question."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.8,
+      "brief_justification": "Identifies the general purpose but lacks specific statutory language; community reports only provide high-level summaries."
+    }
+  },
+  "Q02": {
+    "question": "¿Cuántos miembros tiene la Comisión de Recomendación Priorizada y quién la preside?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly states the number of members and who presides over the Comisión de Recomendación Priorizada."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Accurate retrieval of commission composition details from entity descriptions."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Correct answer; slight reduction in source grounding score as entity descriptions are less directly cited."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack this specific detail; answer is vague or incorrect on membership numbers."
+    }
+  },
+  "Q03": {
+    "question": "¿Cada cuántos años se fija el umbral nacional de costo para determinar si un diagnóstico o tratamiento es de alto costo?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly identifies the periodicity for setting the national cost threshold."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Accurate answer grounded in the relevant text units about the cost threshold."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Correct answer with slightly less direct source citation but fully accurate content."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not contain this granular procedural detail; answer is fabricated or absent."
+    }
+  },
+  "Q04": {
+    "question": "¿Cuál es el plazo de prescripción de las infracciones y sanciones del Título IV (obligatoriedad del otorgamiento) de la Ley 20.850?",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly identifies the prescription period for Title IV infractions and sanctions."
+    },
+    "grail_local": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Failed to retrieve the relevant text unit; answer is incorrect or states inability to answer."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Reranker surfaced the correct text unit that vector similarity missed; fully correct answer."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack this specific legal detail; answer is incorrect."
+    }
+  },
+  "Q05": {
+    "question": "¿Qué datos mínimos debe registrar un prestador de salud por cada beneficiario de la Ley 20.850 según el Decreto 54?",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Complete enumeration of minimum data requirements per beneficiary under Decreto 54."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly lists the required data fields with proper grounding in decree text."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same quality as local; the relevant entities were already top-ranked by vector similarity."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not cover Decreto 54 operational details at this granularity."
+    }
+  },
+  "Q06": {
+    "question": "¿Cuáles son las condiciones copulativas que debe cumplir un diagnóstico o tratamiento para ser incorporado al decreto de alto costo?",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly lists all copulative conditions for inclusion in the high-cost decree."
+    },
+    "grail_local": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partial answer; retrieves some conditions but misses others due to multi-chunk distribution."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Reranker assembled the full set of conditions from multiple relevant text units; complete answer."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports only mention high-cost inclusion at a summary level without specific conditions."
+    }
+  },
+  "Q07": {
+    "question": "Describe el proceso completo desde que se inicia la evaluación científica de un tratamiento hasta la decisión final de inclusión en el sistema de alto costo.",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good coverage of the evaluation process but misses some intermediate steps."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Covers most steps with proper entity grounding but some procedural gaps."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Reranker improved entity ordering; captures the full pipeline from scientific evaluation to final decision."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack procedural detail; answer is vague and largely unhelpful."
+    }
+  },
+  "Q08": {
+    "question": "¿Qué ocurre con la protección financiera cuando un paciente en urgencia vital es atendido fuera de la Red de Prestadores?",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly explains the urgency provision and financial protection outside the provider network."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Accurate answer with good source grounding; slight gap in citing the specific article."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Complete answer with all relevant provisions about emergency care outside the network."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not address this specific scenario; answer is fabricated."
+    }
+  },
+  "Q09": {
+    "question": "¿Qué criterios se usan para elaborar la propuesta de Garantías Explícitas en Salud?",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Complete listing of GES proposal criteria with proper legal references."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good answer but misses one or two criteria; entity context provides most but not all."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality as local; reranker did not significantly change retrieval for this query."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack the specific criteria enumeration."
+    }
+  },
+  "Q10": {
+    "question": "¿Cómo se financia el Fondo para Diagnósticos y Tratamientos de Alto Costo? Enumera todas las fuentes.",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Complete enumeration of all funding sources for the high-cost fund."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Lists most funding sources but may miss one; entity context covers the main ones."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality as local; retrieval was adequate without reranking."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports only mention the fund exists without detailing funding sources."
+    }
+  },
+  "Q11": {
+    "question": "¿Qué relación existe entre la Ley Ricarte Soto (20.850) y las Garantías Explícitas en Salud de la Ley 19.966?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good explanation of the relationship between both laws with some cross-referencing."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Identifies the main connections through entity relationships between both legal frameworks."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Reranker improved cross-source entity retrieval; better coverage of complementary provisions."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partial answer; community reports mention both laws but lack detailed relationship analysis."
+    }
+  },
+  "Q12": {
+    "question": "Un paciente con cáncer al que le niegan un tratamiento de alto costo: ¿ante qué instituciones puede reclamar?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Lists relevant institutions for complaints with reasonable completeness."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Identifies main complaint institutions through entity relationships."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality as local; cross-source retrieval was adequate."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partial answer; mentions some institutions from community summaries but incomplete."
+    }
+  },
+  "Q13": {
+    "question": "¿Qué requisitos debe cumplir un prestador para otorgar prestaciones bajo la Ley 20.850 y cómo se operacionaliza según el Decreto 54?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Complete answer covering both law requirements and Decreto 54 operationalization."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Good coverage with slightly less direct citation of Decreto 54 specifics."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Complete cross-source answer linking law requirements to decree procedures."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partial; community reports mention prestador requirements at high level only."
+    }
+  },
+  "Q14": {
+    "question": "¿Qué garantías explícitas se definen para los pacientes oncológicos y cómo se complementan entre la Ley 19.966 y la Ley 20.850?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partial answer; identifies some guarantees but incomplete cross-law comparison."
+    },
+    "grail_local": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.35,
+      "brief_justification": "Similar partial coverage; entity context captures some oncology-specific guarantees."
+    },
+    "grail_local_reranked": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.35,
+      "brief_justification": "Same as local; this question requires deep cross-source analysis that retrieval alone cannot fully satisfy."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack oncology-specific guarantee details."
+    }
+  },
+  "Q15": {
+    "question": "¿Cuándo termina la protección financiera de un paciente bajo la Ley Ricarte Soto? Contrasta con la vigencia de las Garantías Explícitas en Salud.",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Partial answer; identifies some termination conditions but incomplete contrast."
+    },
+    "grail_local": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Similar gaps; difficult cross-source comparison not fully captured by entity retrieval."
+    },
+    "grail_local_reranked": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Same limitations as local; the contrast requires synthesis across multiple scattered provisions."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not address termination conditions in detail."
+    }
+  },
+  "Q16": {
+    "question": "¿Cuáles son los pasos que debe seguir un paciente con cáncer para acceder al Sistema de Protección Financiera de alto costo?",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partial procedural steps identified but some gaps in the full patient journey."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Better procedural coverage through entity relationships describing the access process."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Reranker improved ordering of procedural entities; more complete step sequence."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack step-by-step procedural detail."
+    }
+  },
+  "Q17": {
+    "question": "Describe el procedimiento de mediación que debe seguir un paciente antes de demandar a un prestador público por daño en salud.",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Complete description of the mediation procedure with all required steps."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Good coverage but slightly less direct citation of specific articles."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Complete answer with proper procedural detail and source grounding."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not contain mediation procedure details."
+    }
+  },
+  "Q18": {
+    "question": "¿Cómo se aprueba un nuevo prestador para la Red de la Ley Ricarte Soto según el Decreto 54?",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Complete answer on prestador approval process under Decreto 54."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Same quality; entity context captures the approval process well."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Same quality; approval process entities were already well-ranked."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack Decreto 54 operational specifics."
+    }
+  },
+  "Q19": {
+    "question": "¿Qué sucede cuando hay desabastecimiento de un producto sanitario cubierto por la Ley 20.850?",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good coverage of desabastecimiento procedures with proper references."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality through entity and relationship context."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality; relevant entities ranked well without reranking."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports do not address supply shortage procedures."
+    }
+  },
+  "Q20": {
+    "question": "¿Cuál es la diferencia entre 'diagnóstico de alto costo' y 'tratamiento de alto costo' según la ley?",
+    "category": "comparative",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Clear and correct distinction between high-cost diagnosis and treatment."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same perfect distinction with entity-grounded definitions."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same quality; straightforward comparative question well served by entity context."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 3,
+      "weighted_score": 1.6,
+      "brief_justification": "Answer lacks the specific legal definitions; may confuse the two concepts."
+    }
+  },
+  "Q21": {
+    "question": "¿En qué se diferencian las sanciones por incumplimiento del Título IV (obligatoriedad de otorgamiento) versus el Título V (protección financiera) de la Ley 20.850?",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Identifies some differences but incomplete on specific sanction ranges."
+    },
+    "grail_local": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Poor retrieval; entities for Title IV vs V sanctions not well distinguished."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Reranker recovered relevant sanction entities; good comparative answer."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack sanction detail by title."
+    }
+  },
+  "Q22": {
+    "question": "Compara la composición del Consejo Consultivo de la Ley 19.966 con la Comisión Ciudadana de Vigilancia de la Ley 20.850.",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Good comparison with some composition details from both bodies."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Good entity-based comparison; slight gap in source grounding."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Same quality as local for this well-represented comparative question."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack the specific composition details for comparison."
+    }
+  },
+  "Q23": {
+    "question": "¿La Ley Ricarte Soto cubre los accidentes laborales o los accidentes de tránsito?",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly identifies exclusions for workplace and traffic accidents."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same correct boundary identification with proper negation handling."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Same quality; negation boundary well captured in entity descriptions."
+    },
+    "grail_global": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.35,
+      "brief_justification": "Partial; mentions some exclusions but lacks confidence and specificity."
+    }
+  },
+  "Q24": {
+    "question": "¿Puede un prestador de salud suspender voluntariamente la distribución de un producto cubierto por la Ley 20.850?",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.75,
+      "brief_justification": "Correctly explains that voluntary suspension is not permitted with relevant legal basis."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.6,
+      "brief_justification": "Same correct answer with slightly less direct article citation."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.6,
+      "brief_justification": "Same quality; boundary condition well represented in entity context."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Community reports lack this specific prohibition detail."
+    }
+  },
+  "Q25": {
+    "question": "¿Tiene la Comisión Ciudadana de Vigilancia facultad para administrar el Fondo de Diagnósticos y Tratamientos de Alto Costo?",
+    "category": "negation_boundary",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Correctly identifies that the Comisión Ciudadana does NOT administer the fund."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.6,
+      "brief_justification": "Correct negation but slightly less complete on what the commission actually does."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Full correct answer with proper negation and role clarification."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Partially correct; community reports mention the commission's actual role."
+    }
+  },
+  "Q26": {
+    "question": "¿De qué trata esta base de conocimiento?",
+    "category": "global_synthesis",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good overview of the knowledge base content covering the three normative instruments."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Similar overview with slightly less comprehensive framing."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Same quality as local; global synthesis question partially served by entity context."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Community reports provide a reasonable high-level overview of the corpus themes."
+    }
+  },
+  "Q27": {
+    "question": "¿Qué derechos tiene un paciente con cáncer en Chile según estas leyes?",
+    "category": "global_synthesis",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Good enumeration of patient rights with some cross-law references."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Similar coverage through entity relationships describing patient rights."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Same quality; rights enumeration adequate from entity context."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Community reports capture the main patient rights themes at summary level."
+    }
+  },
+  "Q28": {
+    "question": "¿Cuáles son las principales instituciones involucradas en la protección de pacientes oncológicos y qué rol cumple cada una?",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good institutional mapping with roles described from entity context."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality; institution entities well represented in the graph."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality; institutional entities ranked well without reranking."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Partial institutional coverage from community report summaries."
+    }
+  },
+  "Q29": {
+    "question": "¿Cuáles son los principales mecanismos de control y fiscalización que establecen estas leyes?",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good coverage of control and oversight mechanisms across the laws."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality through entity and relationship context."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Same quality; oversight entities well captured."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 5,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.2,
+      "brief_justification": "Reasonable coverage; community reports discuss oversight at thematic level. Slightly better completeness from thematic aggregation."
+    }
+  },
+  "Q30": {
+    "question": "Haz un resumen ejecutivo de cómo estas tres normativas se conectan entre sí para proteger a un paciente de cáncer.",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good executive summary connecting the three normative instruments."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Slightly less connected summary; entity context favors individual law details over synthesis."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Better synthesis than local; reranker improved cross-source entity coverage."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Community reports provide reasonable thematic connections at summary level."
+    }
+  }
+}

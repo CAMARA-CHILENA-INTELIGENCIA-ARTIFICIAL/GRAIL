@@ -32,6 +32,8 @@ dependencies = [
     "networkx>=3.2",
     "graspologic>=3.4",
     "rich>=13",
+    "textual>=0.50",
+    "aiosqlite>=0.20",
     "tiktoken>=0.7",
     "pyyaml>=6",
     "typer>=0.12",
@@ -58,7 +60,6 @@ ui = [
     "uvicorn[standard]>=0.30",
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7",
-    "aiosqlite>=0.20",
     "sse-starlette>=2.0",
     "bcrypt==4.0.1",
 ]

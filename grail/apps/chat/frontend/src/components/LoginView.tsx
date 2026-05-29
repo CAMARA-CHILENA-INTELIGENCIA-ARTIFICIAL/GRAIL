@@ -1,14 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../lib/store";
-import { Lock, User, ArrowRight } from "lucide-react";
+import { Lock, User, ArrowRight, Sparkles } from "lucide-react";
 
-const LOGO = ` ██████╗ ██████╗ █████╗ ██╗██╗
-██╔════╝ ██╔══██╗██╔══██╗██║██║
-██║  ███╗██████╔╝███████║██║██║
-██║   ██║██╔══██╗██╔══██║██║██║
-╚██████╔╝██║  ██║██║  ██║██║███████╗
- ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝`;
+const ease = [0.25, 0.4, 0.25, 1] as const;
 
 export default function LoginView() {
   const { needsSetup, login, setup, error } = useAuthStore();
@@ -21,11 +16,8 @@ export default function LoginView() {
     if (!username.trim() || !password.trim()) return;
     setIsSubmitting(true);
     try {
-      if (needsSetup) {
-        await setup(username, password);
-      } else {
-        await login(username, password);
-      }
+      if (needsSetup) await setup(username, password);
+      else await login(username, password);
     } catch {
       // Error is set in store
     } finally {
@@ -34,53 +26,82 @@ export default function LoginView() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div
+      className="relative flex min-h-screen items-center justify-center px-4"
+      style={{ background: "var(--surface-0)" }}
+    >
+      {/* Ambient glow */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: 500,
+          height: 500,
+          background: "radial-gradient(circle, rgba(20,184,166,0.06) 0%, transparent 70%)",
+          filter: "blur(60px)",
+        }}
+      />
+
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-        className="w-full max-w-sm"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease }}
+        className="relative w-full max-w-sm"
       >
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <pre
-            className="inline-block text-left font-mono text-xs leading-tight"
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease, delay: 0.1 }}
+            className="flex h-12 w-12 items-center justify-center rounded-xl"
             style={{
-              background:
-                "linear-gradient(180deg, #5eead4 0%, #14b8a6 50%, #0f766e 100%)",
+              background: "var(--accent-soft)",
+              border: "1px solid var(--accent-border)",
+              boxShadow: "0 0 40px -8px rgba(20, 184, 166, 0.25)",
+            }}
+          >
+            <Sparkles size={20} style={{ color: "var(--accent)" }} />
+          </motion.div>
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl font-bold tracking-tight"
+            style={{
+              background: "linear-gradient(135deg, #5eead4, #14b8a6)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
           >
-            {LOGO}
-          </pre>
+            GRAIL
+          </motion.span>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-          <h2 className="mb-1 text-center text-lg font-semibold text-zinc-50">
-            {needsSetup ? "Set up your account" : "Sign in"}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease, delay: 0.15 }}
+          className="rounded-xl p-6"
+          style={{
+            background: "var(--surface-1)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h2 className="mb-1 text-center text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+            {needsSetup ? "Create your account" : "Welcome back"}
           </h2>
-          <p className="mb-6 text-center text-sm text-zinc-400">
-            {needsSetup
-              ? "Create your first account to get started"
-              : "Enter your credentials to continue"}
+          <p className="mb-6 text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+            {needsSetup ? "Set up credentials to get started" : "Sign in to continue"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
             <div>
-              <label
-                htmlFor="username"
-                className="mb-1.5 block text-sm font-medium text-zinc-300"
-              >
+              <label htmlFor="username" className="mb-1.5 block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
                 Username
               </label>
               <div className="relative">
-                <User
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                />
+                <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-tertiary)" }} />
                 <input
                   id="username"
                   type="text"
@@ -88,24 +109,24 @@ export default function LoginView() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter username"
                   autoComplete="username"
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950 py-2.5 pl-10 pr-3 text-sm text-zinc-50 placeholder-zinc-500 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  className="w-full rounded-lg py-2.5 pl-10 pr-3 text-sm outline-none transition-all duration-150 focus:ring-1"
+                  style={{
+                    background: "var(--surface-0)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 1px var(--accent-border)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-sm font-medium text-zinc-300"
-              >
+              <label htmlFor="password" className="mb-1.5 block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
                 Password
               </label>
               <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                />
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-tertiary)" }} />
                 <input
                   id="password"
                   type="password"
@@ -113,23 +134,39 @@ export default function LoginView() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   autoComplete={needsSetup ? "new-password" : "current-password"}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950 py-2.5 pl-10 pr-3 text-sm text-zinc-50 placeholder-zinc-500 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  className="w-full rounded-lg py-2.5 pl-10 pr-3 text-sm outline-none transition-all duration-150"
+                  style={{
+                    background: "var(--surface-0)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 1px var(--accent-border)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
                 />
               </div>
             </div>
 
-            {/* Error */}
             {error && (
-              <p className="rounded-lg bg-red-900/30 px-3 py-2 text-sm text-red-400">
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-lg px-3 py-2 text-sm"
+                style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)", color: "#f87171" }}
+              >
                 {error}
-              </p>
+              </motion.p>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={isSubmitting || !username.trim() || !password.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 py-2.5 text-sm font-medium text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{
+                background: "var(--accent)",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.2), 0 0 16px -4px rgba(20,184,166,0.3)",
+              }}
+              onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.filter = "brightness(1.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.filter = "brightness(1)"; }}
             >
               {isSubmitting ? (
                 <div className="flex gap-1">
@@ -140,16 +177,22 @@ export default function LoginView() {
               ) : (
                 <>
                   {needsSetup ? "Create Account" : "Sign In"}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={15} />
                 </>
               )}
             </button>
           </form>
-        </div>
+        </motion.div>
 
-        <p className="mt-4 text-center text-xs text-zinc-600">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-5 text-center text-[11px] tracking-wide"
+          style={{ color: "var(--text-tertiary)" }}
+        >
           Graph RAG with Advanced Integration and Learning
-        </p>
+        </motion.p>
       </motion.div>
     </div>
   );

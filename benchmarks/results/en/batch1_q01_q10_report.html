@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Benchmark — Batch 1 (Q01-Q10)</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#151515;--s2:#1c1c1c;--s3:#232323;--border:#2a2a2a;--text:#ececec;--t2:#a1a1a1;--t3:#6b6b6b;--green:#10b981;--green-dim:rgba(16,185,129,0.10);--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.10);--orange:#f97316;--orange-dim:rgba(249,115,22,0.10);--red:#ef4444;--yellow:#eab308;--purple:#a855f7;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono','Fira Code',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+  /* Hero */
+  .hero{padding:48px 0 36px;text-align:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(16,185,129,0.08) 0%,transparent 70%);pointer-events:none;}
+  .ascii-logo{font-family:var(--mono);font-size:11px;line-height:1.2;color:var(--green);opacity:0.7;margin-bottom:16px;letter-spacing:1px;}
+  .hero .batch-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 16px;border-radius:999px;background:var(--green-dim);color:var(--green);font-size:13px;font-weight:600;margin-bottom:16px;border:1px solid rgba(16,185,129,0.2);}
+  .logo{margin-bottom:20px;}.logo svg{width:280px;height:auto;}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px;background:linear-gradient(135deg,var(--text) 0%,var(--t2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p{font-size:15px;color:var(--t2);max-width:640px;margin:0 auto;}
+  .hero-meta{display:flex;justify-content:center;gap:24px;margin-top:16px;font-size:12px;color:var(--t3);}
+
+  .section{padding:40px 0;border-bottom:1px solid var(--border);}
+  .section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:4px;}
+  .section .sub{color:var(--t2);font-size:14px;margin-bottom:24px;}
+
+  /* Big headline scores */
+  .headline{display:flex;justify-content:center;gap:1px;margin:24px 0;}
+  .h-card{background:var(--surface);padding:28px 40px;text-align:center;flex:1;max-width:280px;}
+  .h-card:first-child{border-radius:16px 0 0 16px;}
+  .h-card:last-child{border-radius:0 16px 16px 0;}
+  .h-card .h-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .h-card .h-num{font-size:48px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .h-card .h-sub{font-size:12px;color:var(--t3);margin-top:4px;}
+
+  /* Metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px;}
+  .m-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;}
+  .m-card .m-val{font-size:20px;font-weight:700;font-family:var(--mono);line-height:1.2;}
+  .m-card .m-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+
+  /* Tool usage donut-style */
+  .tool-section{display:flex;justify-content:center;gap:40px;padding:24px 0;}
+  .tool-item{text-align:center;}
+  .tool-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative;}
+  .tool-ring .ring-num{font-size:24px;font-weight:700;font-family:var(--mono);}
+  .tool-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--bg);}
+  .tool-ring .ring-num{position:relative;z-index:1;}
+  .tool-name{font-size:12px;font-weight:600;font-family:var(--mono);}
+  .tool-desc{font-size:10px;color:var(--t3);max-width:100px;}
+
+  /* Score bars chart */
+  .chart-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .chart-row:last-child{border-bottom:none;}
+  .chart-qid{width:36px;font-family:var(--mono);font-weight:600;font-size:13px;flex-shrink:0;}
+  .chart-cat{width:90px;font-size:11px;color:var(--t3);flex-shrink:0;}
+  .chart-bars{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .chart-bar-row{display:flex;align-items:center;gap:6px;}
+  .chart-bar-label{width:40px;font-size:10px;color:var(--t3);text-align:right;flex-shrink:0;}
+  .chart-bar-track{flex:1;height:14px;background:var(--s2);border-radius:7px;overflow:hidden;}
+  .chart-bar-fill{height:100%;border-radius:7px;transition:width 0.8s cubic-bezier(0.22,1,0.36,1);}
+  .chart-bar-val{width:32px;font-size:11px;font-family:var(--mono);font-weight:600;flex-shrink:0;}
+  .chart-tools{width:120px;font-size:10px;font-family:var(--mono);color:var(--t3);flex-shrink:0;text-align:right;}
+  .chart-winner{width:50px;font-size:10px;font-weight:700;text-align:center;flex-shrink:0;}
+
+  /* Question detail cards */
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;transition:border-color 0.2s;}
+  .q-card:hover{border-color:#444;}
+  .q-card .q-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;}
+  .q-card .q-title{font-size:14px;font-weight:600;}
+  .q-card .q-text{color:var(--t2);font-size:13px;font-style:italic;margin-bottom:12px;}
+  .q-card .q-gold{font-size:12px;color:var(--yellow);margin-bottom:14px;padding:10px 14px;background:rgba(234,179,8,0.06);border-radius:8px;border:1px solid rgba(234,179,8,0.15);border-left:3px solid var(--yellow);}
+  .q-card .q-gold strong{color:#facc15;}
+  .a-preview{font-size:11px;color:var(--t2);margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:2px solid var(--border);line-height:1.5;font-style:italic;}
+
+  .agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .a-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .a-box .a-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .a-box .a-name{font-size:12px;font-weight:600;}
+  .a-box .a-score{font-family:var(--mono);font-weight:700;font-size:20px;}
+  .a-box .a-tools{margin-bottom:4px;}
+  .a-box .a-dims{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;}
+  .a-dim{text-align:center;padding:4px;background:var(--bg);border-radius:6px;}
+  .a-dim .d-val{font-size:14px;font-weight:700;font-family:var(--mono);}
+  .a-dim .d-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10px;font-weight:600;}
+  .p-e{background:rgba(16,185,129,0.12);color:#34d399;} .p-m{background:rgba(59,130,246,0.12);color:#60a5fa;} .p-h{background:rgba(239,68,68,0.12);color:#f87171;}
+  .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);font-weight:600;margin:1px;}
+  .tag-l{background:rgba(16,185,129,0.12);color:#34d399;}
+  .tag-c{background:rgba(59,130,246,0.12);color:#60a5fa;}
+  .tag-d{background:rgba(168,85,247,0.12);color:#a78bfa;}
+  .tag-r{background:rgba(249,115,22,0.12);color:#f97316;}
+
+  .verdict{padding:2px 10px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .v-g{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.2);}
+  .v-r{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,0.2);}
+  .v-t{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.2);}
+
+  .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .insight .i-icon{font-size:24px;margin-bottom:8px;}
+  .insight h4{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .insight p{font-size:13px;color:var(--t2);line-height:1.5;}
+
+  .footer{padding:32px 0;text-align:center;color:var(--t3);font-size:12px;}
+  @media(max-width:768px){.metrics{grid-template-columns:repeat(3,1fr);}.agent-grid,.insight-grid{grid-template-columns:1fr;}.headline{flex-direction:column;align-items:center;gap:8px;}.h-card{border-radius:12px!important;max-width:100%;}.chart-tools,.chart-cat{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <div class="logo"><svg viewBox="0 0 280 60" xmlns="http://www.w3.org/2000/svg"><text x="0" y="48" font-family="'JetBrains Mono','SF Mono','Fira Code',monospace" font-size="56" font-weight="900" fill="#10b981" opacity="0.85" letter-spacing="-2">GRAIL</text></svg></div>
+  <div class="batch-tag">Batch 1 of 3 &mdash; Q01 to Q10</div>
+  <h1>Agent Benchmark Report</h1>
+  <p>10 patient-language questions on Chilean oncology law. GRAIL agent (multi-tool, graph-enhanced) vs RAG agent (single-tool, chunk retrieval). Zero empty responses.</p>
+  <div class="hero-meta">
+    <span>Model: Qwen3.6-35B-A3B</span>
+    <span>Embeddings: Qwen3-Embedding-8B</span>
+    <span>Vector store: FAISS cosine</span>
+    <span>Judge: Claude Opus 4.6</span>
+  </div>
+</div></div>
+
+<div class="container">
+
+<!-- HEADLINE SCORES -->
+<div class="section">
+  <div class="headline">
+    <div class="h-card" style="border-right:1px solid var(--border);">
+      <div class="h-label" style="color:var(--green);">GRAIL Agent</div>
+      <div class="h-num" style="color:var(--green);">4.77</div>
+      <div class="h-sub">avg score / 5.00</div>
+    </div>
+    <div class="h-card" style="border-right:1px solid var(--border);">
+      <div class="h-label" style="color:var(--orange);">RAG Agent</div>
+      <div class="h-num" style="color:var(--orange);">4.15</div>
+      <div class="h-sub">avg score / 5.00</div>
+    </div>
+    <div class="h-card">
+      <div class="h-label" style="color:var(--text);">W - L - T</div>
+      <div class="h-num" style="color:var(--green);">9-0-1</div>
+      <div class="h-sub">GRAIL dominant</div>
+    </div>
+  </div>
+</div>
+
+<!-- METRICS -->
+<div class="section">
+  <h2>Performance Metrics</h2>
+  <p class="sub">Speed, efficiency, and reliability across 10 questions</p>
+  <div class="metrics">
+    <div class="m-card"><div class="m-val" style="color:var(--green)">0</div><div class="m-lbl">GRAIL empties</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">0</div><div class="m-lbl">RAG empties</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">14s</div><div class="m-lbl">GRAIL avg time</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">24s</div><div class="m-lbl">RAG avg time</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">2.5</div><div class="m-lbl">GRAIL calls/q</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">3.0</div><div class="m-lbl">RAG calls/q</div></div>
+  </div>
+</div>
+
+<!-- TOOL USAGE -->
+<div class="section">
+  <h2>GRAIL Tool Selection</h2>
+  <p class="sub">The agent strategically picks different tools based on question type</p>
+  <div class="tool-section">
+    <div class="tool-item">
+      <div class="tool-ring" style="background:conic-gradient(var(--green) 0% 46%,var(--s3) 46%);">
+        <span class="ring-num" style="color:var(--green)">6</span>
+      </div>
+      <div class="tool-name" style="color:var(--green)">local</div>
+      <div class="tool-desc">Entity description matching. Used for concept lookups.</div>
+    </div>
+    <div class="tool-item">
+      <div class="tool-ring" style="background:conic-gradient(var(--blue) 0% 54%,var(--s3) 54%);">
+        <span class="ring-num" style="color:var(--blue)">7</span>
+      </div>
+      <div class="tool-name" style="color:var(--blue)">cascade</div>
+      <div class="tool-desc">Entity + text matching. Used for specific details.</div>
+    </div>
+    <div class="tool-item">
+      <div class="tool-ring" style="background:conic-gradient(var(--orange) 0% 100%,var(--s3) 100%);">
+        <span class="ring-num" style="color:var(--orange)">10</span>
+      </div>
+      <div class="tool-name" style="color:var(--orange)">rag</div>
+      <div class="tool-desc">RAG agent: always semantic chunk search.</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--t3);text-align:center;">13 total GRAIL tool calls across 10 questions. local for Q01,Q02,Q06,Q07,Q09,Q10. cascade for Q03,Q04,Q05,Q06,Q08,Q10. Mixed strategies on Q06 and Q10.</p>
+</div>
+
+<!-- SCORE CHART -->
+<div class="section">
+  <h2>Score Comparison</h2>
+  <p class="sub">Weighted score per question — green (GRAIL) vs orange (RAG)</p>
+  <div id="chart"></div>
+  <script>
+  const data = [
+    {qid:"Q01",cat:"Single Fact",gw:4.85,rw:4.60,tools:"local",w:"GRAIL"},
+    {qid:"Q02",cat:"Single Fact",gw:4.85,rw:4.10,tools:"local",w:"GRAIL"},
+    {qid:"Q03",cat:"Single Fact",gw:5.00,rw:4.75,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q04",cat:"Single Fact",gw:4.35,rw:3.25,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q05",cat:"Single Fact",gw:5.00,rw:4.75,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q06",cat:"Multi-Chunk",gw:5.00,rw:4.85,tools:"local+cascade",w:"GRAIL"},
+    {qid:"Q07",cat:"Multi-Chunk",gw:4.70,rw:4.10,tools:"local",w:"GRAIL"},
+    {qid:"Q08",cat:"Multi-Chunk",gw:5.00,rw:5.00,tools:"cascade",w:"TIE"},
+    {qid:"Q09",cat:"Multi-Chunk",gw:4.85,rw:3.25,tools:"local",w:"GRAIL"},
+    {qid:"Q10",cat:"Multi-Chunk",gw:4.10,rw:2.85,tools:"local+cascade",w:"GRAIL"},
+  ];
+  const chart = document.getElementById("chart");
+  data.forEach(d => {
+    const wClass = d.w==="GRAIL"?"v-g":d.w==="RAG"?"v-r":"v-t";
+    chart.innerHTML += `
+    <div class="chart-row">
+      <div class="chart-qid">${d.qid}</div>
+      <div class="chart-cat">${d.cat}</div>
+      <div class="chart-bars">
+        <div class="chart-bar-row">
+          <div class="chart-bar-label" style="color:var(--green)">GRAIL</div>
+          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.gw/5*100}%;background:var(--green);"></div></div>
+          <div class="chart-bar-val" style="color:var(--green)">${d.gw.toFixed(2)}</div>
+        </div>
+        <div class="chart-bar-row">
+          <div class="chart-bar-label" style="color:var(--orange)">RAG</div>
+          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.rw/5*100}%;background:var(--orange);"></div></div>
+          <div class="chart-bar-val" style="color:var(--orange)">${d.rw.toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="chart-tools">${d.tools}</div>
+      <div class="chart-winner"><span class="verdict ${wClass}">${d.w}</span></div>
+    </div>`;
+  });
+  </script>
+</div>
+
+<!-- PER-QUESTION DETAIL -->
+<div class="section">
+  <h2>Per-Question Detail</h2>
+  <p class="sub">5-dimension scoring: Correctness (35%) · Completeness (25%) · Source Grounding (15%) · Coherence (10%) · No Hallucination (15%)</p>
+  <div id="details"></div>
+  <script>
+  const qs = [
+    {qid:"Q01",cat:"Single Fact",diff:"easy",q:"¿Qué es la Ley Ricarte Soto y para qué sirve?",gold:"Sistema de Protección Financiera para diagnósticos y tratamientos de alto costo declarados por decreto supremo del Ministerio de Salud. Forma parte del Régimen General de Garantías en Salud.",gw:4.85,rw:4.60,gs:[5,5,4,5,5],rs:[5,4,4,5,5],tools:["local"],w:"GRAIL",
+     gp:"La Ley Nº 20.850, conocida como Ley Ricarte Soto, es una normativa chilena que crea el Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo...",
+     rp:"La Ley Ricarte Soto es la denominación popular de la Ley N° 20.850 de Chile. Su nombre rinde homenaje póstumo a Luis Ricarte Soto Gallegos..."},
+    {qid:"Q02",cat:"Single Fact",diff:"easy",q:"¿Quiénes son los que deciden qué tratamientos caros va a cubrir el Estado?",gold:"Comisión de Recomendación Priorizada: 12 miembros de reconocida idoneidad, presidida por el Subsecretario de Salud Pública (Art. 8, Ley 20.850).",gw:4.85,rw:4.10,gs:[5,5,4,5,5],rs:[4,4,4,5,4],tools:["local"],w:"GRAIL",
+     gp:"La decisión se realiza a través de un proceso técnico-científico y multisectorial regulado por la Ley N° 20.850. La Comisión de Recomendación Priorizada, de 12 miembros...",
+     rp:"La decisión se formaliza a través de un decreto supremo suscrito por el Ministro de Salud y el Ministro de Hacienda..."},
+    {qid:"Q03",cat:"Single Fact",diff:"easy",q:"¿Cada cuánto tiempo se revisa qué tratamientos se consideran de alto costo?",gold:"Cada tres años, mediante decreto supremo de los Ministerios de Salud y Hacienda, tomando en cuenta el 40% de los ingresos familiares anuales promedio.",gw:5.00,rw:4.75,gs:[5,5,5,5,5],rs:[5,4,5,5,5],tools:["cascade","cascade"],w:"GRAIL",
+     gp:"La revisión se realiza cada tres años. Esto se establece en dos niveles: el umbral de costo anual (Art. 6º) y la vigencia de los tratamientos...",
+     rp:"El proceso de revisión y actualización se realiza cada tres años. Los Ministerios de Salud y Hacienda fijan el umbral mediante decreto supremo..."},
+    {qid:"Q04",cat:"Single Fact",diff:"medium",q:"Si un hospital se niega a darme un tratamiento que me corresponde, ¿cuánto tiempo tengo para reclamar?",gold:"Las infracciones y sanciones del Título IV prescriben en el plazo de dos años.",gw:4.35,rw:3.25,gs:[4,5,4,5,4],rs:[3,3,3,4,4],tools:["cascade","cascade"],w:"GRAIL",
+     gp:"Tienes dos plazos principales: reclamo administrativo ante la Superintendencia de Salud (2 años), y acción de reparación de daños (5 años)...",
+     rp:"Para reclamar debes tener en cuenta: mediación previa obligatoria y plazos de prescripción según la Ley 19.966 y 20.850..."},
+    {qid:"Q05",cat:"Single Fact",diff:"medium",q:"¿Qué información mía debe guardar el hospital cuando me atienden por un tratamiento de alto costo?",gold:"8 datos mínimos según Art. 8 Decreto 54: nombre y RUT, domicilio, situación previsional, motivo de consulta, diagnóstico probable, fecha/hora, prestación garantizada, nombre y RUT del profesional.",gw:5.00,rw:4.75,gs:[5,5,5,5,5],rs:[5,4,5,5,5],tools:["cascade","cascade"],w:"GRAIL",
+     gp:"Según el Art. 8º del Decreto 54: nombre completo y RUT del paciente, domicilio, situación previsional, motivo de consulta, diagnóstico probable...",
+     rp:"Según el Decreto 54, Art. 8: los prestadores deben registrar nombre y RUT, domicilio, situación previsional..."},
+    {qid:"Q06",cat:"Multi-Chunk",diff:"medium",q:"¿Qué requisitos tiene que cumplir un tratamiento para que el Estado lo cubra como de alto costo?",gold:"4 condiciones copulativas del Art. 5: (a) costo ≥ umbral Art.6, (b) evaluación científica favorable Art.7, (c) recomendado Art.8, (d) decisión de incorporación Art.9.",gw:5.00,rw:4.85,gs:[5,5,5,5,5],rs:[5,5,4,5,5],tools:["local","cascade"],w:"GRAIL",
+     gp:"Un tratamiento debe cumplir cuatro condiciones copulativas (todas obligatorias): superar el umbral de costo, evaluación científica favorable, recomendación priorizada, decisión ministerial...",
+     rp:"Para que un tratamiento sea cubierto debe cumplir condiciones copulativas: que el costo supere el umbral, evaluación científica favorable..."},
+    {qid:"Q07",cat:"Multi-Chunk",diff:"hard",q:"¿Cómo se decide si un tratamiento nuevo va a ser cubierto por el sistema de salud?",gold:"3 fases: (1) Evaluación científica por la Subsecretaría de Salud Pública (Art.7), (2) Recomendación priorizada por la Comisión de 12 miembros (Art.8), (3) Decisión ministerial por decreto supremo (Art.9).",gw:4.70,rw:4.10,gs:[5,5,4,5,4],rs:[4,4,4,5,4],tools:["local"],w:"GRAIL",
+     gp:"La decisión sigue un proceso técnico-científico y administrativo regulado por la Ley 20.850: evaluación científica, recomendación por la Comisión, decreto supremo...",
+     rp:"La decisión se basa en la Ley N° 20.850 y su reglamento, con evaluación científica, análisis económico y recomendación del comité..."},
+    {qid:"Q08",cat:"Multi-Chunk",diff:"hard",q:"¿Qué ocurre con la protección financiera cuando un paciente en urgencia vital es atendido fuera de la Red?",gold:"Art. 3 Ley 20.850: mantiene protección financiera hasta ser trasladado a prestador aprobado. Costos reembolsados por FONASA con cargo al Fondo. 3 escenarios según decisión del paciente.",gw:5.00,rw:5.00,gs:[5,5,5,5,5],rs:[5,5,5,5,5],tools:["cascade"],w:"TIE",
+     gp:"Cuando un paciente en urgencia vital es atendido fuera de la Red de Prestadores, la protección financiera sí se mantiene, pero con condiciones específicas del Art. 3º...",
+     rp:"Cuando un paciente en urgencia vital es atendido fuera de la Red, sí mantiene su protección financiera, bajo condiciones específicas de la Ley 20.850..."},
+    {qid:"Q09",cat:"Multi-Chunk",diff:"medium",q:"¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos?",gold:"Arts. 13-14 Ley 19.966: estudios epidemiológicos, carga de enfermedad, revisiones sistemáticas de efectividad, evaluaciones económicas, costo-efectividad, demanda potencial, capacidad de oferta.",gw:4.85,rw:3.25,gs:[5,5,4,5,5],rs:[3,3,3,4,4],tools:["local"],w:"GRAIL",
+     gp:"El gobierno decide a través del proceso establecido en la Ley 19.966 para las Garantías Explícitas en Salud: estudios epidemiológicos, carga de enfermedad, costo-efectividad...",
+     rp:"El gobierno decide mediante un proceso formal que involucra a los Ministerios de Salud y Hacienda, basado en la Ley 20.850 y su reglamento..."},
+    {qid:"Q10",cat:"Multi-Chunk",diff:"medium",q:"¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?",gold:"Art. 20 Ley 20.850: (a) aportes fiscales hasta 100 mil millones CLP ajustados por IPC, (b) donaciones y herencias, (c) cooperación internacional, (d) rentabilidad de inversión del fondo.",gw:4.10,rw:2.85,gs:[4,4,4,5,4],rs:[3,2,2,4,4],tools:["local","cascade"],w:"GRAIL",
+     gp:"Según la Ley Nº 20.850, el Fondo para Diagnósticos y Tratamientos de Alto Costo se financia con aportes fiscales del Tesoro Público, donaciones, cooperación internacional...",
+     rp:"El dinero proviene del Fondo de Tratamientos de Alto Costo según la Ley N° 20.850 y el Decreto N° 54..."},
+  ];
+  const dims=["Correct","Complete","Source","Coher.","No Hal."];
+  const det = document.getElementById("details");
+  const diffPill = {easy:"p-e",medium:"p-m",hard:"p-h"};
+  const wCls = {GRAIL:"v-g",RAG:"v-r",TIE:"v-t"};
+  const tCls = {local:"tag-l",cascade:"tag-c",document:"tag-d"};
+  qs.forEach(q => {
+    const toolTags = q.tools.map(t => `<span class="tag ${tCls[t]||'tag-c'}">${t}</span>`).join(" ");
+    const gDims = q.gs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    const rDims = q.rs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    det.innerHTML += `
+    <div class="q-card">
+      <div class="q-head">
+        <div class="q-title">${q.qid} &mdash; ${q.cat} <span class="pill ${diffPill[q.diff]}">${q.diff}</span></div>
+        <span class="verdict ${wCls[q.w]}">${q.w} ${q.w!=="TIE"?`+${Math.abs(q.gw-q.rw).toFixed(2)}`:""}</span>
+      </div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-gold"><strong>Gold:</strong> ${q.gold}</div>
+      <div class="agent-grid">
+        <div class="a-box">
+          <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL ${toolTags}</span><span class="a-score" style="color:var(--green)">${q.gw.toFixed(2)}</span></div>
+          <div class="a-dims">${gDims}</div>
+          <div class="a-preview">${q.gp}</div>
+        </div>
+        <div class="a-box">
+          <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG <span class="tag tag-r">rag</span></span><span class="a-score" style="color:var(--orange)">${q.rw.toFixed(2)}</span></div>
+          <div class="a-dims">${rDims}</div>
+          <div class="a-preview">${q.rp}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  </script>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section">
+  <h2>Key Insights</h2>
+  <p class="sub">What this batch reveals about graph-enhanced retrieval</p>
+  <div class="insight-grid">
+    <div class="insight">
+      <div class="i-icon" style="color:var(--green);">+1.60</div>
+      <h4>Biggest win: Q09</h4>
+      <p>GRAIL 4.85 vs RAG 3.25. The WHO+WHAT+TERMS formula matched entity descriptions for "proceso de elaboración de garantías explícitas basado en estudios epidemiológicos" — finding criteria that RAG's chunk search missed entirely.</p>
+    </div>
+    <div class="insight">
+      <div class="i-icon" style="color:var(--green);">+1.25</div>
+      <h4>Structural advantage: Q10</h4>
+      <p>GRAIL 4.10 vs RAG 2.85. The entity graph connects the Fund entity to its four funding sources (donaciones, cooperación, rentabilidad). RAG returned a generic answer about FONASA without specific sources.</p>
+    </div>
+    <div class="insight">
+      <div class="i-icon" style="color:var(--blue);">local</div>
+      <h4>local_search is the star</h4>
+      <p>Used in 6/10 questions, averaging 4.70 weighted score. The entity-description matching with retrieval queries bridges patient language to legal concepts better than raw chunk cosine.</p>
+    </div>
+    <div class="insight">
+      <div class="i-icon" style="color:var(--blue);">mixed</div>
+      <h4>Tool combinations work</h4>
+      <p>Q06 and Q10 used local+cascade — local found the concept entities, cascade filled in specific text details. This multi-tool strategy is unique to GRAIL and unavailable to single-tool RAG.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>GRAIL Benchmark Batch 1 (Q01-Q10) &middot; May 2026 &middot; <a href="#" style="color:var(--green);text-decoration:none;">github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL</a></p>
+  <p style="margin-top:4px;">Scoring: Correctness 35% · Completeness 25% · Source Grounding 15% · Coherence 10% · No Hallucination 15%</p>
+</div>
+
+</body>
+</html>

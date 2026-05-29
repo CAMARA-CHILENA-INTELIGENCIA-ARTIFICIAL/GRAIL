@@ -1,0 +1,267 @@
+[
+  {
+    "qid": "Q01",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "question": "¿Qué es la Ley Ricarte Soto y para qué sirve?",
+    "grail_scores": [
+      5,
+      5,
+      4,
+      5,
+      5
+    ],
+    "grail_weighted": 4.85,
+    "rag_scores": [
+      5,
+      4,
+      4,
+      5,
+      5
+    ],
+    "rag_weighted": 4.6,
+    "grail_tools": [
+      "local_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q02",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "question": "¿Quiénes son los que deciden qué tratamientos caros va a cubrir el Estado?",
+    "grail_scores": [
+      5,
+      5,
+      4,
+      5,
+      5
+    ],
+    "grail_weighted": 4.85,
+    "rag_scores": [
+      4,
+      4,
+      4,
+      5,
+      4
+    ],
+    "rag_weighted": 4.1,
+    "grail_tools": [
+      "local_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q03",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "question": "¿Cada cuánto tiempo se revisa qué tratamientos se consideran de alto costo?",
+    "grail_scores": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "grail_weighted": 5.0,
+    "rag_scores": [
+      5,
+      4,
+      5,
+      5,
+      5
+    ],
+    "rag_weighted": 4.75,
+    "grail_tools": [
+      "cascade_search",
+      "cascade_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q04",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "question": "Si un hospital se niega a darme un tratamiento que me corresponde, ¿cuánto tiempo tengo para reclamar?",
+    "grail_scores": [
+      4,
+      5,
+      4,
+      5,
+      4
+    ],
+    "grail_weighted": 4.35,
+    "rag_scores": [
+      3,
+      3,
+      3,
+      4,
+      4
+    ],
+    "rag_weighted": 3.25,
+    "grail_tools": [
+      "cascade_search",
+      "cascade_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q05",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "question": "¿Qué información mía debe guardar el hospital cuando me atienden por un tratamiento de alto costo?",
+    "grail_scores": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "grail_weighted": 5.0,
+    "rag_scores": [
+      5,
+      4,
+      5,
+      5,
+      5
+    ],
+    "rag_weighted": 4.75,
+    "grail_tools": [
+      "cascade_search",
+      "cascade_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q06",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "question": "¿Qué requisitos tiene que cumplir un tratamiento para que el Estado lo cubra como de alto costo?",
+    "grail_scores": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "grail_weighted": 5.0,
+    "rag_scores": [
+      5,
+      5,
+      4,
+      5,
+      5
+    ],
+    "rag_weighted": 4.85,
+    "grail_tools": [
+      "local_search",
+      "cascade_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q07",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "question": "¿Cómo se decide si un tratamiento nuevo va a ser cubierto por el sistema de salud?",
+    "grail_scores": [
+      5,
+      5,
+      4,
+      5,
+      4
+    ],
+    "grail_weighted": 4.7,
+    "rag_scores": [
+      4,
+      4,
+      4,
+      5,
+      4
+    ],
+    "rag_weighted": 4.1,
+    "grail_tools": [
+      "local_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q08",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "question": "¿Qué ocurre con la protección financiera cuando un paciente en urgencia vital es atendido fuera de la Red de Prestadores?\n",
+    "grail_scores": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "grail_weighted": 5.0,
+    "rag_scores": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "rag_weighted": 5.0,
+    "grail_tools": [
+      "cascade_search"
+    ],
+    "winner": "TIE"
+  },
+  {
+    "qid": "Q09",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "question": "¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos?",
+    "grail_scores": [
+      5,
+      5,
+      4,
+      5,
+      5
+    ],
+    "grail_weighted": 4.85,
+    "rag_scores": [
+      3,
+      3,
+      3,
+      4,
+      4
+    ],
+    "rag_weighted": 3.25,
+    "grail_tools": [
+      "local_search"
+    ],
+    "winner": "GRAIL"
+  },
+  {
+    "qid": "Q10",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "question": "¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?",
+    "grail_scores": [
+      4,
+      4,
+      4,
+      5,
+      4
+    ],
+    "grail_weighted": 4.1,
+    "rag_scores": [
+      3,
+      2,
+      2,
+      4,
+      4
+    ],
+    "rag_weighted": 2.85,
+    "grail_tools": [
+      "local_search",
+      "cascade_search"
+    ],
+    "winner": "GRAIL"
+  }
+]

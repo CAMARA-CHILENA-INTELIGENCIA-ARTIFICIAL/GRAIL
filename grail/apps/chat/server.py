@@ -27,6 +27,7 @@ from grail.apps.chat.auth import (
 from grail.apps.chat.database import (
     configure_db_path,
     create_message,
+    create_messages_batch,
     create_session,
     create_user,
     delete_session,
@@ -63,6 +64,7 @@ def create_app(
     port: int = 8765,
     dev: bool = False,
     db_path: Path | None = None,
+    debug: bool = False,
 ) -> FastAPI:
     app = FastAPI(title="GRAIL Chat API", version=__version__)
 
@@ -70,6 +72,7 @@ def create_app(
     app.state.grail_instance = None
     app.state.host = host
     app.state.port = port
+    app.state.debug = debug
 
     if db_path:
         configure_db_path(db_path)
@@ -149,7 +152,7 @@ def create_app(
 
     @app.get("/api/sessions", response_model=list[SessionResponse])
     async def sessions_list(current_user: dict = Depends(get_current_user)) -> list[SessionResponse]:
-        rows = await list_sessions(current_user["id"])
+        rows = await list_sessions(current_user["id"], source="web")
         return [SessionResponse(**r) for r in rows]
 
     @app.post("/api/sessions", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
@@ -217,15 +220,24 @@ def create_app(
                 await chunk_queue.put(text)
 
             async def run_search() -> None:
-                from grail.llm.wrapper import set_stream_callback
+                from grail.llm.wrapper import set_debug_mode, set_stream_callback
                 try:
-                    set_stream_callback(on_chunk)
-                    recent = await get_recent_messages(body.session_id, limit=20)
-                    history = [
-                        {"role": m["role"], "content": m["content"]}
-                        for m in recent
-                        if m["id"] != user_msg["id"]
-                    ][-10:]
+                    if mode != "agent":
+                        set_stream_callback(on_chunk)
+                    if app.state.debug:
+                        set_debug_mode(True)
+                    recent = await get_recent_messages(body.session_id, limit=40)
+                    history = []
+                    for m in recent:
+                        if m["id"] == user_msg["id"]:
+                            continue
+                        entry: dict[str, Any] = {"role": m["role"], "content": m["content"]}
+                        if m.get("tool_calls"):
+                            entry["tool_calls"] = m["tool_calls"]
+                        if m.get("tool_call_id"):
+                            entry["tool_call_id"] = m["tool_call_id"]
+                        history.append(entry)
+                    history = history[-20:]
 
                     if mode == "agent":
                         result_holder[0] = await grail.agent_search(
@@ -244,6 +256,7 @@ def create_app(
                     error_holder[0] = exc
                 finally:
                     set_stream_callback(None)
+                    set_debug_mode(False)
                     await chunk_queue.put(None)
 
             task = asyncio.create_task(run_search())
@@ -262,11 +275,27 @@ def create_app(
             else:
                 result = result_holder[0]
                 response_text = result.response if isinstance(result.response, str) else json.dumps(result.response)
-                metadata = {
+
+                source_refs: list[dict[str, str]] = []
+                if isinstance(result.context_data, dict):
+                    from grail.query.retrieval import extract_source_references, load_artifacts_for_search
+                    artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+                    source_refs = extract_source_references(
+                        result.context_data,
+                        documents=artifacts.documents,
+                        mapping=artifacts.mapping,
+                    )
+
+                metadata: dict[str, Any] = {
                     "completion_time": result.completion_time,
                     "llm_calls": result.llm_calls,
                     "mode": mode,
+                    "sources": source_refs,
                 }
+
+                agent_msgs = (result.context_data or {}).get("agent_messages")
+                if agent_msgs:
+                    await create_messages_batch(body.session_id, agent_msgs)
 
                 new_title = None
                 if session["title"] == "New Chat":
@@ -318,6 +347,44 @@ def create_app(
             })
         return result
 
+    # ================================================================ Document download
+
+    @app.get("/api/documents/{doc_id}/download")
+    async def document_download(
+        doc_id: str,
+        request: Request,
+        token: Optional[str] = None,
+    ) -> FileResponse:
+        from grail.apps.chat.auth import decode_token
+        auth_header = request.headers.get("authorization") or ""
+        bearer_token = auth_header.removeprefix("Bearer ").strip() if auth_header.startswith("Bearer") else ""
+        actual_token = bearer_token or token or ""
+        if not actual_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        try:
+            decode_token(actual_token)
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        grail = _get_grail()
+        from grail.query.retrieval import load_artifacts_for_search
+        artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+        docs = artifacts.documents
+        if docs.empty:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No documents indexed")
+        match = docs[docs["id"] == doc_id]
+        if match.empty:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        row = match.iloc[0]
+        storage_key = str(row.get("path", ""))
+        if not storage_key or not grail.storage.exists(storage_key):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source file not found on disk")
+        with grail.storage.open_for_read(storage_key) as file_path:
+            return FileResponse(
+                path=str(file_path),
+                filename=Path(storage_key).name,
+                media_type="application/octet-stream",
+            )
+
     # ================================================================ Static files / SPA
 
     if FRONTEND_DIR.is_dir():
@@ -339,8 +406,9 @@ def run_server(
     port: int = 8765,
     dev: bool = False,
     db_path: Path | None = None,
+    debug: bool = False,
 ) -> None:
     import uvicorn
 
-    app = create_app(project_dir=project_dir, host=host, port=port, dev=dev, db_path=db_path)
+    app = create_app(project_dir=project_dir, host=host, port=port, dev=dev, db_path=db_path, debug=debug)
     uvicorn.run(app, host=host, port=port, log_level="info")

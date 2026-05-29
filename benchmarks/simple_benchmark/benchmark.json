@@ -44,7 +44,7 @@
       "id": "Q01",
       "category": "single_fact",
       "difficulty": "easy",
-      "question": "¿Cuál es el objeto de la Ley 20.850?",
+      "question": "¿Qué es la Ley Ricarte Soto y para qué sirve?",
       "gold_answer": "Crear un Sistema de Protección Financiera para el otorgamiento de diagnósticos y tratamientos de alto costo declarados por decreto supremo del Ministerio de Salud.  Forma parte del Régimen General de Garantías en Salud.\n",
       "source_refs": [
         "Ley 20.850, Artículo 1"
@@ -55,7 +55,7 @@
       "id": "Q02",
       "category": "single_fact",
       "difficulty": "easy",
-      "question": "¿Cuántos miembros tiene la Comisión de Recomendación Priorizada y quién la preside?\n",
+      "question": "¿Quiénes son los que deciden qué tratamientos caros va a cubrir el Estado?",
       "gold_answer": "12 miembros de reconocida idoneidad en medicina, salud pública, economía, bioética, derecho sanitario, y expertos en fármacos, elementos de uso médico y alimentos.  Es presidida por el Subsecretario de Salud Pública.\n",
       "source_refs": [
         "Ley 20.850, Artículo 8"
@@ -66,7 +66,7 @@
       "id": "Q03",
       "category": "single_fact",
       "difficulty": "easy",
-      "question": "¿Cada cuántos años se fija el umbral nacional de costo para determinar si un diagnóstico o tratamiento es de alto costo?\n",
+      "question": "¿Cada cuánto tiempo se revisa qué tratamientos se consideran de alto costo?",
       "gold_answer": "Cada tres años, mediante decreto supremo de los Ministerios de Salud y de Hacienda, tomando en cuenta el 40% de los ingresos familiares anuales promedio una vez cubiertos los gastos básicos de subsistencia.\n",
       "source_refs": [
         "Ley 20.850, Artículo 6"
@@ -77,7 +77,7 @@
       "id": "Q04",
       "category": "single_fact",
       "difficulty": "medium",
-      "question": "¿Cuál es el plazo de prescripción de las infracciones y sanciones del Título IV (obligatoriedad del otorgamiento) de la Ley 20.850?\n",
+      "question": "Si un hospital se niega a darme un tratamiento que me corresponde, ¿cuánto tiempo tengo para reclamar?",
       "gold_answer": "Las infracciones y sanciones del Título IV prescriben en el plazo de dos años.\n",
       "source_refs": [
         "Ley 20.850, Artículo 13 (párrafo final del Título IV)"
@@ -88,7 +88,7 @@
       "id": "Q05",
       "category": "single_fact",
       "difficulty": "medium",
-      "question": "¿Qué datos mínimos debe registrar un prestador de salud por cada beneficiario de la Ley 20.850 según el Decreto 54?\n",
+      "question": "¿Qué información mía debe guardar el hospital cuando me atienden por un tratamiento de alto costo?",
       "gold_answer": "Según el Artículo 8 del Decreto 54, los prestadores deben registrar al menos: (a) nombre completo y RUT del paciente, (b) domicilio incluyendo ciudad y comuna, (c) situación previsional en materia de salud, (d) motivo de consulta, (e) diagnóstico probable, (f) fecha y hora de la atención, (g) prestación garantizada correspondiente, (h) nombre completo y RUT del profesional.\n",
       "source_refs": [
         "Decreto 54, Artículo 8"
@@ -99,7 +99,7 @@
       "id": "Q06",
       "category": "multi_chunk",
       "difficulty": "medium",
-      "question": "¿Cuáles son las condiciones copulativas que debe cumplir un diagnóstico o tratamiento para ser incorporado al decreto de alto costo?\n",
+      "question": "¿Qué requisitos tiene que cumplir un tratamiento para que el Estado lo cubra como de alto costo?",
       "gold_answer": "Según el Artículo 5 de la Ley 20.850, se requieren cuatro condiciones copulativas: (a) que el costo sea igual o superior al umbral del Artículo 6, (b) que hayan sido objeto de una favorable evaluación científica de la evidencia conforme al Artículo 7, (c) que hayan sido recomendados de acuerdo al Artículo 8, y (d) que se haya decidido su incorporación conforme al Artículo 9.\n",
       "source_refs": [
         "Ley 20.850, Artículos 5, 6, 7, 8, 9"
@@ -110,7 +110,7 @@
       "id": "Q07",
       "category": "multi_chunk",
       "difficulty": "hard",
-      "question": "Describe el proceso completo desde que se inicia la evaluación científica de un tratamiento hasta la decisión final de incorporarlo al Sistema de Protección Financiera.\n",
+      "question": "¿Cómo se decide si un tratamiento nuevo va a ser cubierto por el sistema de salud?",
       "gold_answer": "El proceso tiene tres fases: (1) Evaluación científica (Art. 7): la Subsecretaría de Salud Pública inicia de oficio la evaluación basada en la evidencia disponible, considerando eficacia, seguridad, evaluación económica, impacto presupuestario, alternativas, y repercusiones éticas/jurídicas/sociales. (2) Recomendación priorizada (Art. 8): la Comisión de 12 miembros delibera sobre el valor científico, económico y social, y emite una recomendación con propuesta de contenido y plazo de revisión. (3) Decisión (Art. 9): los Ministerios de Salud y Hacienda determinan mediante decreto supremo fundado los diagnósticos y tratamientos cubiertos, asegurando que el costo anual esperado sea ≤80% del valor esperado de los recursos del Fondo al 1 de enero siguiente.\n",
       "source_refs": [
         "Ley 20.850, Artículos 7, 8, 9"
@@ -132,7 +132,7 @@
       "id": "Q09",
       "category": "multi_chunk",
       "difficulty": "medium",
-      "question": "¿Qué criterios se usan para elaborar la propuesta de Garantías Explícitas en Salud?\n",
+      "question": "¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos?",
       "gold_answer": "Según los Artículos 13 y 14 de la Ley 19.966: estudios epidemiológicos, carga de enfermedad, revisiones sistemáticas sobre la efectividad de las intervenciones, evaluaciones económicas, contribución a la calidad de vida, relación costo-efectividad, demanda potencial, y capacidad de oferta del sistema de salud chileno (público y privado).  Se descartarán enfermedades para las que no haya fundamentos de beneficio para la sobrevida o calidad de vida.\n",
       "source_refs": [
         "Ley 19.966, Artículos 13, 14"
@@ -143,7 +143,7 @@
       "id": "Q10",
       "category": "multi_chunk",
       "difficulty": "medium",
-      "question": "¿Cómo se financia el Fondo para Diagnósticos y Tratamientos de Alto Costo?  Enumera todas las fuentes.\n",
+      "question": "¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?",
       "gold_answer": "Según el Artículo 20 de la Ley 20.850, el Fondo se financia con: (a) aportes fiscales anuales por un monto de hasta cien mil millones de pesos, reajustados el 1 de enero por el 100% de la variación del IPC; (b) donaciones y herencias que acepte el Ministerio de Hacienda; (c) aportes de la cooperación internacional; (d) la rentabilidad que genere la inversión de los recursos del Fondo.  Los recursos se contemplan en la partida presupuestaria del Tesoro Público.\n",
       "source_refs": [
         "Ley 20.850, Artículo 20"
@@ -154,7 +154,7 @@
       "id": "Q11",
       "category": "cross_source",
       "difficulty": "hard",
-      "question": "¿Qué relación existe entre la Ley Ricarte Soto (20.850) y las Garantías Explícitas en Salud de la Ley 19.966?\n",
+      "question": "¿Cómo se complementan la Ley Ricarte Soto y el plan AUGE/GES para proteger a un paciente con cáncer?",
       "gold_answer": "La Ley 20.850 complementa la Ley 19.966: su Sistema de Protección Financiera forma parte del Régimen General de Garantías en Salud (Art. 1, Ley 20.850).  Los beneficiarios de ISAPRE deben primero agotar la Cobertura Adicional para Enfermedades Catastróficas (CAEC) antes de acceder a la Ley 20.850.  Si un diagnóstico o tratamiento de alto costo es incorporado al Régimen de Garantías Explícitas (GES), pasa a regirse por la Ley 19.966, pero la protección financiera continúa vigente para beneficiarios no incorporados al GES mientras subsista su eficacia terapéutica (Art. 10, Ley 20.850). El Decreto 54 operacionaliza esta relación definiendo las normas concretas de otorgamiento y cobertura.\n",
       "source_refs": [
         "Ley 20.850, Artículos 1, 10",
@@ -180,7 +180,7 @@
       "id": "Q13",
       "category": "cross_source",
       "difficulty": "hard",
-      "question": "¿Qué requisitos debe cumplir un prestador para otorgar prestaciones bajo la Ley 20.850 y cómo se operacionaliza según el Decreto 54?\n",
+      "question": "¿Qué necesita un hospital para poder atender pacientes bajo la Ley Ricarte Soto?",
       "gold_answer": "La Ley 20.850 (Art. 13) exige que los prestadores estén acreditados en la Superintendencia de Salud según la Ley 19.966 Art. 4 letra b), y cuenten con aprobación del Ministerio de Salud.  El Decreto 54 detalla el proceso: la Subsecretaría de Redes Asistenciales inicia la evaluación de oficio o a solicitud (Art. 13°); la Comisión Asesora para la Evaluación de Prestadores analiza el cumplimiento de estándares técnicos pudiendo verificar en terreno (Art. 13°, 14°); recomienda al Ministro de Salud la aprobación o rechazo; el Ministro decide por decreto (Art. 13°); el prestador aprobado suscribe convenio con FONASA en 10 días hábiles (Art. 17°); FONASA publica el listado de prestadores aprobados en su sitio web.\n",
       "source_refs": [
         "Ley 20.850, Artículo 13",
@@ -192,7 +192,7 @@
       "id": "Q14",
       "category": "cross_source",
       "difficulty": "hard",
-      "question": "¿Qué garantías explícitas se definen para los pacientes oncológicos y cómo se complementan entre la Ley 19.966 y la Ley 20.850?\n",
+      "question": "¿Qué derechos específicos de atención tiene un paciente con cáncer y cómo lo protegen las distintas leyes?",
       "gold_answer": "La Ley 19.966 (Art. 4) define cuatro Garantías Explícitas en Salud: (a) Acceso — obligación de asegurar el otorgamiento de prestaciones; (b) Calidad — otorgamiento por prestador registrado o acreditado; (c) Oportunidad — plazo máximo para el otorgamiento; (d) Protección Financiera — copago máximo del 20% del valor de referencia.  La Ley 20.850 complementa con cobertura del 100% (sin copago) para diagnósticos y tratamientos que superan el umbral de alto costo, incluyendo enfermedades oncológicas expresamente mencionadas en Art. 5.  Así, un paciente oncológico puede tener doble cobertura: GES para la patología base y Ley Ricarte Soto para tratamientos que exceden el umbral.\n",
       "source_refs": [
         "Ley 19.966, Artículo 4",
@@ -204,7 +204,7 @@
       "id": "Q15",
       "category": "cross_source",
       "difficulty": "hard",
-      "question": "¿Cuándo termina la protección financiera de un paciente bajo la Ley Ricarte Soto?  Contrasta con la vigencia de las Garantías Explícitas bajo la Ley 19.966.\n",
+      "question": "¿En qué momento dejo de estar cubierto por la Ley Ricarte Soto? ¿Es diferente al AUGE/GES?",
       "gold_answer": "Bajo la Ley Ricarte Soto (Decreto 54, Art. 10), la protección termina por: (a) alta médica; (b) decisión voluntaria de recibir prestaciones fuera de la Red de Prestadores; (c) rechazo voluntario de la prestación cubierta conforme a la Ley 20.584; (d) muerte del beneficiario.  Bajo la Ley 19.966 (Art. 23), las Garantías Explícitas tienen vigencia de tres años, prorrogables automáticamente por otros tres si no se modifican.  El Presidente puede disponer su modificación antes del plazo en circunstancias especiales.  Las GES son permanentes mientras el decreto esté vigente; la Ley Ricarte Soto es por tratamiento individual hasta su conclusión.\n",
       "source_refs": [
         "Decreto 54, Artículo 10",
@@ -228,7 +228,7 @@
       "id": "Q17",
       "category": "procedural",
       "difficulty": "hard",
-      "question": "Describe el procedimiento de mediación que debe seguir un paciente antes de demandar a un prestador público por daño en salud.\n",
+      "question": "Si un hospital público me hizo daño durante mi tratamiento, ¿qué tengo que hacer antes de poder demandarlo?",
       "gold_answer": "Según la Ley 19.966, Título III: (1) el interesado presenta reclamo ante el Consejo de Defensa del Estado con nombre completo, cédula, profesión, domicilio, motivo del reclamo y peticiones concretas (Art. 44).  (2) Se cita a las partes a primera audiencia (Art. 45). (3) El plazo total es de 60 días corridos, prorrogable a 120 por acuerdo (Art. 45).  (4) El mediador informa sobre la naturaleza, objetivos, duración y carácter voluntario (Art. 47).  (5) Todas las declaraciones son secretas (Art. 51).  (6) Si hay acuerdo, se firma acta que surte efectos de contrato de transacción (Art. 53). (7) Si no hay acuerdo, se levanta acta de fracaso y el paciente queda habilitado para la vía judicial.  Para prestadores privados, la mediación es ante mediadores acreditados por la Superintendencia de Salud (Art. 43).\n",
       "source_refs": [
         "Ley 19.966, Artículos 43-53"
@@ -239,7 +239,7 @@
       "id": "Q18",
       "category": "procedural",
       "difficulty": "medium",
-      "question": "¿Cómo se aprueba un nuevo prestador para la Red de la Ley Ricarte Soto según el Decreto 54?\n",
+      "question": "¿Cómo hace un hospital para entrar a la red que puede atender pacientes con tratamientos caros?",
       "gold_answer": "(1) La Subsecretaría de Redes Asistenciales inicia la evaluación de oficio o a solicitud del prestador (Art. 13°).  (2) Se remiten antecedentes a la Comisión Asesora para la Evaluación de Prestadores (Art. 13°).  (3) La Comisión analiza el cumplimiento de estándares técnicos, pudiendo verificar en terreno a través del Departamento de Auditoría del Ministerio (Art. 13°).  (4) La Comisión recomienda al Ministro de Salud la aprobación o rechazo; el acta se publica en el sitio web dentro de 15 días (Art. 13°, 14°).  (5) El Ministro decide por decreto (Art. 13°).  (6) El prestador aprobado suscribe convenio con FONASA en 10 días hábiles (Art. 17°).  (7) FONASA publica el listado de prestadores aprobados con convenio en su sitio web (Art. 13° de la Ley 20.850).\n",
       "source_refs": [
         "Decreto 54, Artículos 11, 13, 14, 17"
@@ -250,7 +250,7 @@
       "id": "Q19",
       "category": "procedural",
       "difficulty": "medium",
-      "question": "¿Qué sucede cuando hay desabastecimiento de un producto sanitario cubierto por la Ley 20.850?\n",
+      "question": "¿Qué pasa si el medicamento que necesito para mi tratamiento se agota o no está disponible?",
       "gold_answer": "(1) El titular del registro, productor, importador o distribuidor debe comunicar cualquier riesgo de desabastecimiento dentro de 24 horas al Ministerio de Salud, FONASA, CENABAST y la Superintendencia de Salud (Art. 16).  (2) Si no existe en el mercado chileno otra alternativa al precio máximo industrial (Art. 7°), CENABAST puede importar y distribuir el producto excepcionalmente, incluso sin registro sanitario (Art. 15).  (3) El titular del registro es civilmente responsable de la discontinuidad del tratamiento (Art. 15).  (4) El ISP debe poner la información en conocimiento del público (Art. 16).  (5) Cada día de desabastecimiento se considera una falta reiterada para efectos sancionatorios (Art. 16).\n",
       "source_refs": [
         "Ley 20.850, Artículos 15, 16"
@@ -261,7 +261,7 @@
       "id": "Q20",
       "category": "comparative",
       "difficulty": "easy",
-      "question": "¿Cuál es la diferencia entre \"diagnóstico de alto costo\" y \"tratamiento de alto costo\" según la ley?\n",
+      "question": "¿Es lo mismo que me cubran los exámenes que el tratamiento? ¿Cuál es la diferencia?",
       "gold_answer": "Según el Artículo 2 de la Ley 20.850 (replicado en Art. 2 del Decreto 54): (a) Diagnóstico de alto costo es el conjunto de prestaciones demostradamente útiles para la confirmación y posterior control y tratamiento de la patología, cuando dichas prestaciones impiden el acceso al tratamiento o impactan catastróficamente en el gasto del beneficiario.  (b) Tratamiento de alto costo es el constituido por medicamentos, alimentos o elementos de uso médico asociados a enfermedades, y por las prestaciones indispensables para su confirmación diagnóstica y seguimiento, que por su costo impiden el acceso o impactan catastróficamente en el gasto.\n",
       "source_refs": [
         "Ley 20.850, Artículo 2",
@@ -273,7 +273,7 @@
       "id": "Q21",
       "category": "comparative",
       "difficulty": "hard",
-      "question": "¿En qué se diferencian las sanciones por incumplimiento del Título IV (obligatoriedad de otorgamiento) versus el Título III (determinación de tratamientos) de la Ley 20.850?\n",
+      "question": "¿Qué castigos hay si un hospital no me da el tratamiento que me corresponde versus si alguien manipula el sistema?",
       "gold_answer": "Título III (Art. 12): multa de 100 a 10.000 UTM, atendida la naturaleza y gravedad.  Si el beneficio económico supera las 10.000 UTM, la multa es equivalente al monto del beneficio.  Reincidencia se sanciona con el doble.  Además, cancelación de autorizaciones o eliminación del registro de agrupaciones de pacientes.  Prescripción: 4 años.  Título IV (Art. 13): amonestación O multa de 10 a 1.000 UTM.  Para establecimientos públicos, puede solicitarse sumario administrativo.  Prescripción: 2 años.  La diferencia clave es de escala: el Título III castiga la manipulación del sistema (inducir o influir prescripciones), mientras el Título IV castiga la falta de otorgamiento de prestaciones.\n",
       "source_refs": [
         "Ley 20.850, Artículos 12, 13"
@@ -284,7 +284,7 @@
       "id": "Q22",
       "category": "comparative",
       "difficulty": "hard",
-      "question": "Compara la composición del Consejo Consultivo de la Ley 19.966 con la Comisión Ciudadana de Vigilancia de la Ley 20.850.\n",
+      "question": "¿Quiénes forman parte del comité que asesora sobre las garantías de salud y quiénes vigilan el sistema de alto costo? ¿Son los mismos?",
       "gold_answer": "Consejo Consultivo (Ley 19.966, Art. 21): 9 miembros — 1 representante de la Academia Chilena de Medicina, 2 de facultades de medicina, 2 de facultades de economía o administración, 1 de facultades de química y farmacia, 3 designados por el Presidente de la República con representación regional.  Todos de universidades reconocidas oficialmente.  Comisión Ciudadana de Vigilancia (Ley 20.850, Art. 22): 12 miembros — 4 representantes de asociaciones de pacientes (registradas Art. 30), 2 de asociaciones científicas, 2 académicos de facultades de medicina, 4 expertos del área de la salud designados por el Ministro.  La diferencia clave: el Consejo es técnico-académico (economía, medicina, farmacia); la Comisión tiene participación ciudadana directa (1/3 son asociaciones de pacientes).\n",
       "source_refs": [
         "Ley 19.966, Artículo 21",
@@ -318,7 +318,7 @@
       "id": "Q25",
       "category": "negation_boundary",
       "difficulty": "easy",
-      "question": "¿Tiene la Comisión Ciudadana de Vigilancia facultad para administrar el Fondo de Diagnósticos y Tratamientos de Alto Costo?\n",
+      "question": "¿Los que vigilan el sistema de tratamientos caros pueden también manejar el dinero del fondo?",
       "gold_answer": "No.  El Artículo 22 de la Ley 20.850 establece expresamente que \"la Comisión no estará facultada para intervenir en la administración del Fondo para Diagnósticos y Tratamientos de Alto Costo\".  Su función es exclusivamente de asesoría y monitoreo, mediante la elaboración de recomendaciones a los ministros de Salud y Hacienda.\n",
       "source_refs": [
         "Ley 20.850, Artículo 22"

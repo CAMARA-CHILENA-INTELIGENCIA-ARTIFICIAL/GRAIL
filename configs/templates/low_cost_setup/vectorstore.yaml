@@ -1,9 +1,11 @@
 # Vector store — where entity-description embeddings live for local search.
 
-# Supported backends: "lancedb" (default), "faiss", "chromadb".
-# faiss requires:    pip install grail[faiss]
-# chromadb requires: pip install grail[chroma]
-backend: lancedb
+# Supported backends: "faiss" (default), "lancedb", "chromadb".
+# faiss:    in-memory, cosine similarity via IndexFlatIP, persisted to disk.
+#           Zero external services, works out of the box.
+# lancedb:  on-disk, cosine similarity. Good for larger indexes.
+# chromadb: requires pip install grail[chroma]
+backend: faiss
 
 # Collection / table name.
 collection_name: entity_descriptions
@@ -12,5 +14,6 @@ collection_name: entity_descriptions
 # mounts or to keep multiple projects in one DB.
 uri: null
 
-# Distance function for ChromaDB ("l2" or "cosine"). Ignored by other backends.
-distance_fn: l2
+# Distance function hint. FAISS and LanceDB always use cosine.
+# ChromaDB supports "l2" or "cosine".
+distance_fn: cosine

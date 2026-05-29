@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Agent Benchmark — Q01-Q15</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#171717;--s2:#1e1e1e;--border:#2e2e2e;--text:#ececec;--t2:#a1a1a1;--t3:#737373;--green:#10b981;--blue:#3b82f6;--orange:#f97316;--red:#ef4444;--yellow:#eab308;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+  .hero{padding:56px 0 32px;text-align:center;border-bottom:1px solid var(--border);}
+  .hero .badge{display:inline-flex;padding:4px 14px;border-radius:999px;background:rgba(16,185,129,0.12);color:var(--green);font-size:13px;font-weight:600;margin-bottom:16px;}
+  .hero h1{font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px;}
+  .hero p{font-size:15px;color:var(--t2);max-width:660px;margin:0 auto;}
+
+  .section{padding:40px 0;border-bottom:1px solid var(--border);}
+  .section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:6px;}
+  .section .sub{color:var(--t2);font-size:14px;margin-bottom:24px;}
+
+  .big-scores{display:flex;justify-content:center;gap:48px;padding:24px 0;}
+  .big-score{text-align:center;}
+  .big-score .label{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .big-score .num{font-size:52px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .big-score .sub-stat{font-size:13px;color:var(--t3);margin-top:4px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+  .stat-card .val{font-size:24px;font-weight:700;font-family:var(--mono);}
+  .stat-card .lbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;margin-top:4px;}
+
+  table.main{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+  table.main th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--t3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:1;}
+  table.main td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.main tr:hover{background:var(--surface);}
+  .pill{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .pill-e{background:rgba(16,185,129,0.12);color:#34d399;} .pill-m{background:rgba(59,130,246,0.12);color:#60a5fa;} .pill-h{background:rgba(239,68,68,0.12);color:#f87171;}
+  .tool-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:600;margin:1px;}
+  .tool-local{background:rgba(16,185,129,0.12);color:#34d399;}
+  .tool-cascade{background:rgba(59,130,246,0.12);color:#60a5fa;}
+  .tool-doc{background:rgba(168,85,247,0.12);color:#a78bfa;}
+  .tool-global{background:rgba(234,179,8,0.12);color:#eab308;}
+  .tool-rag{background:rgba(249,115,22,0.12);color:#f97316;}
+  .status-ok{color:var(--green);font-weight:600;} .status-empty{color:var(--red);font-weight:600;}
+  .mono{font-family:var(--mono);}
+  .winner-g{color:var(--green);font-weight:700;} .winner-r{color:var(--orange);font-weight:700;} .winner-t{color:var(--blue);font-weight:600;}
+
+  .tool-chart{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:16px 0;}
+  .tool-block{text-align:center;}
+  .tool-block .num{font-size:28px;font-weight:700;font-family:var(--mono);}
+  .tool-block .name{font-size:12px;color:var(--t3);}
+
+  .footer{padding:28px 0;text-align:center;color:var(--t3);font-size:12px;}
+  @media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.big-scores{flex-direction:column;gap:16px;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <div class="badge">Agent Benchmark Q01-Q15</div>
+  <h1>GRAIL Agent vs RAG Agent</h1>
+  <p>15 questions across 4 categories. Both agents get up to 2 tool calls and 3 iterations. GRAIL agent chooses from local/cascade/global/document search. RAG agent uses semantic chunk retrieval. Local-first strategy with WHO+WHAT+TERMS query formula.</p>
+</div></div>
+
+<div class="container">
+
+<!-- HEADLINE SCORES -->
+<div class="section">
+  <div class="big-scores">
+    <div class="big-score">
+      <div class="label" style="color:var(--green)">GRAIL Agent</div>
+      <div class="num" style="color:var(--green)">14<span style="font-size:20px;color:var(--t3)">/15</span></div>
+      <div class="sub-stat">1 empty (Q15)</div>
+    </div>
+    <div class="big-score">
+      <div class="label" style="color:var(--orange)">RAG Agent</div>
+      <div class="num" style="color:var(--orange)">12<span style="font-size:20px;color:var(--t3)">/15</span></div>
+      <div class="sub-stat">3 empty (Q01, Q07, Q10)</div>
+    </div>
+  </div>
+</div>
+
+<!-- KEY STATS -->
+<div class="section">
+  <h2>Key Statistics</h2>
+  <p class="sub">Performance metrics across 15 questions</p>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="val" style="color:var(--green)">93%</div><div class="lbl">GRAIL response rate</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--orange)">80%</div><div class="lbl">RAG response rate</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--green)">11.3s</div><div class="lbl">GRAIL avg time</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--orange)">31.1s</div><div class="lbl">RAG avg time</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="val" style="color:var(--green)">11.3K</div><div class="lbl">GRAIL avg context (tok)</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--orange)">4.3K</div><div class="lbl">RAG avg context (tok)</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--green)">2.3</div><div class="lbl">GRAIL avg LLM calls</div></div>
+    <div class="stat-card"><div class="val" style="color:var(--orange)">3.7</div><div class="lbl">RAG avg LLM calls</div></div>
+  </div>
+</div>
+
+<!-- TOOL USAGE -->
+<div class="section">
+  <h2>GRAIL Agent Tool Selection</h2>
+  <p class="sub">The agent chose different tools based on question type</p>
+  <div class="tool-chart">
+    <div class="tool-block"><div class="num" style="color:var(--blue)">14</div><div class="name">cascade_search</div></div>
+    <div class="tool-block"><div class="num" style="color:var(--green)">7</div><div class="name">local_search</div></div>
+    <div class="tool-block"><div class="num" style="color:#a78bfa">1</div><div class="name">document_search</div></div>
+    <div class="tool-block"><div class="num" style="color:var(--t3)">0</div><div class="name">global_search</div></div>
+  </div>
+  <p style="font-size:13px;color:var(--t2);text-align:center;margin-top:8px;">22 total tool calls across 15 questions. local_search used for entity-focused queries (Q02, Q09, Q11, Q12, Q13, Q14). cascade_search for factual/text-detail questions. document_search tried once (Q05).</p>
+</div>
+
+<!-- RESULTS TABLE -->
+<div class="section">
+  <h2>Per-Question Results</h2>
+  <p class="sub">Response status, tool choices, context size, and timing</p>
+  <div style="overflow-x:auto;">
+  <table class="main">
+    <thead><tr>
+      <th>ID</th><th>Category</th><th>Diff</th>
+      <th>GRAIL Tools</th><th>GRAIL</th><th>GRAIL ctx</th><th>Time</th>
+      <th>RAG</th><th>RAG ctx</th><th>Time</th>
+      <th>Winner</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="mono">Q01</td><td>Single Fact</td><td><span class="pill pill-e">easy</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">1844ch</td><td class="mono">11.4K</td><td class="mono">18s</td>
+        <td class="status-empty">EMPTY</td><td class="mono">4.5K</td><td class="mono">90s</td>
+        <td class="winner-g">GRAIL</td></tr>
+      <tr><td class="mono">Q02</td><td>Single Fact</td><td><span class="pill pill-e">easy</span></td>
+        <td><span class="tool-tag tool-local">local</span></td><td class="status-ok">671ch</td><td class="mono">11.1K</td><td class="mono">5s</td>
+        <td class="status-ok">547ch</td><td class="mono">4.1K</td><td class="mono">13s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q03</td><td>Single Fact</td><td><span class="pill pill-e">easy</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">763ch</td><td class="mono">11.4K</td><td class="mono">16s</td>
+        <td class="status-ok">421ch</td><td class="mono">4.3K</td><td class="mono">18s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q04</td><td>Single Fact</td><td><span class="pill pill-m">med</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">1456ch</td><td class="mono">23.0K</td><td class="mono">25s</td>
+        <td class="status-ok">752ch</td><td class="mono">8.8K</td><td class="mono">36s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q05</td><td>Single Fact</td><td><span class="pill pill-m">med</span></td>
+        <td><span class="tool-tag tool-doc">document</span><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">1180ch</td><td class="mono">11.5K</td><td class="mono">13s</td>
+        <td class="status-ok">730ch</td><td class="mono">4.2K</td><td class="mono">14s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q06</td><td>Multi-Chunk</td><td><span class="pill pill-m">med</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">1904ch</td><td class="mono">12.6K</td><td class="mono">19s</td>
+        <td class="status-ok">1132ch</td><td class="mono">4.3K</td><td class="mono">16s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q07</td><td>Multi-Chunk</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">4997ch</td><td class="mono">11.2K</td><td class="mono">14s</td>
+        <td class="status-empty">EMPTY</td><td class="mono">13.0K</td><td class="mono">53s</td>
+        <td class="winner-g">GRAIL</td></tr>
+      <tr><td class="mono">Q08</td><td>Multi-Chunk</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">2227ch</td><td class="mono">12.6K</td><td class="mono">10s</td>
+        <td class="status-ok">1632ch</td><td class="mono">4.2K</td><td class="mono">22s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q09</td><td>Multi-Chunk</td><td><span class="pill pill-m">med</span></td>
+        <td><span class="tool-tag tool-local">local</span></td><td class="status-ok">2525ch</td><td class="mono">10.9K</td><td class="mono">8s</td>
+        <td class="status-ok">891ch</td><td class="mono">4.2K</td><td class="mono">17s</td>
+        <td class="winner-g">GRAIL</td></tr>
+      <tr><td class="mono">Q10</td><td>Multi-Chunk</td><td><span class="pill pill-m">med</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">1270ch</td><td class="mono">10.8K</td><td class="mono">10s</td>
+        <td class="status-empty">EMPTY</td><td class="mono">13.2K</td><td class="mono">47s</td>
+        <td class="winner-g">GRAIL</td></tr>
+      <tr><td class="mono">Q11</td><td>Cross-Source</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-local">local</span><span class="tool-tag tool-local">local</span></td><td class="status-ok">3851ch</td><td class="mono">23.0K</td><td class="mono">11s</td>
+        <td class="status-ok">3724ch</td><td class="mono">8.8K</td><td class="mono">41s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q12</td><td>Cross-Source</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-local">local</span></td><td class="status-ok">2052ch</td><td class="mono">12.6K</td><td class="mono">7s</td>
+        <td class="status-ok">3012ch</td><td class="mono">4.3K</td><td class="mono">18s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q13</td><td>Cross-Source</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-local">local</span><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">5893ch</td><td class="mono">23.9K</td><td class="mono">18s</td>
+        <td class="status-ok">3577ch</td><td class="mono">4.2K</td><td class="mono">35s</td>
+        <td class="winner-g">GRAIL</td></tr>
+      <tr><td class="mono">Q14</td><td>Cross-Source</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-local">local</span><span class="tool-tag tool-cascade">cascade</span></td><td class="status-ok">4981ch</td><td class="mono">24.7K</td><td class="mono">18s</td>
+        <td class="status-ok">5429ch</td><td class="mono">8.8K</td><td class="mono">42s</td>
+        <td class="winner-t">TIE</td></tr>
+      <tr><td class="mono">Q15</td><td>Cross-Source</td><td><span class="pill pill-h">hard</span></td>
+        <td><span class="tool-tag tool-cascade">cascade</span><span class="tool-tag tool-cascade">cascade</span><span class="tool-tag tool-cascade">cascade</span></td><td class="status-empty">EMPTY</td><td class="mono">33.8K</td><td class="mono">23s</td>
+        <td class="status-ok">3856ch</td><td class="mono">8.7K</td><td class="mono">38s</td>
+        <td class="winner-r">RAG</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- CATEGORY BREAKDOWN -->
+<div class="section">
+  <h2>By Category</h2>
+  <p class="sub">Response rate and tool patterns per question type</p>
+  <table class="main">
+    <thead><tr><th>Category</th><th>Questions</th><th>GRAIL answered</th><th>RAG answered</th><th>GRAIL tools</th></tr></thead>
+    <tbody>
+      <tr><td>Single Fact</td><td>5</td><td class="status-ok">5/5</td><td class="status-empty">4/5</td><td><span class="tool-tag tool-cascade">cascade&times;6</span> <span class="tool-tag tool-local">local&times;1</span> <span class="tool-tag tool-doc">document&times;1</span></td></tr>
+      <tr><td>Multi-Chunk</td><td>5</td><td class="status-ok">5/5</td><td class="status-empty">3/5</td><td><span class="tool-tag tool-cascade">cascade&times;4</span> <span class="tool-tag tool-local">local&times;1</span></td></tr>
+      <tr><td>Cross-Source</td><td>5</td><td class="status-empty">4/5</td><td class="status-ok">5/5</td><td><span class="tool-tag tool-local">local&times;5</span> <span class="tool-tag tool-cascade">cascade&times;4</span></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--t2);margin-top:12px;">
+    <strong>Single Fact &amp; Multi-Chunk:</strong> GRAIL answers 10/10, RAG fails on 3 (thinking model token exhaustion on complex contexts). GRAIL's structured context is more efficient — 2 LLM calls vs RAG's 3-7.<br>
+    <strong>Cross-Source:</strong> GRAIL uses local+local or local+cascade pairs to search both sides of cross-document questions. RAG fails less here because it doesn't need entity matching.
+  </p>
+</div>
+
+<!-- FINDINGS -->
+<div class="section">
+  <h2>Key Findings</h2>
+  <p class="sub">What this benchmark reveals</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="stat-card" style="text-align:left;padding:20px;">
+      <h4 style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:8px;">GRAIL is faster and more reliable</h4>
+      <p style="font-size:13px;color:var(--t2);">Average 11.3s vs RAG's 31.1s. GRAIL uses 2.3 LLM calls per question vs RAG's 3.7. The structured context (entities + relationships + text units) gives the LLM everything in one pass. RAG often needs multiple search refinements.</p>
+    </div>
+    <div class="stat-card" style="text-align:left;padding:20px;">
+      <h4 style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:8px;">Tool diversity works</h4>
+      <p style="font-size:13px;color:var(--t2);">The agent uses local_search for entity-focused queries (Q02, Q09, Q11-Q14), cascade for text-detail queries (Q01, Q03, Q06-Q08, Q10), and even document_search (Q05). This strategic tool selection is GRAIL's unique advantage over single-tool RAG.</p>
+    </div>
+    <div class="stat-card" style="text-align:left;padding:20px;">
+      <h4 style="font-size:14px;font-weight:600;color:var(--orange);margin-bottom:8px;">RAG fails on complex contexts</h4>
+      <p style="font-size:13px;color:var(--t2);">RAG returned empty on Q01, Q07, Q10 — all cases where the thinking model exhausted its token budget processing large raw chunk contexts (13K+ tokens across multiple searches). GRAIL's single-pass structured context avoids this.</p>
+    </div>
+    <div class="stat-card" style="text-align:left;padding:20px;">
+      <h4 style="font-size:14px;font-weight:600;color:var(--red);margin-bottom:8px;">Q15 remains hard for GRAIL</h4>
+      <p style="font-size:13px;color:var(--t2);">GRAIL failed on Q15 (when does protection end?) — made 3 cascade searches consuming 33.8K tokens but couldn't synthesize an answer. This is a question where the answer (D54 Art.10) requires very specific article-level detail that cascade finds but the synthesis fails under thinking-model token pressure.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  GRAIL Agent Benchmark Q01-Q15 &middot; May 2026 &middot; Model: Qwen3.6-35B-A3B &middot; Embeddings: Qwen3-Embedding-8B &middot; FAISS cosine &middot; Local-first strategy with WHO+WHAT+TERMS formula
+</div>
+
+</body>
+</html>

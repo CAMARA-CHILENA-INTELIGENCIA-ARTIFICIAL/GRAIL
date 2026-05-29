@@ -392,8 +392,9 @@ class GRAIL:
     ) -> SearchResult:
         """Run a single search.
 
-        ``mode`` is one of ``"local"``, ``"global"``, or ``"document"``.
+        ``mode`` is one of ``"local"``, ``"global"``, ``"document"``, or ``"cascade"``.
         For ``"document"`` mode, pass ``document`` (filename, path, or doc ID).
+        ``"cascade"`` uses entity-gated retrieval with text-based rescue.
 
         ``use_reranker`` overrides the config-level reranker setting for this call:
         ``True`` forces reranking on, ``False`` forces it off, ``None`` uses config.
@@ -461,9 +462,39 @@ class GRAIL:
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
             )
+        elif mode == "cascade":
+            from grail.query.cascade_search import CascadeSearch
+            s_cfg = self.config.search
+            s = CascadeSearch(
+                storage=self.storage,
+                llm=self.llm,
+                embeddings=self.embeddings,
+                prompts=self.prompts,
+                artifacts=artifacts,
+                vector_store=self._vector_store(),
+                output_folder=self._output_folder(),
+                top_k_entities=s_cfg.local_top_k_entities,
+                max_tokens=s_cfg.local_max_tokens,
+                text_unit_prop=s_cfg.local_text_unit_prop,
+                community_prop=s_cfg.local_community_prop,
+                conversation_history_max_turns=s_cfg.local_conversation_history_max_turns,
+                response_max_tokens=resp_max,
+                endpoint=s_cfg.local_search_endpoint,
+                model=s_cfg.local_search_model,
+                use_community_summary=s_cfg.use_community_summary,
+                reporter=self.reporter,
+            )
+            return await s.asearch(
+                query,
+                conversation_history=conversation_history,
+                artifact_instructions=artifact_instructions,
+                include_entity_names=include_entity_names,
+                exclude_entity_names=exclude_entity_names,
+            )
         elif mode == "document":
             if not document:
                 raise ValueError("mode='document' requires a 'document' argument.")
+            s_cfg = self.config.search
             s = DocumentSearch(
                 storage=self.storage,
                 llm=self.llm,
@@ -471,11 +502,11 @@ class GRAIL:
                 prompts=self.prompts,
                 artifacts=artifacts,
                 output_folder=self._output_folder(),
-                max_tokens=self.config.search.local_max_tokens,
-                top_k_entities=self.config.search.local_top_k_entities,
-                response_max_tokens=resp_max,
-                endpoint=self.config.search.local_search_endpoint,
-                model=self.config.search.local_search_model,
+                max_tokens=s_cfg.document_search_max_tokens,
+                top_k_entities=s_cfg.local_top_k_entities,
+                response_max_tokens=s_cfg.document_search_response_max_tokens,
+                endpoint=s_cfg.document_search_endpoint or s_cfg.local_search_endpoint,
+                model=s_cfg.document_search_model or s_cfg.local_search_model,
                 reporter=self.reporter,
                 reranker=self.reranker,
                 reranker_overfetch_factor=r_cfg.overfetch_factor,
@@ -488,7 +519,7 @@ class GRAIL:
                 artifact_instructions=artifact_instructions,
                 use_reranker=use_reranker,
             )
-        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local', 'global', or 'document'.")
+        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local', 'global', 'document', or 'cascade'.")
 
     async def agent_search(
         self,
@@ -497,13 +528,18 @@ class GRAIL:
         conversation_history: Optional[list[dict[str, Any]]] = None,
         system_prompt: Optional[str] = None,
         max_iterations: int = 5,
+        enabled_tools: Optional[set[str]] = None,
     ) -> SearchResult:
         """Agentic search — the LLM decides which search tools to call and iterates.
 
-        The agent has access to ``local_search``, ``global_search``, and
-        ``document_search`` as tools. It can call them multiple times with
+        The agent has access to ``local_search``, ``cascade_search``, ``global_search``,
+        and ``document_search`` as tools. It can call them multiple times with
         different parameters before synthesizing a final answer.
+
+        ``enabled_tools`` optionally restricts which tools the agent can call
+        (set of tool names). When None, all tools are available.
         """
+        s_cfg = self.config.search
         agent = AgentSearch(
             storage=self.storage,
             llm=self.llm,
@@ -512,15 +548,16 @@ class GRAIL:
             vector_store=self._vector_store(),
             output_folder=self._output_folder(),
             max_iterations=max_iterations,
-            max_tokens=self.config.search.local_max_tokens,
-            top_k_entities=self.config.search.local_top_k_entities,
-            text_unit_prop=self.config.search.local_text_unit_prop,
-            community_prop=self.config.search.local_community_prop,
-            use_community_summary=self.config.search.use_community_summary,
-            response_max_tokens=self.config.search.response_max_tokens,
-            endpoint=self.config.search.local_search_endpoint,
-            model=self.config.search.local_search_model,
+            max_tokens=s_cfg.agent_search_max_tokens,
+            top_k_entities=s_cfg.local_top_k_entities,
+            text_unit_prop=s_cfg.local_text_unit_prop,
+            community_prop=s_cfg.local_community_prop,
+            use_community_summary=s_cfg.use_community_summary,
+            response_max_tokens=s_cfg.agent_search_response_max_tokens,
+            endpoint=s_cfg.agent_search_endpoint or s_cfg.local_search_endpoint,
+            model=s_cfg.agent_search_model or s_cfg.local_search_model,
             reporter=self.reporter,
+            enabled_tools=enabled_tools,
         )
         return await agent.asearch(
             query,
@@ -660,7 +697,14 @@ class GRAIL:
             extraction_max_tokens=self.config.indexing.extraction_max_tokens,
             extraction_concurrency=self.config.indexing.extraction_concurrency,
             summarization_concurrency=self.config.indexing.summarization_concurrency,
+            summarization_max_tokens=self.config.indexing.max_summarization_tokens,
+            summarization_batch_size=self.config.indexing.summarization_batch_size,
             delimiters={**DEFAULT_DELIMITERS, **delimiters},
+            deduplicate_entities=self.config.indexing.deduplicate_entities,
+            dedup_similarity_threshold=self.config.indexing.dedup_similarity_threshold,
+            dedup_endpoint=self.config.indexing.dedup_endpoint,
+            dedup_model=self.config.indexing.dedup_model,
+            dedup_max_entities_per_call=self.config.indexing.dedup_max_entities_per_call,
             reporter=self.reporter,
         )
 
@@ -691,7 +735,7 @@ class GRAIL:
             docs = [
                 VectorStoreDocument(
                     id=row["id"],
-                    text=row["description"],
+                    text=f"{row['name']}: {row['description']}",
                     vector=row["description_embedding"],
                     attributes={
                         "name": row["name"],

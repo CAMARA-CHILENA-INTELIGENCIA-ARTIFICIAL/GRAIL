@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Benchmark — Batch 2 (Q11-Q20)</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#151515;--s2:#1c1c1c;--s3:#232323;--border:#2a2a2a;--text:#ececec;--t2:#a1a1a1;--t3:#6b6b6b;--green:#10b981;--green-dim:rgba(16,185,129,0.10);--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.10);--orange:#f97316;--orange-dim:rgba(249,115,22,0.10);--red:#ef4444;--yellow:#eab308;--purple:#a855f7;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono','Fira Code',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+  .hero{padding:48px 0 36px;text-align:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(16,185,129,0.08) 0%,transparent 70%);pointer-events:none;}
+  .ascii-logo{font-family:var(--mono);font-size:11px;line-height:1.2;color:var(--green);opacity:0.7;margin-bottom:16px;letter-spacing:1px;}
+  .hero .batch-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 16px;border-radius:999px;background:var(--green-dim);color:var(--green);font-size:13px;font-weight:600;margin-bottom:16px;border:1px solid rgba(16,185,129,0.2);}
+  .logo{margin-bottom:20px;}.logo svg{width:280px;height:auto;}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px;background:linear-gradient(135deg,var(--text) 0%,var(--t2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p{font-size:15px;color:var(--t2);max-width:660px;margin:0 auto;}
+  .hero-meta{display:flex;justify-content:center;gap:24px;margin-top:16px;font-size:12px;color:var(--t3);}
+  .section{padding:40px 0;border-bottom:1px solid var(--border);}.section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:4px;}.section .sub{color:var(--t2);font-size:14px;margin-bottom:24px;}
+  .headline{display:flex;justify-content:center;gap:1px;margin:24px 0;}
+  .h-card{background:var(--surface);padding:28px 40px;text-align:center;flex:1;max-width:280px;}
+  .h-card:first-child{border-radius:16px 0 0 16px;}.h-card:last-child{border-radius:0 16px 16px 0;}
+  .h-card .h-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .h-card .h-num{font-size:48px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .h-card .h-sub{font-size:12px;color:var(--t3);margin-top:4px;}
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px;}
+  .m-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;}
+  .m-card .m-val{font-size:20px;font-weight:700;font-family:var(--mono);line-height:1.2;}
+  .m-card .m-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+  .tool-section{display:flex;justify-content:center;gap:40px;padding:24px 0;}
+  .tool-item{text-align:center;}.tool-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative;}
+  .tool-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--bg);}.tool-ring .ring-num{position:relative;z-index:1;font-size:24px;font-weight:700;font-family:var(--mono);}
+  .tool-name{font-size:12px;font-weight:600;font-family:var(--mono);}.tool-desc{font-size:10px;color:var(--t3);max-width:100px;}
+  .chart-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}.chart-row:last-child{border-bottom:none;}
+  .chart-qid{width:36px;font-family:var(--mono);font-weight:600;font-size:13px;flex-shrink:0;}
+  .chart-cat{width:90px;font-size:11px;color:var(--t3);flex-shrink:0;}
+  .chart-bars{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .chart-bar-row{display:flex;align-items:center;gap:6px;}
+  .chart-bar-label{width:40px;font-size:10px;color:var(--t3);text-align:right;flex-shrink:0;}
+  .chart-bar-track{flex:1;height:14px;background:var(--s2);border-radius:7px;overflow:hidden;}
+  .chart-bar-fill{height:100%;border-radius:7px;transition:width 0.8s cubic-bezier(0.22,1,0.36,1);}
+  .chart-bar-val{width:32px;font-size:11px;font-family:var(--mono);font-weight:600;flex-shrink:0;}
+  .chart-tools{width:120px;font-size:10px;font-family:var(--mono);color:var(--t3);flex-shrink:0;text-align:right;}
+  .chart-winner{width:50px;font-size:10px;font-weight:700;text-align:center;flex-shrink:0;}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;transition:border-color 0.2s;}.q-card:hover{border-color:#444;}
+  .q-card .q-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;}
+  .q-card .q-title{font-size:14px;font-weight:600;}
+  .q-card .q-text{color:var(--t2);font-size:13px;font-style:italic;margin-bottom:12px;}
+  .q-card .q-gold{font-size:12px;color:var(--yellow);margin-bottom:14px;padding:10px 14px;background:rgba(234,179,8,0.06);border-radius:8px;border:1px solid rgba(234,179,8,0.15);border-left:3px solid var(--yellow);}
+  .q-card .q-gold strong{color:#facc15;}
+  .agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .a-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .a-box .a-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .a-box .a-name{font-size:12px;font-weight:600;}.a-box .a-score{font-family:var(--mono);font-weight:700;font-size:20px;}
+  .a-box .a-dims{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;}
+  .a-dim{text-align:center;padding:4px;background:var(--bg);border-radius:6px;}
+  .a-dim .d-val{font-size:14px;font-weight:700;font-family:var(--mono);}.a-dim .d-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;}
+  .a-preview{font-size:11px;color:var(--t2);margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:2px solid var(--border);line-height:1.5;font-style:italic;}
+  .pill{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10px;font-weight:600;}
+  .p-e{background:rgba(16,185,129,0.12);color:#34d399;}.p-m{background:rgba(59,130,246,0.12);color:#60a5fa;}.p-h{background:rgba(239,68,68,0.12);color:#f87171;}
+  .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);font-weight:600;margin:1px;}
+  .tag-l{background:rgba(16,185,129,0.12);color:#34d399;}.tag-c{background:rgba(59,130,246,0.12);color:#60a5fa;}.tag-d{background:rgba(168,85,247,0.12);color:#a78bfa;}.tag-r{background:rgba(249,115,22,0.12);color:#f97316;}
+  .verdict{padding:2px 10px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .v-g{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.2);}
+  .v-r{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,0.2);}
+  .v-t{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.2);}
+  .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .insight .i-icon{font-size:24px;margin-bottom:8px;}.insight h4{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .insight p{font-size:13px;color:var(--t2);line-height:1.5;}
+  .footer{padding:32px 0;text-align:center;color:var(--t3);font-size:12px;}
+  @media(max-width:768px){.metrics{grid-template-columns:repeat(3,1fr);}.agent-grid,.insight-grid{grid-template-columns:1fr;}.headline{flex-direction:column;align-items:center;gap:8px;}.h-card{border-radius:12px!important;max-width:100%;}.chart-tools,.chart-cat{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <div class="logo"><svg viewBox="0 0 280 60" xmlns="http://www.w3.org/2000/svg"><text x="0" y="48" font-family="'JetBrains Mono','SF Mono','Fira Code',monospace" font-size="56" font-weight="900" fill="#10b981" opacity="0.85" letter-spacing="-2">GRAIL</text></svg></div>
+  <div class="batch-tag">Batch 2 of 3 &mdash; Q11 to Q20</div>
+  <h1>Agent Benchmark Report</h1>
+  <p>10 questions: 5 Cross-Source + 3 Procedural + 1 Comparative + 1 Single Fact. Zero empty responses. Patient-language queries on Chilean oncology law.</p>
+  <div class="hero-meta">
+    <span>Model: Qwen3.6-35B-A3B</span><span>Embeddings: Qwen3-Embedding-8B</span><span>Judge: Claude Opus 4.6</span>
+  </div>
+</div></div>
+
+<div class="container">
+
+<div class="section">
+  <div class="headline">
+    <div class="h-card" style="border-right:1px solid var(--border);"><div class="h-label" style="color:var(--green);">GRAIL Agent</div><div class="h-num" style="color:var(--green);">4.78</div><div class="h-sub">avg score / 5.00</div></div>
+    <div class="h-card" style="border-right:1px solid var(--border);"><div class="h-label" style="color:var(--orange);">RAG Agent</div><div class="h-num" style="color:var(--orange);">4.05</div><div class="h-sub">avg score / 5.00</div></div>
+    <div class="h-card"><div class="h-label" style="color:var(--text);">W - L - T</div><div class="h-num" style="color:var(--green);">9-0-1</div><div class="h-sub">GRAIL dominant</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Performance Metrics</h2>
+  <div class="metrics">
+    <div class="m-card"><div class="m-val" style="color:var(--green)">0</div><div class="m-lbl">GRAIL empties</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">0</div><div class="m-lbl">RAG empties</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">40s</div><div class="m-lbl">GRAIL avg time</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">44s</div><div class="m-lbl">RAG avg time</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">2.6</div><div class="m-lbl">GRAIL calls/q</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">3.0</div><div class="m-lbl">RAG calls/q</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>GRAIL Tool Selection</h2>
+  <p class="sub">Cross-source questions trigger multi-tool strategies</p>
+  <div class="tool-section">
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--green) 0% 35%,var(--s3) 35%);"><span class="ring-num" style="color:var(--green)">5</span></div><div class="tool-name" style="color:var(--green)">local</div><div class="tool-desc">Entity description matching</div></div>
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--blue) 0% 65%,var(--s3) 65%);"><span class="ring-num" style="color:var(--blue)">9</span></div><div class="tool-name" style="color:var(--blue)">cascade</div><div class="tool-desc">Entity + text matching</div></div>
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--orange) 0% 100%,var(--s3) 100%);"><span class="ring-num" style="color:var(--orange)">10</span></div><div class="tool-name" style="color:var(--orange)">rag</div><div class="tool-desc">RAG: always chunk search</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Score Comparison</h2>
+  <p class="sub">Weighted score per question</p>
+  <div id="chart"></div>
+  <script>
+  const data=[
+    {qid:"Q11",cat:"Cross-Source",gw:4.85,rw:4.10,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q12",cat:"Cross-Source",gw:4.85,rw:3.95,tools:"local",w:"GRAIL"},
+    {qid:"Q13",cat:"Cross-Source",gw:5.00,rw:4.10,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q14",cat:"Cross-Source",gw:4.70,rw:3.95,tools:"cascade",w:"GRAIL"},
+    {qid:"Q15",cat:"Cross-Source",gw:3.95,rw:3.25,tools:"cascade×3",w:"GRAIL"},
+    {qid:"Q16",cat:"Procedural",gw:4.85,rw:4.10,tools:"local+cascade",w:"GRAIL"},
+    {qid:"Q17",cat:"Procedural",gw:4.85,rw:4.85,tools:"cascade",w:"TIE"},
+    {qid:"Q18",cat:"Procedural",gw:5.00,rw:4.10,tools:"local",w:"GRAIL"},
+    {qid:"Q19",cat:"Procedural",gw:4.85,rw:3.95,tools:"cascade+local",w:"GRAIL"},
+    {qid:"Q20",cat:"Comparative",gw:4.85,rw:4.10,tools:"local",w:"GRAIL"},
+  ];
+  const wC={GRAIL:"v-g",RAG:"v-r",TIE:"v-t"};
+  const ch=document.getElementById("chart");
+  data.forEach(d=>{ch.innerHTML+=`
+  <div class="chart-row">
+    <div class="chart-qid">${d.qid}</div><div class="chart-cat">${d.cat}</div>
+    <div class="chart-bars">
+      <div class="chart-bar-row"><div class="chart-bar-label" style="color:var(--green)">GRAIL</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.gw/5*100}%;background:var(--green);"></div></div><div class="chart-bar-val" style="color:var(--green)">${d.gw.toFixed(2)}</div></div>
+      <div class="chart-bar-row"><div class="chart-bar-label" style="color:var(--orange)">RAG</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.rw/5*100}%;background:var(--orange);"></div></div><div class="chart-bar-val" style="color:var(--orange)">${d.rw.toFixed(2)}</div></div>
+    </div>
+    <div class="chart-tools">${d.tools}</div><div class="chart-winner"><span class="verdict ${wC[d.w]}">${d.w}</span></div>
+  </div>`;});
+  </script>
+</div>
+
+<div class="section">
+  <h2>Per-Question Detail</h2>
+  <p class="sub">5-dimension scoring with response previews</p>
+  <div id="details"></div>
+  <script>
+  const qs=[
+    {qid:"Q11",cat:"Cross-Source",diff:"hard",q:"¿Cómo se complementan la Ley Ricarte Soto y el plan AUGE/GES para proteger a un paciente con cáncer?",gold:"La Ley 20.850 complementa la Ley 19.966: forma parte del Régimen General de Garantías. Beneficiarios ISAPRE agotan CAEC primero. Si un tratamiento se incorpora al GES, pasa a regirse por la Ley 19.966.",gw:4.85,rw:4.10,gs:[5,5,4,5,5],rs:[4,4,4,5,4],tools:["cascade","cascade"],w:"GRAIL",gp:"La Ley Ricarte Soto y el plan AUGE/GES se complementan de manera jerárquica y progresiva para proteger a pacientes con cáncer...",rp:"La Ley Ricarte Soto y el Plan AUGE/GES se complementan para ofrecer una protección integral al paciente oncológico..."},
+    {qid:"Q12",cat:"Cross-Source",diff:"hard",q:"Un paciente con cáncer al que le niegan un tratamiento de alto costo: ¿ante qué instituciones puede reclamar?",gold:"Intendencia de Fondos y Seguros Previsionales de la Superintendencia de Salud. También Consejo de Defensa del Estado para mediación por daño.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["local"],w:"GRAIL",gp:"Un paciente con cáncer al que se le niega un tratamiento puede reclamar ante la Superintendencia de Salud, Intendencia de Fondos y Seguros...",rp:"Un paciente al que se le niega un tratamiento puede reclamar ante la Superintendencia de Salud según la Ley 20.850..."},
+    {qid:"Q13",cat:"Cross-Source",diff:"hard",q:"¿Qué necesita un hospital para poder atender pacientes bajo la Ley Ricarte Soto?",gold:"Acreditación en Superintendencia, aprobación del Ministerio de Salud, convenio con FONASA. Decreto 54 detalla: Comisión Asesora evalúa, Ministro aprueba por decreto, convenio en 10 días.",gw:5.00,rw:4.10,gs:[5,5,5,5,5],rs:[4,4,4,5,4],tools:["cascade","cascade"],w:"GRAIL",gp:"Un hospital debe cumplir: acreditación en Superintendencia de Salud, aprobación del Ministerio, convenio con FONASA, estándares técnicos del Decreto 54...",rp:"Un hospital debe cumplir con una serie de requisitos: acreditación, aprobación del Ministerio de Salud..."},
+    {qid:"Q14",cat:"Cross-Source",diff:"hard",q:"¿Qué derechos específicos de atención tiene un paciente con cáncer y cómo lo protegen las distintas leyes?",gold:"Ley 19.966: 4 garantías (acceso, calidad, oportunidad, protección financiera 20% copago). Ley 20.850: cobertura 100% sin copago para alto costo incluyendo oncología.",gw:4.70,rw:3.95,gs:[5,5,4,5,4],rs:[4,4,3,5,4],tools:["cascade"],w:"GRAIL",gp:"Los pacientes con cáncer tienen derechos protegidos por varias leyes: garantías de acceso, calidad, oportunidad y protección financiera...",rp:"Un paciente con cáncer tiene derechos bajo la Ley 19.966 y la Ley 20.850: acceso a tratamientos, protección financiera..."},
+    {qid:"Q15",cat:"Cross-Source",diff:"hard",q:"¿En qué momento dejo de estar cubierto por la Ley Ricarte Soto? ¿Es diferente al AUGE/GES?",gold:"Decreto 54 Art.10: termina por alta médica, atención voluntaria fuera de Red, rechazo de prestación, muerte. GES: vigencia de 3 años renovable automáticamente.",gw:3.95,rw:3.25,gs:[4,4,3,5,4],rs:[3,3,3,4,4],tools:["cascade","cascade","cascade"],w:"GRAIL",gp:"La cobertura Ricarte Soto termina cuando: recibes el alta médica, decides atenderte fuera de la red aprobada, rechazas la prestación, o por fallecimiento...",rp:"La protección financiera de la Ley Ricarte Soto no tiene una fecha de término fija; opera mientras cumples los requisitos del sistema..."},
+    {qid:"Q16",cat:"Procedural",diff:"hard",q:"¿Cuáles son los pasos que debe seguir un paciente con cáncer para acceder al Sistema de Protección Financiera?",gold:"(1) Ser beneficiario previsional, (2) ISAPRE agotar CAEC, (3) diagnóstico en decreto Art.5, (4) atenderse en Red aprobada, (5) prestador informa derechos.",gw:4.85,rw:4.10,gs:[5,5,4,5,5],rs:[4,4,4,5,4],tools:["local","cascade"],w:"GRAIL",gp:"Los pasos según la Ley 20.850 y Decreto 54: ser beneficiario del sistema previsional, verificar que el diagnóstico está en el decreto, atenderse en la Red...",rp:"Los pasos y requisitos según la Ley 20.850 y Decreto 54: ser beneficiario, que el tratamiento esté incorporado al sistema..."},
+    {qid:"Q17",cat:"Procedural",diff:"hard",q:"Si un hospital público me hizo daño durante mi tratamiento, ¿qué tengo que hacer antes de poder demandarlo?",gold:"Mediación obligatoria ante Consejo de Defensa del Estado, 60 días corridos prorrogable a 120, confidencialidad, acta de acuerdo o fracaso.",gw:4.85,rw:4.85,gs:[5,5,4,5,5],rs:[5,5,4,5,5],tools:["cascade"],w:"TIE",gp:"Según la Ley 19.966, antes de demandar debes agotar un procedimiento de mediación ante el Consejo de Defensa del Estado, plazo de 60 días...",rp:"El paso obligatorio es agotar un procedimiento de mediación formal antes de poder interponer demanda judicial..."},
+    {qid:"Q18",cat:"Procedural",diff:"medium",q:"¿Cómo hace un hospital para entrar a la red que puede atender pacientes con tratamientos caros?",gold:"Subsecretaría de Redes Asistenciales inicia evaluación, Comisión Asesora evalúa estándares, Ministro aprueba por decreto, convenio con FONASA en 10 días.",gw:5.00,rw:4.10,gs:[5,5,5,5,5],rs:[4,4,4,5,4],tools:["local"],w:"GRAIL",gp:"Según el Decreto 54 y Ley 20.850: la Subsecretaría de Redes Asistenciales inicia la evaluación, la Comisión Asesora analiza los estándares técnicos...",rp:"Un hospital debe cumplir requisitos de acreditación y seguir un proceso formal para ingresar a la Red de Prestadores..."},
+    {qid:"Q19",cat:"Procedural",diff:"medium",q:"¿Qué pasa si el medicamento que necesito para mi tratamiento se agota o no está disponible?",gold:"Titular debe informar en 24hrs. CENABAST puede importar sin registro sanitario. Titular civilmente responsable de discontinuidad.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["cascade","local"],w:"GRAIL",gp:"Si tu medicamento se agota, la normativa establece varios mecanismos: notificación obligatoria en 24 horas, CENABAST puede importar sin registro sanitario...",rp:"Existen mecanismos para garantizar la continuidad de tu tratamiento si el medicamento se agota según la Ley 20.850..."},
+    {qid:"Q20",cat:"Comparative",diff:"easy",q:"¿Es lo mismo que me cubran los exámenes que el tratamiento? ¿Cuál es la diferencia?",gold:"Diagnóstico de alto costo: prestaciones para confirmación y control de la patología. Tratamiento de alto costo: medicamentos, alimentos, elementos de uso médico.",gw:4.85,rw:4.10,gs:[5,5,4,5,5],rs:[4,4,3,5,5],tools:["local"],w:"GRAIL",gp:"No, no es lo mismo. El sistema distingue claramente entre confirmación diagnóstica (exámenes) y tratamiento, aunque ambos están protegidos...",rp:"No, no es lo mismo, aunque están estrechamente relacionados y ambos suelen estar cubiertos bajo el mismo sistema de protección financiera..."},
+  ];
+  const dims=["Correct","Complete","Source","Coher.","No Hal."];
+  const det=document.getElementById("details");
+  const dP={easy:"p-e",medium:"p-m",hard:"p-h"};const wCl={GRAIL:"v-g",RAG:"v-r",TIE:"v-t"};const tC={local:"tag-l",cascade:"tag-c"};
+  qs.forEach(q=>{
+    const tt=q.tools.map(t=>`<span class="tag ${tC[t]||'tag-c'}">${t}</span>`).join(" ");
+    const gD=q.gs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    const rD=q.rs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    det.innerHTML+=`
+    <div class="q-card">
+      <div class="q-head"><div class="q-title">${q.qid} &mdash; ${q.cat} <span class="pill ${dP[q.diff]}">${q.diff}</span></div><span class="verdict ${wCl[q.w]}">${q.w} ${q.w!=="TIE"?`+${Math.abs(q.gw-q.rw).toFixed(2)}`:""}</span></div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-gold"><strong>Gold:</strong> ${q.gold}</div>
+      <div class="agent-grid">
+        <div class="a-box"><div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL ${tt}</span><span class="a-score" style="color:var(--green)">${q.gw.toFixed(2)}</span></div><div class="a-dims">${gD}</div><div class="a-preview">${q.gp}</div></div>
+        <div class="a-box"><div class="a-head"><span class="a-name" style="color:var(--orange)">RAG <span class="tag tag-r">rag</span></span><span class="a-score" style="color:var(--orange)">${q.rw.toFixed(2)}</span></div><div class="a-dims">${rD}</div><div class="a-preview">${q.rp}</div></div>
+      </div>
+    </div>`;
+  });
+  </script>
+</div>
+
+<div class="section">
+  <h2>Key Insights</h2>
+  <p class="sub">Batch 2 patterns</p>
+  <div class="insight-grid">
+    <div class="insight"><div class="i-icon" style="color:var(--green);">+0.90</div><h4>Cross-Source dominance</h4><p>GRAIL wins all 5 cross-source questions. The agent uses cascade×2 to search both sides of cross-document comparisons (Q11, Q13) or combines local+cascade for entity concepts with text details. RAG's single chunk search can't connect information across documents as effectively.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--green);">+0.90</div><h4>Procedural: local+cascade combo</h4><p>Q16 and Q19 use local_search first (find the procedure entity) then cascade (fill in specific steps and details). This two-phase strategy gives GRAIL richer context than RAG's single pass.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--blue);">Q18</div><h4>local_search perfect score</h4><p>Q18 (hospital joining the network) scored 5.00 with a single local_search. The WHO+WHAT+TERMS query matched the provider accreditation entity and its full D54 process — all in one call, 18 seconds.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--yellow);">Q15</div><h4>Hardest question</h4><p>Q15 (when does protection end?) is the toughest — GRAIL needed 3 cascade calls and still scored only 3.95. The termination conditions (D54 Art.10) are scattered across articles. RAG scored 3.25. Both struggle but GRAIL handles it better.</p></div>
+  </div>
+</div>
+
+</div>
+<div class="footer"><p>GRAIL Benchmark Batch 2 (Q11-Q20) &middot; May 2026 &middot; Qwen3.6-35B-A3B &middot; Qwen3-Embedding-8B &middot; FAISS cosine &middot; Judge: Claude Opus 4.6</p></div>
+</body>
+</html>

@@ -40,6 +40,120 @@ from benchmarks.rag_baseline import RAGBaseline
 from grail.core import GRAIL
 from grail.schemas import SearchResult
 
+_GRAIL_AGENT_SYSTEM = """\
+You are a precise assistant that answers questions using a knowledge base of legal documents. \
+You have up to 2 search tool calls before you must answer. Pick the best search strategy, \
+retrieve the relevant information, then synthesize a complete answer. Respond in the same \
+language as the question.
+
+<tools>
+1. **local_search** — Searches by matching your query against entity descriptions in the \
+knowledge graph. The knowledge base contains entities (concepts, laws, institutions, \
+procedures) each with a detailed description. Your query is embedded and compared against \
+these descriptions, then the system retrieves the matching entities, their relationships, \
+community summaries, and the original source text chunks that mention them. \
+IMPORTANT: craft your query as a description of the concept you are looking for, not as a \
+question. For example, to find information about a commission, describe it: \
+"Comisión de 12 miembros que evalúa y prioriza tratamientos de alto costo". \
+You can also use include_entities with UPPERCASE names to force specific entities.
+
+2. **cascade_search** — Hybrid search that combines entity matching (like local_search) \
+with direct text matching (BM25 + cosine similarity) over ALL raw text chunks. Use this \
+when your question refers to specific details, numbers, article references, or provisions \
+that might not be captured in any entity description — the text matching path will find \
+them directly in the source documents even if no entity matches.
+
+3. **global_search** — Synthesizes an answer from pre-computed community report summaries \
+that cover the entire knowledge base thematically. Does NOT search individual entities or \
+text chunks. Use only for broad overview questions.
+
+4. **document_search** — Searches within a single source document by filename. Use when \
+the user asks specifically about one law or decree.
+</tools>
+
+<strategy>
+- DEFAULT for most questions → **local_search** with the WHO+WHAT+TERMS formula. \
+  This is GRAIL's core strength — the knowledge graph connects entities to their \
+  source text, relationships, and community context.
+- When you need specific words, exact numbers, article references, or quoted text → \
+  **cascade_search**. This adds RAG-style text matching that finds raw passages \
+  even when no entity captures them.
+- When local_search returned incomplete results → retry with **cascade_search** as \
+  fallback (it searches the raw text directly).
+- Comparison of two concepts → two local_search calls, one per concept.
+- Broad "what is this about?" or "summarize the framework" → **global_search**
+- "What does Decreto 54 say about X?" → **document_search**
+</strategy>
+
+<query_formula>
+For local_search, build your query using this formula to maximize entity matching:
+
+  [WHO does it] + [WHAT is the process/concept] + [SPECIFIC TERMS you expect in descriptions]
+
+Examples of good local_search queries:
+- BAD:  "comisión que decide qué enfermedades están cubiertas"  (institution only — misses the criteria)
+- GOOD: "proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas en salud, basado en estudios epidemiológicos, carga de enfermedad, evaluaciones económicas y costo-efectividad"
+
+The query is embedded and compared against entity descriptions. Include ALL relevant \
+terms — the entity name, its attributes, and the specific vocabulary you expect to find. \
+More overlap = better retrieval.
+</query_formula>
+
+<examples>
+User: "¿Quién vigila que se cumplan los tratamientos de alto costo?"
+→ local_search(query="comisión ciudadana de vigilancia y control del sistema de protección financiera para diagnósticos y tratamientos de alto costo, integrada por representantes de pacientes y asociaciones científicas")
+
+User: "¿Cómo decide el gobierno qué enfermedades cubrir?"
+→ local_search(query="proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas en salud, basado en estudios epidemiológicos, carga de enfermedad, evaluaciones económicas y costo-efectividad")
+
+User: "¿Cuánto tiempo tengo para reclamar si me niegan un tratamiento?"
+→ cascade_search(query="plazo prescripción infracciones sanciones incumplimiento otorgamiento tratamientos alto costo dos años cuatro años")
+
+User: "Compara el Consejo Consultivo con la Comisión Ciudadana"
+→ local_search(query="consejo consultivo de nueve miembros expertos en medicina, economía y farmacia que asesora al Ministro de Salud sobre garantías explícitas")
+→ local_search(query="comisión ciudadana de vigilancia y control con representantes de pacientes, científicos y académicos que monitorea el sistema de protección financiera")
+
+User: "¿De qué trata esta base de conocimiento?"
+→ global_search(query="resumen del marco normativo de salud")
+</examples>
+
+<rules>
+- ONE tool per turn, max 2 total.
+- For local_search: use the WHO + WHAT + TERMS formula. Describe the concept richly.
+- For cascade_search: include specific keywords, article numbers, or legal terms.
+- Respond in the same language as the question.
+</rules>"""
+
+_RAG_AGENT_SYSTEM = """\
+You are a precise assistant that answers questions about a knowledge base of legal documents. \
+You have up to 2 tool calls to retrieve context before answering. Search for the relevant \
+passages, then synthesize a complete answer grounded in the retrieved data. If the first \
+search is incomplete, refine your query and search again. Respond in the same language as \
+the question."""
+
+_RAG_AGENT_TOOL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "rag_search",
+            "description": (
+                "Search the knowledge base by semantic similarity. Returns the most "
+                "relevant text passages from the source documents. Use for any question."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query — be specific and descriptive.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+]
+
 log = logging.getLogger("grail.benchmarks")
 
 
@@ -146,6 +260,138 @@ async def collect_rag_responses(
     return results
 
 
+async def collect_grail_agent_responses(
+    grail: GRAIL,
+    questions: list[dict],
+) -> dict[str, dict[str, Any]]:
+    """GRAIL agent: 3 iterations (up to 2 tool calls + synthesis)."""
+    results: dict[str, dict[str, Any]] = {}
+    total = len(questions)
+
+    for i, q in enumerate(questions, 1):
+        qid = q["id"]
+        log.info(f"[{i}/{total}] GRAIL Agent — {qid}: {q['question'][:60]}...")
+
+        result = await grail.agent_search(
+            query=q["question"],
+            system_prompt=_GRAIL_AGENT_SYSTEM,
+            max_iterations=3,
+        )
+
+        tools_used = []
+        ctx = result.context_data
+        if isinstance(ctx, dict):
+            for msg in ctx.get("agent_messages", []):
+                if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                    tools_used.append(msg["tool_calls"][0]["function"]["name"])
+
+        results[qid] = {
+            "question": q["question"],
+            "grail_agent": {
+                "response": result.response,
+                "completion_time": result.completion_time,
+                "llm_calls": result.llm_calls,
+                "tools_used": tools_used,
+            },
+        }
+    return results
+
+
+async def collect_rag_agent_responses(
+    rag: RAGBaseline,
+    llm: Any,
+    questions: list[dict],
+    *,
+    endpoint: Optional[str] = None,
+    model: Optional[str] = None,
+    response_max_tokens: int = 16_384,
+) -> dict[str, dict[str, Any]]:
+    """RAG agent: 3 iterations (up to 2 tool calls + synthesis). Same budget as GRAIL agent."""
+    results: dict[str, dict[str, Any]] = {}
+    total = len(questions)
+
+    for i, q in enumerate(questions, 1):
+        qid = q["id"]
+        log.info(f"[{i}/{total}] RAG Agent — {qid}: {q['question'][:60]}...")
+
+        started = time.perf_counter()
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": _RAG_AGENT_SYSTEM},
+            {"role": "user", "content": q["question"]},
+        ]
+
+        total_calls = 0
+        tools_count = 0
+        for _iteration in range(3):
+            result = await llm.execute_with_tools(
+                messages,
+                tools=_RAG_AGENT_TOOL,
+                endpoint=endpoint,
+                model=model,
+                max_tokens=response_max_tokens,
+                tag="rag_agent",
+            )
+            total_calls += 1
+
+            if not result["tool_calls"]:
+                break
+
+            tc = result["tool_calls"][0]
+            args = json.loads(tc["function"]["arguments"])
+            search_query = args.get("query", q["question"])
+            rag_result = await rag.query(search_query)
+            total_calls += rag_result.llm_calls
+            tools_count += 1
+
+            messages.append({
+                "role": "assistant",
+                "content": result["content"] or "",
+                "tool_calls": [{"id": tc["id"], "type": "function", "function": tc["function"]}],
+            })
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "content": rag_result.context_text[:15000] if rag_result.context_text else "",
+            })
+        else:
+            pass  # fell through — force synthesis below
+
+        response = ((result.get("content", "") if isinstance(result, dict) else str(result)) or "").strip()
+
+        if not response:
+            messages.append({
+                "role": "user",
+                "content": (
+                    "You have used all your search calls. Answer the original question NOW "
+                    "using whatever information you have gathered. If you don't have enough "
+                    "information, say what you found and what is missing."
+                ),
+            })
+            final = await llm.execute_safe(
+                messages=messages,
+                endpoint=endpoint,
+                model=model,
+                max_tokens=response_max_tokens,
+                tag="rag_agent_forced",
+            )
+            total_calls += 1
+            response = (final or "").strip()
+            if not response:
+                response = "No pude encontrar suficiente información para responder esta pregunta."
+
+        elapsed = time.perf_counter() - started
+        results[qid] = {
+            "question": q["question"],
+            "rag_agent": {
+                "response": response,
+                "completion_time": elapsed,
+                "llm_calls": total_calls,
+                "tools_count": tools_count,
+            },
+        }
+    return results
+
+
 async def judge_responses(
     llm_client,
     questions: list[dict],
@@ -158,7 +404,7 @@ async def judge_responses(
     """Score every (question, system, response) triple via LLM-as-judge."""
     scores: dict[str, dict[str, Any]] = {}
     total = len(questions)
-    systems = ["grail_local", "grail_local_reranked", "grail_global", "rag"]
+    systems = ["grail_local", "grail_local_reranked", "grail_global", "rag", "grail_agent", "rag_agent"]
 
     for i, q in enumerate(questions, 1):
         qid = q["id"]
@@ -342,6 +588,7 @@ async def main(args: argparse.Namespace) -> None:
     for qid, data in grail_responses.items():
         merged_responses[qid] = data
 
+    rag: Optional[RAGBaseline] = None
     if not args.skip_rag:
         log.info("Phase 1b: collecting RAG baseline responses...")
         rag = RAGBaseline(
@@ -350,6 +597,7 @@ async def main(args: argparse.Namespace) -> None:
             embeddings=grail.embeddings,
             output_folder=grail._output_folder(),
             top_k=grail.config.search.local_top_k_entities,
+            response_max_tokens=grail.config.search.response_max_tokens,
             endpoint=grail.config.search.local_search_endpoint,
             model=grail.config.search.local_search_model,
             reporter=grail.reporter,
@@ -360,6 +608,33 @@ async def main(args: argparse.Namespace) -> None:
             merged_responses.setdefault(qid, {}).update(data)
     else:
         log.info("Skipping RAG baseline (--skip-rag)")
+
+    if args.include_agents:
+        s_cfg = grail.config.search
+        log.info("Phase 1c: collecting GRAIL Agent responses...")
+        agent_responses = await collect_grail_agent_responses(grail, questions)
+        for qid, data in agent_responses.items():
+            merged_responses.setdefault(qid, {}).update(data)
+
+        if rag is None:
+            rag = RAGBaseline(
+                storage=grail.storage, llm=grail.llm, embeddings=grail.embeddings,
+                output_folder=grail._output_folder(),
+                top_k=s_cfg.local_top_k_entities,
+                response_max_tokens=s_cfg.response_max_tokens,
+                endpoint=s_cfg.local_search_endpoint, model=s_cfg.local_search_model,
+                reporter=grail.reporter,
+            )
+            await rag.prepare()
+        log.info("Phase 1d: collecting RAG Agent responses...")
+        rag_agent_responses = await collect_rag_agent_responses(
+            rag, grail.llm, questions,
+            endpoint=s_cfg.agent_search_endpoint or s_cfg.local_search_endpoint,
+            model=s_cfg.agent_search_model or s_cfg.local_search_model,
+            response_max_tokens=s_cfg.agent_search_response_max_tokens,
+        )
+        for qid, data in rag_agent_responses.items():
+            merged_responses.setdefault(qid, {}).update(data)
 
     write_json(out_dir / "responses.json", merged_responses)
     log.info(f"Responses saved to {out_dir / 'responses.json'}")
@@ -445,6 +720,11 @@ def cli() -> None:
         "--include-reranked",
         action="store_true",
         help="Include GRAIL local search with reranking as a 4th system",
+    )
+    parser.add_argument(
+        "--include-agents",
+        action="store_true",
+        help="Include single-tool-call agent comparison (RAG agent vs GRAIL agent)",
     )
     parser.add_argument(
         "--log-level",

@@ -1,0 +1,296 @@
+[
+  {
+    "qid": "Q08",
+    "question": "Me llevaron de urgencia a un hospital que no está en la red aprobada, ¿pierdo la cobertura del tratamiento de alto costo?",
+    "gold_kw": [
+      "urgencia vital",
+      "trasladado",
+      "reembolso",
+      "FONASA",
+      "Artículo 3"
+    ],
+    "grail": {
+      "response": "**No, no pierdes la cobertura.** La ley protege explícitamente tu derecho a recibir el tratamiento de alto costo incluso si fuiste atendido en un hospital que no está en la red aprobada, **siempre que se haya tratado de una urgencia**.\n\nSegún el **Artículo 3º de la Ley Nº 20.850**, la regla general es que las prestaciones deben otorgarse en la Red de Prestadores aprobada. Sin embargo, existe una **excepción importante** que aplica a tu caso:\n\n### ¿Cuándo tienes cobertura fuera de la red?\nTienes derecho a la protección financiera si la situación de salud implicaba una **urgencia vital** o una **secuela funcional grave**, lo que requirió una **hospitalización inmediata e impostergable** en un establecimiento diferente a los de la red aprobada.\n\n### ¿Qué pasa con los costos?\nEn este caso de urgencia:\n1.  El Fondo Nacional de Salud (FONASA) **reembolsará los costos** de los tratamientos cubiertos al prestador de urgencia, cargando dichos montos al Fondo de Tratamientos de Alto Costo.\n2.  La cobertura se mantiene **hasta que el paciente se encuentre en condiciones de ser trasladado** a un prestador aprobado por el Ministerio de Salud.\n\n### ¿Quién decide cuándo es seguro el traslado?\nEl **médico tratante** del establecimiento de urgencia es quien determina el momento a partir del cual el paciente está en condiciones de ser trasladado a la red.\n\n### Precaución importante:\nUna vez que el médico determine que el paciente puede ser trasladado:\n*   Si optas por el traslado a un establecimiento **de la red aprobada**, la protección financiera continúa.\n*   Si optas por la mantención o el traslado a un establecimiento **fuera de la red**, los copagos o costos que se devenguen a partir de ese momento **no estarán cubiertos** por el Sistema de Protección Financiera.\n\n**En resumen:** Si fuiste llevado de urgencia y tu condición requería atención inmediata, tu tratamiento de alto costo está cubierto. Asegúrate de que el hospital informe este ingreso a la Intendencia de Fondos y Seguros Previsionales y a FONASA dentro de las 24 horas siguientes, como lo exige la ley.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "emergencia hospital no aprobado red cobertura tratamiento alto costo pérdida cobertura"
+      ],
+      "ctx_tokens": [
+        11411
+      ],
+      "calls": 2,
+      "time": 35.758910333999665,
+      "hits": [
+        "urgencia vital",
+        "trasladado",
+        "FONASA",
+        "Artículo 3"
+      ],
+      "missed": [
+        "reembolso"
+      ],
+      "score": 4
+    },
+    "rag": {
+      "response": "No, **no pierdes la cobertura** en este caso específico.\n\nAunque la regla general establece que los tratamientos de alto costo deben otorgarse dentro de la **Red de Prestadores** aprobada, la **Ley 20.850 (Artículo 3º)** establece una excepción fundamental para situaciones de emergencia:\n\nSi tu traslado se debió a una condición de salud que implicaba una **urgencia vital** o una **secuela funcional grave**, y requirió hospitalización inmediata e impostergable en un establecimiento fuera de la red, **tienes derecho a las prestaciones del Sistema de Protección Financiera**.\n\n**Detalles importantes sobre tu situación:**\n\n*   **Cobertura de costos:** Los costos de los tratamientos cubiertos por esta ley y proporcionados por el prestador de urgencia (el hospital no aprobado) serán reembolsados por el Fondo Nacional de Salud (FONASA).\n*   **Duración de la protección:** La cobertura aplica hasta que el médico tratante determine que estás en condiciones de ser trasladado a un establecimiento de la red aprobada.\n*   **Cuándo podrías perder la cobertura:** Una vez que el médico determine que estás estable para el traslado, si decides quedarte en el hospital no aprobado o te trasladan a otro que tampoco esté en la red, la protección financiera **cesará a partir de ese momento**. Si te trasladan a un hospital de la red, la cobertura continúa.\n\nEn resumen, mientras la atención se haya dado por una urgencia real e inmediata, tu derecho a la protección financiera está resguardado.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "emergencia hospital no red aprobada cobertura tratamiento alto costo"
+      ],
+      "ctx_tokens": [
+        4187
+      ],
+      "calls": 3,
+      "time": 63.96690862500691,
+      "hits": [
+        "urgencia vital",
+        "trasladado",
+        "FONASA",
+        "Artículo 3"
+      ],
+      "missed": [
+        "reembolso"
+      ],
+      "score": 4
+    }
+  },
+  {
+    "qid": "Q09",
+    "question": "¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos por el sistema de salud?",
+    "gold_kw": [
+      "epidemiológic",
+      "carga de enfermedad",
+      "costo-efectividad",
+      "evidencia científica",
+      "Ministerio de Salud"
+    ],
+    "grail": {
+      "response": "En Chile, la decisión sobre qué enfermedades y tratamientos cubre el sistema de salud se realiza a través de **dos mecanismos principales**, cada uno con su propio proceso técnico y normativo:\n\n---\n\n## 1. Garantías Explícitas en Salud (GES) — Ley 19.966\n\nLas **Garantías Explícitas en Salud** definen un conjunto de prestaciones obligatorias que todas las instituciones de salud deben entregar. La priorización se basa en:\n\n- **Evaluaciones técnicas y económicas**: revisiones sistemáticas de evidencia científica y análisis de costo-efectividad.\n- **Marco regulatorio**: la ley establece la obligatoriedad, vigencia y fiscalización de estas garantías, con actualizaciones periódicas.\n- **Supervisión**: la **Superintendencia de Salud** aprueba los procedimientos y supervisa el cumplimiento por parte de las Instituciones de Salud Previsional.\n\n---\n\n## 2. Sistema de Protección Financiera para Alto Costo — Ley 20.850\n\nPara diagnósticos y tratamientos de **alto costo** (fuera de las GES), existe un proceso más complejo y participativo:\n\n### Etapa 1: Evaluación técnica y priorización\n\n- **Comisión de Recomendación Priorizada**: órgano de 12 expertos multidisciplinarios, presidido por el Subsecretario de Salud Pública, que analiza y prioriza tratamientos según su **valor científico, económico y social**.\n- **Comisión Asesora**: integrada por académicos de medicina acreditada, expertos en salud designados por el Ministro de Salud y **representantes de agrupaciones de pacientes** (2 representantes elegidos por las asociaciones de pacientes). Esta comisión evalúa y recomienda diagnósticos y tratamientos de alto costo.\n\n### Etapa 2: Decisión gubernamental\n\n- Los **Ministerios de Salud y Hacienda** determinan oficialmente qué diagnósticos y tratamientos se cubrirán mediante un **Decreto Supremo Fundado**.\n- En este decreto también se establece el **plazo y contenido de la revisión** de la decisión.\n\n### Etapa 3: Viabilidad financiera\n\n- La **Dirección de Presupuestos del Ministerio de Hacienda** elabora estudios públicos sobre la **sustentabilidad financiera** del Fondo para Diagnósticos y Tratamientos de Alto Costo.\n- **Tope presupuestario**: el costo anual esperado de todos los tratamientos cubiertos no puede superar el **80% de los recursos totales** con que contará el Fondo en ese año.\n\n### Etapa 4: Control ciudadano\n\n- La **Comisión Ciudadana de Vigilancia y Control** (con representantes de pacientes, asociaciones científicas, académicos y expertos) supervisa el cumplimiento del sistema.\n\n---\n\n## Resumen del proceso\n\n| Etapa | Responsable | Función |\n|---|---|---|\n| Evaluación técnica | Comisión de Recomendación Priorizada + Comisión Asesora | Analizan evidencia científica, valor económico y social |\n| Viabilidad financiera | Dirección de Presupuestos (Min. Hacienda) | Estudia sustentabilidad del fondo |\n| Decisión final | Ministros de Salud y Hacienda | Dictan Decreto Supremo Fundado |\n| Control | Comisión Ciudadana de Vigilancia y Control | Supervisa el cumplimiento |\n\nEste proceso busca garantizar que las decisiones sean **técnicamente fundamentadas, financieramente sostenibles y transparentes**, con participación de la sociedad civil a través de las agrupaciones de pacientes.",
+      "tools": [
+        "local_search"
+      ],
+      "queries": [
+        "comité o comisión que decide qué enfermedades y tratamientos están cubiertos por el sistema de salud"
+      ],
+      "ctx_tokens": [
+        12468
+      ],
+      "calls": 2,
+      "time": 24.669993999996223,
+      "hits": [
+        "costo-efectividad",
+        "evidencia científica"
+      ],
+      "missed": [
+        "epidemiológic",
+        "carga de enfermedad",
+        "Ministerio de Salud"
+      ],
+      "score": 2
+    },
+    "rag": {
+      "response": "Según la normativa chilena (específicamente la Ley 19.966 sobre Garantías Explícitas en Salud - GES, y la Ley 20.850 sobre Tratamientos de Alto Costo), el gobierno decide qué enfermedades y tratamientos cubrir mediante un proceso técnico, científico y presupuestario riguroso.\n\nEl proceso se divide en dos grandes categorías:\n\n### 1. Para las Garantías Explícitas en Salud (GES)\nEl Ministerio de Salud elabora el listado de enfermedades y prestaciones, siguiendo estos pasos:\n\n*   **Marco Presupuestario:** El Ministerio de Hacienda fija el monto total disponible para financiar estas garantías (la \"Prima Universal\"). Las garantías no pueden generar un costo promedio que supere este marco financiero.\n*   **Estudios de Priorización:** Se realizan estudios epidemiológicos y revisiones sistemáticas para determinar:\n    *   La carga de enfermedad en la población.\n    *   La efectividad de las intervenciones médicas.\n    *   La relación costo-efectividad (cuando es posible).\n    *   La demanda potencial y la capacidad de oferta del sistema de salud.\n*   **Criterios de Inclusión:** Se confecciona un listado priorizado descartando aquellas prestaciones que no tengan fundamentos de que mejoran la sobrevida o la calidad de vida de los pacientes.\n*   **Verificación:** La propuesta final se somete a un estudio de verificación del costo esperado por beneficiario antes de ser aprobada por Decreto Supremo.\n\n### 2. Para Tratamientos de Alto Costo (Ley 20.850)\nPara condiciones oncológicas, inmunológicas, raras o poco frecuentes, la inclusión se realiza mediante Decreto Supremo y debe cumplir condiciones estrictas:\n\n*   **Umbral de Costo:** Se fija un umbral nacional de costo anual (revisado cada tres años), basado en el 40% de los ingresos familiares promedio. Solo se consideran tratamientos cuyo costo sea igual o superior a este umbral.\n*   **Evaluación Científica de la Evidencia:** El Ministerio de Salud (a través de la Subsecretaría de Salud Pública) evalúa científicamente el diagnóstico o tratamiento. Esta evaluación debe incluir, como mínimo:\n    *   Eficacia y efectividad relativas.\n    *   Seguridad del tratamiento.\n    *   Evaluación económica e impacto presupuestario.\n    *   Impacto en las redes asistenciales y alternativas disponibles.\n    *   Repercusiones éticas, jurídicas y sociales.\n*   **Participación de Expertos y Pacientes:** El proceso toma en cuenta las recomendaciones de comisiones técnicas asesoras y de agrupaciones de pacientes inscritas.\n*   **Decisión Final:** Si el tratamiento cumple con el umbral de costo, la evidencia científica favorable y las recomendaciones técnicas, se decide su incorporación mediante decreto.\n\nEn resumen, la decisión no es arbitraria, sino que se basa en **evidencia científica**, **análisis de costo-efectividad**, **capacidad de pago del sistema** y **priorización de salud pública**, supervisado por los Ministerios de Salud y Hacienda.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos por el sistema de salud"
+      ],
+      "ctx_tokens": [
+        4243
+      ],
+      "calls": 3,
+      "time": 59.3854495419946,
+      "hits": [
+        "epidemiológic",
+        "carga de enfermedad",
+        "costo-efectividad",
+        "evidencia científica",
+        "Ministerio de Salud"
+      ],
+      "missed": [],
+      "score": 5
+    }
+  },
+  {
+    "qid": "Q10",
+    "question": "¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?",
+    "gold_kw": [
+      "cien mil millones",
+      "donacion",
+      "cooperación internacional",
+      "rentabilidad",
+      "Artículo 20"
+    ],
+    "grail": {
+      "response": "El dinero para pagar los tratamientos caros de pacientes con cáncer (y otras condiciones de alto costo) proviene principalmente del **Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo**, establecido por la **Ley Nº 20.850** en Chile.\n\nLos detalles sobre el origen y la gestión de estos fondos son los siguientes:\n\n1.  **El Fondo Específico:** Existe un **Fondo para Diagnósticos y Tratamientos de Alto Costo** que está destinado específicamente a financiar estas prestaciones.\n2.  **Origen del Capital:** Este fondo es capitalizado por el **Tesoro Público** (el Estado) y su gestión financiera es supervisada por el **Ministerio de Hacienda**.\n3.  **Administración:** El **Fondo Nacional de Salud (FONASA)** es la entidad encargada de administrar operativamente los recursos y asegurar que se otorguen los tratamientos a los beneficiarios.\n4.  **Cobertura:** El sistema garantiza la cobertura del **valor total** de las prestaciones aprobadas. El paciente solo debe pagar un copago del **20%** del valor fijado en el arancel de referencia (siendo exentos de este pago los Grupos A y B de la ley).\n5.  **Requisitos:** Para que un tratamiento oncológico sea financiado por este sistema, debe haber sido previamente evaluado científicamente y declarado de \"alto costo\" mediante un decreto supremo del Ministerio de Salud, lo que significa que su costo supera un umbral monetario nacional establecido por ley.\n\nEn resumen, el dinero proviene de los recursos fiscales del Estado (Tesoro Público), administrados por FONASA bajo el marco de la Ley 20.850, para evitar que los gastos catastróficos recaigan sobre el paciente.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "financiamiento fondos pagar tratamientos alto costo cáncer sistema de protección financiera"
+      ],
+      "ctx_tokens": [
+        12538
+      ],
+      "calls": 2,
+      "time": 31.79892512501101,
+      "hits": [],
+      "missed": [
+        "cien mil millones",
+        "donacion",
+        "cooperación internacional",
+        "rentabilidad",
+        "Artículo 20"
+      ],
+      "score": 0
+    },
+    "rag": {
+      "response": "Según la normativa proporcionada (específicamente la **Ley N° 20.850** y el **Decreto N° 54** de Chile), el dinero para pagar los tratamientos caros, como los de enfermedades oncológicas (cáncer), proviene del **Fondo de Tratamientos de Alto Costo**.\n\nLos puntos clave sobre la financiación son:\n\n*   **Gestión:** El fondo es administrado por el **Fondo Nacional de Salud (FONASA)**.\n*   **Cobertura Total:** El sistema establece una \"garantía explícita de protección financiera\", lo que significa que se cubre el **valor total** de las prestaciones de diagnóstico y tratamiento de alto costo para los beneficiarios.\n*   **Mecanismo:** Cuando un paciente requiere atención de urgencia en un establecimiento que no forma parte de la red aprobada, los costos son reembolsados por el FONASA con cargo a este fondo específico.\n\nEn resumen, el Estado, a través de FONASA y utilizando el **Fondo de Tratamientos de Alto Costo**, asume la responsabilidad de financiar estas prestaciones para evitar que el gasto catastrófico afecte al paciente.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "financiación tratamientos cáncer dinero pagar"
+      ],
+      "ctx_tokens": [
+        4294
+      ],
+      "calls": 3,
+      "time": 43.10077266700682,
+      "hits": [],
+      "missed": [
+        "cien mil millones",
+        "donacion",
+        "cooperación internacional",
+        "rentabilidad",
+        "Artículo 20"
+      ],
+      "score": 0
+    }
+  },
+  {
+    "qid": "Q13",
+    "question": "¿Qué necesita un hospital para poder atender pacientes bajo la Ley Ricarte Soto?",
+    "gold_kw": [
+      "acreditación",
+      "Superintendencia",
+      "convenio",
+      "FONASA",
+      "Decreto 54"
+    ],
+    "grail": {
+      "response": "Según la **Ley Nº 20.850 (Ley Ricarte Soto)** y su reglamento (**Decreto 54 de Salud de 2015**), un hospital o prestador de salud (público o privado) debe cumplir los siguientes requisitos para poder atender pacientes bajo este sistema:\n\n---\n\n## 1. Acreditación en la Superintendencia de Salud\n\nEl prestador debe estar **acreditado en la Superintendencia de Salud**, conforme a lo establecido en la **Ley Nº 19.937** y la **Ley Nº 19.966** (artículo 4º, letra b). Esta acreditación es un proceso de evaluación y certificación técnica obligatoria para mantener la condición de prestador aprobado.\n\n## 2. Aprobación del Ministerio de Salud\n\nAdemás de la acreditación, el prestador debe contar con la **aprobación específica del Ministerio de Salud** para otorgar las prestaciones cubiertas por la Ley Ricarte Soto. Este proceso se regula en el Decreto 54.\n\n## 3. Cumplir las Normas Técnicas Específicas\n\nEl Ministerio de Salud aprueba **Normas Técnicas** que fijan estándares específicos para cada diagnóstico y tratamiento de alto costo que se incorpora al sistema. Estos estándares deben orientarse, al menos, a garantizar:\n\n- **Probidad y transparencia** del prestador\n- **Suficiencia técnica**\n- **Capacidad resolutiva y tecnológica**\n- **Presencia territorial** (a través de telemedicina u otros medios)\n- **Integralidad de su cartera de prestaciones**, cuando corresponda\n\n## 4. Aprobación por Etapas de Atención\n\nLos prestadores pueden ser aprobados para **una, algunas o todas** las etapas de atención asociadas a un diagnóstico o tratamiento:\n\n- **Etapa de confirmación diagnóstica**\n- **Etapa de entrega o dispensación del tratamiento**\n- **Etapa de seguimiento**\n\nPueden existir estándares especiales para cada una de estas etapas.\n\n## 5. Suscribir Convenio con el FONASA\n\nUna vez obtenida la aprobación ministerial, el prestador **debe suscribir el respectivo convenio con el Fondo Nacional de Salud (FONASA)** para el otorgamiento de las prestaciones contempladas en la ley.\n\n---\n\n## Proceso de Evaluación (Decreto 54)\n\nEl procedimiento para obtener la aprobación incluye:\n\n1. La **Subsecretaría de Redes Asistenciales** inicia el proceso de evaluación (de oficio o a solicitud del prestador).\n2. Se remite la solicitud a la **Comisión Asesora para la Evaluación de Prestadores**, integrada por representantes de las Subsecretarías de Salud Pública y Redes Asistenciales, FONASA, Superintendencia de Salud e Instituto de Salud Pública.\n3. La Comisión analiza el cumplimiento de los estándares y puede realizar **verificaciones en terreno** a través del Departamento de Auditoría del Ministerio de Salud.\n4. La Comisión recomienda al **Ministro de Salud** la aprobación o rechazo.\n5. El Ministro aprueba o rechaza mediante **decreto**.\n\n---\n\n## Pérdida de la Condición de Prestador Aprobado\n\nEl Ministerio de Salud puede **revocar la aprobación** mediante resolución fundada cuando concurra alguna de estas circunstancias:\n\n1. **Pérdida de las cualidades** exigidas en el estándar técnico específico de la norma correspondiente.\n2. **Incumplimiento grave** de las obligaciones contenidas en el convenio con el FONASA.\n3. **No obtener la acreditación o reacreditación** contemplada en la Ley Nº 19.966.\n\n---\n\nEn resumen, un hospital debe estar **acreditado por la Superintendencia de Salud**, **aprobado por el Ministerio de Salud** cumpliendo las **Normas Técnicas específicas** para cada patología, y **conveniado con el FONASA** para poder atender pacientes bajo la Ley Ricarte Soto.",
+      "tools": [
+        "cascade_search",
+        "cascade_search"
+      ],
+      "queries": [
+        "Ley Ricarte Soto requisitos hospital atención pacientes habilitación",
+        "Ley 20.850 Ricarte Soto requisitos prestadores aprobación estándares técnicos normas técnicas"
+      ],
+      "ctx_tokens": [
+        11361,
+        11868
+      ],
+      "calls": 3,
+      "time": 66.93691725001554,
+      "hits": [
+        "acreditación",
+        "Superintendencia",
+        "convenio",
+        "FONASA",
+        "Decreto 54"
+      ],
+      "missed": [],
+      "score": 5
+    },
+    "rag": {
+      "response": "Para que un hospital (o cualquier prestador de salud, público o privado) pueda atender pacientes bajo la Ley Ricarte Soto (Ley N° 20.850), debe cumplir con los siguientes requisitos fundamentales establecidos en el Decreto N° 54:\n\n**1. Estar acreditado en la Superintendencia de Salud**\nEl prestador debe contar con la acreditación otorgada por la Superintendencia de Salud, conforme a las condiciones establecidas en la letra b) del artículo 4º de la Ley N° 19.966 (Ley de Acreditación).\n\n**2. Contar con la aprobación del Ministerio de Salud**\nAdemás de la acreditación general, el hospital debe ser específicamente **aprobado por el Ministerio de Salud** para formar parte de la \"Red de prestadores\" autorizada para otorgar las prestaciones de la Ley Ricarte Soto.\n\n**3. Cumplir con los Estándares Técnicos Específicos**\nEl hospital debe cumplir con las **Normas Técnicas** aprobadas por el Ministerio de Salud. Estos estándares son específicos para cada diagnóstico o tratamiento de alto costo y deben garantizar al menos:\n*   Probidad y transparencia.\n*   Suficiencia técnica.\n*   Capacidad resolutiva y tecnológica.\n*   Presencia territorial (vía telemedicina u otros medios).\n*   Integralidad de la cartera de prestaciones.\n\n**4. Aprobación por Etapas (Opcional pero posible)**\nLa aprobación puede ser para una, algunas o todas las etapas de atención, dependiendo de lo que el hospital solicite y cumpla:\n*   Etapa de confirmación diagnóstica.\n*   Etapa de entrega o dispensación del tratamiento.\n*   Etapa de seguimiento.\n\n**Excepción:**\nEn circunstancias calificadas (por ejemplo, si no existe otro prestador aprobado que ponga en riesgo la continuidad del tratamiento), la Subsecretaría de Salud Pública puede autorizar excepcionalmente a prestadores que no tengan la acreditación, mediante un decreto supremo fundado.\n\n**En resumen:** Un hospital debe estar **acreditado por la Superintendencia de Salud** y **aprobado por el Ministerio de Salud** cumpliendo los estándares técnicos específicos para las patologías que desee tratar bajo este régimen.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "requisitos para que un hospital atienda pacientes Ley Ricarte Soto"
+      ],
+      "ctx_tokens": [
+        4387
+      ],
+      "calls": 3,
+      "time": 29.1224369170086,
+      "hits": [
+        "acreditación",
+        "Superintendencia"
+      ],
+      "missed": [
+        "convenio",
+        "FONASA",
+        "Decreto 54"
+      ],
+      "score": 2
+    }
+  },
+  {
+    "qid": "Q17",
+    "question": "Si un hospital público me hizo daño durante mi tratamiento, ¿qué tengo que hacer antes de poder demandarlo?",
+    "gold_kw": [
+      "mediación",
+      "Consejo de Defensa",
+      "60 días",
+      "confidencial",
+      "acta"
+    ],
+    "grail": {
+      "response": "Si un hospital público te causó daño durante tu tratamiento, el paso obligatorio y previo para poder demandarlo es someter tu reclamo a un **Procedimiento de Mediación**.\n\nSegún la **Ley 19.966** (Ley de Garantías Explícitas en Salud), no puedes ir directamente a los tribunales civiles o penales sin antes intentar resolver el conflicto a través de este mecanismo administrativo.\n\nAquí te detallo el proceso que debes seguir:\n\n### 1. Presentar el reclamo ante el Consejo de Defensa del Estado (CDE)\nDebes dirigir tu reclamo al **Consejo de Defensa del Estado**, que es la entidad encargada de defender los intereses del Estado y gestionar este proceso.\n*   **Qué debes entregar:** Tu nombre, cédula de identidad, domicilio, el motivo del reclamo (qué daño sufriste y cómo ocurrió) y todas las pruebas o antecedentes que tengas (historias clínicas, informes, etc.).\n*   **Fundamento legal:** El reclamo se basa en el concepto de **\"Falta de Servicio\"**. Según la ley, el Estado es responsable de los daños que cause por falta de servicio en materia sanitaria, y tú debes probar que el daño ocurrió por una acción u omisión del hospital.\n\n### 2. Participar en el Procedimiento de Mediación\nUna vez ingresado el reclamo, el CDE citará a una audiencia donde un mediador (un funcionario o profesional designado) facilitará la comunicación entre tú y el hospital.\n*   **Objetivo:** Lograr un acuerdo extrajudicial (un contrato de transacción) donde el hospital te indemnice por los daños sin necesidad de un juicio largo.\n*   **Plazos:** El procedimiento tiene un plazo máximo de **60 días corridos** (prorrogables hasta 120 días si ambas partes acuerdan).\n*   **Suspensión de plazos:** Durante la mediación, el tiempo que tienes para demandar (prescripción) se detiene, por lo que no perderás tu derecho a reclamar si el proceso se alarga.\n\n### 3. Si la mediación fracasa\nSi no logran llegar a un acuerdo dentro del plazo, o si alguna de las partes decide no continuar, se levantará un **acta de fracaso de la mediación**.\n*   Con este acta en la mano, **ya estarás habilitado para demandar** al hospital público ante los tribunales de justicia competentes.\n\n**Resumen de pasos:**\n1.  Reúne tu evidencia médica y administrativa.\n2.  Ingresa el reclamo al **Consejo de Defensa del Estado**.\n3.  Asiste a las audiencias de mediación.\n4.  Si no hay acuerdo, pide el acta de fracaso y procede a la demanda judicial.",
+      "tools": [
+        "cascade_search"
+      ],
+      "queries": [
+        "reclamo administrativo previo demandar hospital público daño tratamiento"
+      ],
+      "ctx_tokens": [
+        10842
+      ],
+      "calls": 2,
+      "time": 42.66842387500219,
+      "hits": [
+        "mediación",
+        "Consejo de Defensa",
+        "60 días",
+        "acta"
+      ],
+      "missed": [
+        "confidencial"
+      ],
+      "score": 4
+    },
+    "rag": {
+      "response": "Si un hospital público (que forma parte de la red asistencial del Estado) te causó daño durante tu tratamiento, el paso obligatorio antes de poder demandarlo es someter tu reclamo a un **procedimiento de mediación ante el Consejo de Defensa del Estado (CDE)**.\n\nSegún la Ley 19.966 (Ley Marco de Responsabilidad del Estado), no puedes iniciar una acción judicial directamente; primero debes agotar esta instancia administrativa. Aquí te detallo los pasos y requisitos:\n\n**1. Presentación del Reclamo**\nDebes presentar tu reclamo ante el Consejo de Defensa del Estado. En este documento debes incluir:\n*   Tus datos completos (nombre, cédula de identidad, edad, profesión, domicilio).\n*   El motivo del reclamo (qué sucedió).\n*   Las peticiones concretas (qué indemnización o reparación buscas).\n*   Todos los antecedentes y pruebas que consideres convenientes (historias clínicas, informes, etc.).\n\n**2. El Proceso de Mediación**\n*   **Objetivo:** Es un procedimiento no adversarial donde un mediador (funcionario del CDE o profesional designado) intentará que llegues a un acuerdo extrajudicial con el hospital.\n*   **Plazos:** El procedimiento tiene un plazo total de **60 días corridos** desde la primera citación al hospital. Este plazo puede prorrogarse hasta 120 días si ambas partes están de acuerdo.\n*   **Suspensión de la Prescripción:** Durante todo el tiempo que dure la mediación, el plazo para demandar (prescripción) se detiene. Esto significa que no perderás tu derecho a reclamar mientras intentas llegar a un acuerdo.\n\n**3. Si la Mediación Fracasa**\nSi no logran llegar a un acuerdo dentro del plazo establecido, se levantará un acta de fracaso. Una vez que tengas este acta, **ya estarás habilitado para iniciar la demanda judicial** (acción jurisdiccional) contra el hospital y/o el Estado para obtener la reparación de los daños.\n\n**Resumen legal:**\nEl artículo 43 de la Ley 19.966 establece que el ejercicio de acciones contra prestadores públicos requiere previamente someterse a este procedimiento de mediación.",
+      "tools": [
+        "rag_search"
+      ],
+      "queries": [
+        "qué hacer antes de demandar a un hospital público responsabilidad patrimonial"
+      ],
+      "ctx_tokens": [
+        4269
+      ],
+      "calls": 3,
+      "time": 27.492402832984226,
+      "hits": [
+        "mediación",
+        "Consejo de Defensa",
+        "60 días",
+        "acta"
+      ],
+      "missed": [
+        "confidencial"
+      ],
+      "score": 4
+    }
+  }
+]

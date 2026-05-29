@@ -1,0 +1,272 @@
+{
+  "Q01": {
+    "question": "Object of Ley 20.850",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art 1"},
+    "grail_local": {"correctness": 5, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.65, "brief_justification": "Correct, mentions Ricarte Soto, Art implicitly"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art, Regimen General"},
+    "grail_global": {"correctness": 4, "completeness": 4, "source_grounding": 2, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.80, "brief_justification": "Correct gist but no article citation"}
+  },
+  "Q02": {
+    "question": "Commission 12 members",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct, cites Art 8"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Same quality as grail_local"},
+    "grail_global": {"correctness": 1, "completeness": 1, "source_grounding": 1, "coherence": 4, "no_hallucination": 5, "weighted_score": 1.95, "brief_justification": "Says 'not specified' - wrong"}
+  },
+  "Q03": {
+    "question": "Threshold every 3 years",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art 6"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct 'cada tres anos'"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art 6"},
+    "grail_global": {"correctness": 1, "completeness": 1, "source_grounding": 1, "coherence": 4, "no_hallucination": 3, "weighted_score": 1.65, "brief_justification": "Says 'annual' - factually wrong"}
+  },
+  "Q04": {
+    "question": "Prescription 2 years Title IV",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Answers but says info not explicit for Title IV specifically"},
+    "grail_local": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 3, "weighted_score": 2.55, "brief_justification": "Confuses Title III Art 12 (4 years) with Title IV"},
+    "grail_local_reranked": {"correctness": 3, "completeness": 3, "source_grounding": 3, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.30, "brief_justification": "Says 'dos anos' correctly"},
+    "grail_global": {"correctness": 2, "completeness": 2, "source_grounding": 1, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.55, "brief_justification": "Generic, doesn't find the specific answer"}
+  },
+  "Q05": {
+    "question": "8 data items Decreto 54",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, all 8 items, cites Art 8 D54"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, all 8 items, cites Art 8"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect"},
+    "grail_global": {"correctness": 1, "completeness": 1, "source_grounding": 1, "coherence": 4, "no_hallucination": 5, "weighted_score": 1.95, "brief_justification": "Says 'not specified'"}
+  },
+  "Q06": {
+    "question": "4 copulative conditions",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, all 4, cites Art 5"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, all 4 conditions"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect"},
+    "grail_global": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Mentions conditions but less precise"}
+  },
+  "Q07": {
+    "question": "Full evaluation process",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good 3-phase description with article refs"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, 3 phases with Art 7-9"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Most complete, detailed steps"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 5, "no_hallucination": 3, "weighted_score": 3.10, "brief_justification": "General but adds fabricated details"}
+  },
+  "Q08": {
+    "question": "Emergency outside network",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Excellent, 3 scenarios, Art 3"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct, all scenarios covered"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Same quality"},
+    "grail_global": {"correctness": 3, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.95, "brief_justification": "Mentions coverage maintained but misses the 3 scenarios"}
+  },
+  "Q09": {
+    "question": "GES criteria",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good criteria list, references Arts 13-14"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good criteria, mentions epidemiological studies"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Most complete, cites specific criteria"},
+    "grail_global": {"correctness": 2, "completeness": 2, "source_grounding": 1, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.55, "brief_justification": "Very general, misses specific criteria"}
+  },
+  "Q10": {
+    "question": "Fund financing sources",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, all 4 sources, Art 20"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, mentions sources with Art 20"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good but slightly less precise"},
+    "grail_global": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Partial, only 2 sources"}
+  },
+  "Q11": {
+    "question": "Relationship between laws",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good synthesis, mentions Regimen General"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good complementarity description"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Best, detailed interdependence"},
+    "grail_global": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good structural overview"}
+  },
+  "Q12": {
+    "question": "Where to complain",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 3, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.70, "brief_justification": "Mentions Superintendencia and Intendencia"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, multiple institutions"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Similar quality"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 5, "no_hallucination": 3, "weighted_score": 3.10, "brief_justification": "General oversight framework"}
+  },
+  "Q13": {
+    "question": "Provider requirements + D54",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, mentions accreditation and D54"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.85, "brief_justification": "Excellent, full commission detail"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.85, "brief_justification": "Same quality"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 5, "no_hallucination": 3, "weighted_score": 3.10, "brief_justification": "Correct gist, missing D54 specifics"}
+  },
+  "Q14": {
+    "question": "Oncology guarantees complementarity",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {"correctness": 3, "completeness": 3, "source_grounding": 3, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.30, "brief_justification": "Mentions both laws but incomplete synthesis"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good 4-guarantee description"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Best, tables comparing laws"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 5, "no_hallucination": 3, "weighted_score": 3.10, "brief_justification": "Mentions framework but generic"}
+  },
+  "Q15": {
+    "question": "When protection ends",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Says 'not established' - partially wrong"},
+    "grail_local": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Says 'not specified' - same issue"},
+    "grail_local_reranked": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Same"},
+    "grail_global": {"correctness": 2, "completeness": 2, "source_grounding": 1, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.55, "brief_justification": "Same, all miss D54 Art 10"}
+  },
+  "Q16": {
+    "question": "Steps for cancer patient",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good procedural steps"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, structured steps"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Same"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 5, "no_hallucination": 3, "weighted_score": 3.10, "brief_justification": "General framework, not step-by-step"}
+  },
+  "Q17": {
+    "question": "Mediation procedure",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Excellent, full procedure with article refs"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Excellent, detailed steps"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.85, "brief_justification": "Perfect, with legal citations"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 3, "weighted_score": 2.95, "brief_justification": "Correct general idea but lacks steps"}
+  },
+  "Q18": {
+    "question": "Provider approval D54",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good D54 process description"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.85, "brief_justification": "Excellent, full commission process"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.85, "brief_justification": "Same"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.10, "brief_justification": "General, lacks specific D54 steps"}
+  },
+  "Q19": {
+    "question": "Supply shortage",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Mentions CENABAST, 24hr notification"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good, provisional registration"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Similar"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.10, "brief_justification": "General continuity guarantee"}
+  },
+  "Q20": {
+    "question": "Diagnostic vs treatment",
+    "category": "comparative",
+    "difficulty": "easy",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, Art 2, both definitions"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Excellent distinction"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art 2 and D54"},
+    "grail_global": {"correctness": 1, "completeness": 1, "source_grounding": 1, "coherence": 4, "no_hallucination": 3, "weighted_score": 1.65, "brief_justification": "Says 'no explicit distinction' - wrong"}
+  },
+  "Q21": {
+    "question": "Sanctions Title III vs IV",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Attempts but doesn't find specific numbers"},
+    "grail_local": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Same issue"},
+    "grail_local_reranked": {"correctness": 2, "completeness": 2, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.70, "brief_justification": "Same"},
+    "grail_global": {"correctness": 2, "completeness": 2, "source_grounding": 1, "coherence": 4, "no_hallucination": 4, "weighted_score": 2.55, "brief_justification": "Same"}
+  },
+  "Q22": {
+    "question": "Consejo vs Comision composition",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Excellent, 9 members detailed composition"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, 9 members, key differences"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.70, "brief_justification": "Excellent, structured comparison"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.10, "brief_justification": "Mentions both but lacks specifics"}
+  },
+  "Q23": {
+    "question": "Workplace/traffic excluded",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, cites Art 1, Ley 16.744, 18.490"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct, cites specific laws"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, Art 1 citation"},
+    "grail_global": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.10, "brief_justification": "Correct exclusion, less specific"}
+  },
+  "Q24": {
+    "question": "Voluntary suspension prohibited",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.25, "brief_justification": "Correct, Art 16"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.25, "brief_justification": "Correct"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.25, "brief_justification": "Correct"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.10, "brief_justification": "General, less specific"}
+  },
+  "Q25": {
+    "question": "Comision cannot administer Fund",
+    "category": "negation_boundary",
+    "difficulty": "easy",
+    "rag": {"correctness": 5, "completeness": 5, "source_grounding": 5, "coherence": 5, "no_hallucination": 5, "weighted_score": 5.00, "brief_justification": "Perfect, 'no estara facultada'"},
+    "grail_local": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct negation"},
+    "grail_local_reranked": {"correctness": 5, "completeness": 5, "source_grounding": 4, "coherence": 5, "no_hallucination": 5, "weighted_score": 4.85, "brief_justification": "Correct"},
+    "grail_global": {"correctness": 3, "completeness": 3, "source_grounding": 2, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.10, "brief_justification": "Mentions role but no clear prohibition"}
+  },
+  "Q26": {
+    "question": "What is this about",
+    "category": "global_synthesis",
+    "difficulty": "easy",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, names all 3 documents"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good overview but less structured"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Similar"},
+    "grail_global": {"correctness": 5, "completeness": 5, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.55, "brief_justification": "Best, comprehensive framework"}
+  },
+  "Q27": {
+    "question": "Patient rights",
+    "category": "global_synthesis",
+    "difficulty": "medium",
+    "rag": {"correctness": 3, "completeness": 3, "source_grounding": 3, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.30, "brief_justification": "Mentions rights but says 'cancer not mentioned'"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good comprehensive list"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Similar, detailed"},
+    "grail_global": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good overview"}
+  },
+  "Q28": {
+    "question": "Institutions and roles",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {"correctness": 3, "completeness": 3, "source_grounding": 3, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.30, "brief_justification": "Partial institutional list"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good institutional map"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Similar"},
+    "grail_global": {"correctness": 5, "completeness": 5, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.55, "brief_justification": "Best, comprehensive"}
+  },
+  "Q29": {
+    "question": "Control mechanisms",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {"correctness": 3, "completeness": 3, "source_grounding": 3, "coherence": 4, "no_hallucination": 4, "weighted_score": 3.30, "brief_justification": "Partial"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good overview"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Similar"},
+    "grail_global": {"correctness": 5, "completeness": 5, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.55, "brief_justification": "Best, comprehensive"}
+  },
+  "Q30": {
+    "question": "Executive summary 3 normatives",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good synthesis of the 3 laws"},
+    "grail_local": {"correctness": 4, "completeness": 4, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 3.95, "brief_justification": "Good"},
+    "grail_local_reranked": {"correctness": 4, "completeness": 4, "source_grounding": 4, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.10, "brief_justification": "Good, mentions all 3 with hierarchy"},
+    "grail_global": {"correctness": 5, "completeness": 5, "source_grounding": 3, "coherence": 5, "no_hallucination": 4, "weighted_score": 4.55, "brief_justification": "Best, clear hierarchical connection"}
+  }
+}

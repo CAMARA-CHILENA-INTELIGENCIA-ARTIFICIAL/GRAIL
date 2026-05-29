@@ -43,7 +43,7 @@ class DocumentSearch:
     output_folder: str = "output"
     max_tokens: int = 8192
     top_k_entities: int = 10
-    response_max_tokens: int = 2048
+    response_max_tokens: int = 16_384
     response_temperature: float = 0.0
     endpoint: Optional[str] = None
     model: Optional[str] = None
@@ -61,6 +61,7 @@ class DocumentSearch:
         conversation_history: Optional[list[dict[str, Any]]] = None,
         artifact_instructions: str = "",
         use_reranker: Optional[bool] = None,
+        context_only: bool = False,
     ) -> SearchResult:
         """Search within a single document.
 
@@ -179,6 +180,15 @@ class DocumentSearch:
             "relationships": rel_rows,
             "sources": source_rows,
         }
+
+        if context_only:
+            return SearchResult(
+                response="",
+                context_data=context_data,
+                context_text=context_data_text,
+                completion_time=time.perf_counter() - started,
+                llm_calls=0,
+            )
 
         self.reporter.info("Generating response…")
         messages = self.prompts.build(

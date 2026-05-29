@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Agent vs RAG Agent — Final Experiment</title>
+<style>
+  :root {
+    --bg:#0d0d0d;--surface:#171717;--surface-2:#1e1e1e;--border:#2e2e2e;
+    --text:#ececec;--text-2:#a1a1a1;--text-3:#737373;
+    --green:#10b981;--blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--red:#ef4444;--yellow:#eab308;
+    --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+  .hero{padding:60px 0 36px;text-align:center;border-bottom:1px solid var(--border);}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px;}
+  .hero p{font-size:15px;color:var(--text-2);max-width:660px;margin:0 auto;}
+  .section{padding:44px 0;border-bottom:1px solid var(--border);}
+  .section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:6px;}
+  .section .sub{color:var(--text-2);font-size:14px;margin-bottom:24px;}
+
+  .score-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+  .score-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;}
+  .score-card .qid{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-3);margin-bottom:8px;}
+  .score-card .scores{display:flex;justify-content:center;gap:16px;}
+  .score-card .sys{font-size:11px;color:var(--text-3);}
+  .score-card .val{font-size:28px;font-weight:700;font-family:var(--mono);line-height:1;}
+
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;}
+  .q-card h3{font-size:15px;font-weight:600;margin-bottom:4px;}
+  .q-card .question{color:var(--text-2);font-size:14px;font-style:italic;margin-bottom:16px;}
+  .q-card .gold{font-size:12px;color:var(--text-3);margin-bottom:16px;}
+  .q-card .gold strong{color:var(--text-2);}
+
+  .agent-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;}
+  .agent-box{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .agent-box .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .agent-box .name{font-size:13px;font-weight:600;}
+  .agent-box .score-badge{font-family:var(--mono);font-weight:700;font-size:16px;padding:2px 10px;border-radius:8px;}
+  .agent-box .tool{font-size:12px;color:var(--text-3);margin-bottom:4px;font-family:var(--mono);}
+  .agent-box .query-text{font-size:12px;color:var(--text-2);margin-bottom:4px;padding-left:12px;border-left:2px solid var(--border);}
+  .agent-box .stats{font-size:12px;color:var(--text-3);margin-top:8px;}
+  .agent-box .kw{margin-top:8px;}
+  .agent-box .kw-hit{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600;margin:2px;background:rgba(16,185,129,0.15);color:#34d399;}
+  .agent-box .kw-miss{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600;margin:2px;background:rgba(239,68,68,0.12);color:#f87171;text-decoration:line-through;}
+
+  .verdict{display:inline-block;padding:3px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-top:8px;}
+  .v-grail{background:rgba(16,185,129,0.15);color:#34d399;}
+  .v-rag{background:rgba(249,115,22,0.15);color:#f97316;}
+  .v-tie{background:rgba(59,130,246,0.15);color:#60a5fa;}
+
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .summary-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .summary-box h3{font-size:16px;font-weight:600;margin-bottom:10px;}
+  .summary-box p{font-size:14px;color:var(--text-2);line-height:1.6;}
+  .summary-box .stat{font-size:32px;font-weight:700;font-family:var(--mono);margin-bottom:4px;}
+
+  .footer{padding:32px 0;text-align:center;color:var(--text-3);font-size:12px;}
+  @media(max-width:768px){.agent-row,.summary-grid,.score-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <h1>GRAIL Agent vs RAG Agent</h1>
+  <p>5 patient-language questions on Chilean oncology law. Both agents get up to 2 tool calls and 3 iterations. GRAIL agent chooses from cascade/local/global/document search. RAG agent uses semantic chunk retrieval. After fixing the mini-agent bottleneck — raw structured context now passes through to the agent.</p>
+</div></div>
+
+<div class="container">
+
+<!-- SCORE OVERVIEW -->
+<div class="section">
+  <h2>Scores Overview</h2>
+  <p class="sub">Gold keyword hits out of 5 per question</p>
+  <div class="score-row">
+    <div class="score-card"><div class="qid">Q08</div><div class="scores"><div><div class="sys">GRAIL</div><div class="val" style="color:var(--green)">4</div></div><div><div class="sys">RAG</div><div class="val" style="color:var(--orange)">4</div></div></div></div>
+    <div class="score-card"><div class="qid">Q09</div><div class="scores"><div><div class="sys">GRAIL</div><div class="val" style="color:var(--red)">2</div></div><div><div class="sys">RAG</div><div class="val" style="color:var(--green)">5</div></div></div></div>
+    <div class="score-card"><div class="qid">Q10</div><div class="scores"><div><div class="sys">GRAIL</div><div class="val" style="color:var(--red)">0</div></div><div><div class="sys">RAG</div><div class="val" style="color:var(--red)">0</div></div></div></div>
+    <div class="score-card"><div class="qid">Q13</div><div class="scores"><div><div class="sys">GRAIL</div><div class="val" style="color:var(--green)">5</div></div><div><div class="sys">RAG</div><div class="val" style="color:var(--red)">2</div></div></div></div>
+    <div class="score-card"><div class="qid">Q17</div><div class="scores"><div><div class="sys">GRAIL</div><div class="val" style="color:var(--green)">4</div></div><div><div class="sys">RAG</div><div class="val" style="color:var(--green)">4</div></div></div></div>
+  </div>
+  <div style="text-align:center;font-size:14px;color:var(--text-2);">
+    Average: <strong style="color:var(--green)">GRAIL 3.0/5</strong> vs <strong style="color:var(--orange)">RAG 3.0/5</strong> — tied overall but different strengths
+  </div>
+</div>
+
+<!-- PER QUESTION -->
+<div class="section">
+  <h2>Per-Question Breakdown</h2>
+  <p class="sub">Tool choices, queries, context size, and keyword analysis</p>
+
+  <!-- Q08 -->
+  <div class="q-card">
+    <h3>Q08 — Emergency outside network <span class="verdict v-tie">TIE 4-4</span></h3>
+    <p class="question">"Me llevaron de urgencia a un hospital que no está en la red aprobada, ¿pierdo la cobertura del tratamiento de alto costo?"</p>
+    <p class="gold"><strong>Gold keywords:</strong> urgencia vital, trasladado, reembolso, FONASA, Artículo 3</p>
+    <div class="agent-row">
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--green)">GRAIL Agent</span><span class="score-badge" style="background:rgba(16,185,129,0.15);color:var(--green);">4/5</span></div>
+        <div class="tool">cascade_search</div>
+        <div class="query-text">"emergencia hospital no aprobado red cobertura tratamiento alto costo..."</div>
+        <div class="stats">Context: 11,411 tok &middot; 2 LLM calls &middot; 36s</div>
+        <div class="kw"><span class="kw-hit">urgencia vital</span><span class="kw-hit">trasladado</span><span class="kw-miss">reembolso</span><span class="kw-hit">FONASA</span><span class="kw-hit">Artículo 3</span></div>
+      </div>
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--orange)">RAG Agent</span><span class="score-badge" style="background:rgba(249,115,22,0.15);color:var(--orange);">4/5</span></div>
+        <div class="tool">rag_search</div>
+        <div class="query-text">"emergencia hospital no red aprobada cobertura tratamiento alto costo"</div>
+        <div class="stats">Context: 4,187 tok &middot; 3 LLM calls &middot; 64s</div>
+        <div class="kw"><span class="kw-hit">urgencia vital</span><span class="kw-hit">trasladado</span><span class="kw-miss">reembolso</span><span class="kw-hit">FONASA</span><span class="kw-hit">Artículo 3</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-3);margin-top:8px;">Both miss "reembolso" in response despite it being in both contexts. LLM generation variance. GRAIL is faster (36s vs 64s) with 3x more context (11K vs 4K tokens).</p>
+  </div>
+
+  <!-- Q09 -->
+  <div class="q-card">
+    <h3>Q09 — How government decides coverage <span class="verdict v-rag">RAG WINS 5-2</span></h3>
+    <p class="question">"¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos por el sistema de salud?"</p>
+    <p class="gold"><strong>Gold keywords:</strong> epidemiológic, carga de enfermedad, costo-efectividad, evidencia científica, Ministerio de Salud</p>
+    <div class="agent-row">
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--green)">GRAIL Agent</span><span class="score-badge" style="background:rgba(239,68,68,0.12);color:var(--red);">2/5</span></div>
+        <div class="tool">local_search</div>
+        <div class="query-text">"comité o comisión que decide qué enfermedades y tratamientos están cubiertos..."</div>
+        <div class="stats">Context: 12,468 tok &middot; 2 LLM calls &middot; 25s</div>
+        <div class="kw"><span class="kw-miss">epidemiológic</span><span class="kw-miss">carga de enfermedad</span><span class="kw-hit">costo-efectividad</span><span class="kw-hit">evidencia científica</span><span class="kw-miss">Ministerio de Salud</span></div>
+      </div>
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--orange)">RAG Agent</span><span class="score-badge" style="background:rgba(16,185,129,0.15);color:var(--green);">5/5</span></div>
+        <div class="tool">rag_search</div>
+        <div class="query-text">"cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos..."</div>
+        <div class="stats">Context: 4,243 tok &middot; 3 LLM calls &middot; 59s</div>
+        <div class="kw"><span class="kw-hit">epidemiológic</span><span class="kw-hit">carga de enfermedad</span><span class="kw-hit">costo-efectividad</span><span class="kw-hit">evidencia científica</span><span class="kw-hit">Ministerio de Salud</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-3);margin-top:8px;"><strong>GRAIL chose local_search</strong> and crafted an entity-description query ("comité o comisión que decide..."). This found the commission entities but missed the specific criteria (epidemiológicos, carga de enfermedad). The criteria are in the raw text chunks (Articles 13-14), not well-captured in entity descriptions. <strong>cascade_search would have found them</strong> via text matching. RAG's direct chunk search found the relevant articles immediately.</p>
+  </div>
+
+  <!-- Q10 -->
+  <div class="q-card">
+    <h3>Q10 — Where does the money come from <span class="verdict v-tie">TIE 0-0</span></h3>
+    <p class="question">"¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?"</p>
+    <p class="gold"><strong>Gold keywords:</strong> cien mil millones, donaciones, cooperación internacional, rentabilidad, Artículo 20</p>
+    <div class="agent-row">
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--green)">GRAIL Agent</span><span class="score-badge" style="background:rgba(239,68,68,0.12);color:var(--red);">0/5</span></div>
+        <div class="tool">cascade_search</div>
+        <div class="query-text">"financiamiento fondos pagar tratamientos alto costo cáncer sistema de..."</div>
+        <div class="stats">Context: 12,538 tok &middot; 2 LLM calls &middot; 32s</div>
+        <div class="kw"><span class="kw-miss">cien mil millones</span><span class="kw-miss">donaciones</span><span class="kw-miss">cooperación</span><span class="kw-miss">rentabilidad</span><span class="kw-miss">Artículo 20</span></div>
+      </div>
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--orange)">RAG Agent</span><span class="score-badge" style="background:rgba(239,68,68,0.12);color:var(--red);">0/5</span></div>
+        <div class="tool">rag_search</div>
+        <div class="query-text">"financiación tratamientos cáncer dinero pagar"</div>
+        <div class="stats">Context: 4,294 tok &middot; 3 LLM calls &middot; 43s</div>
+        <div class="kw"><span class="kw-miss">cien mil millones</span><span class="kw-miss">donaciones</span><span class="kw-miss">cooperación</span><span class="kw-miss">rentabilidad</span><span class="kw-miss">Artículo 20</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-3);margin-top:8px;">Both agents fail equally. The specific funding sources (Art. 20 details) are in the context but the LLM generates a generic answer about FONASA/public funds without mentioning the four specific sources. This is a generation quality issue — both have 3-4/5 in their raw context but the model doesn't surface the details. Neither agent attempted a second, more targeted search.</p>
+  </div>
+
+  <!-- Q13 -->
+  <div class="q-card">
+    <h3>Q13 — Hospital requirements <span class="verdict v-grail">GRAIL WINS 5-2</span></h3>
+    <p class="question">"¿Qué necesita un hospital para poder atender pacientes bajo la Ley Ricarte Soto?"</p>
+    <p class="gold"><strong>Gold keywords:</strong> acreditación, Superintendencia, convenio, FONASA, Decreto 54</p>
+    <div class="agent-row">
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--green)">GRAIL Agent</span><span class="score-badge" style="background:rgba(16,185,129,0.15);color:var(--green);">5/5</span></div>
+        <div class="tool">cascade_search &times; 2</div>
+        <div class="query-text">"Ley Ricarte Soto requisitos hospital atención pacientes habilitación"</div>
+        <div class="query-text">"Ley 20.850 Ricarte Soto requisitos prestadores aprobación estándares técnicos..."</div>
+        <div class="stats">Context: 11,361 + 11,868 tok &middot; 3 LLM calls &middot; 67s</div>
+        <div class="kw"><span class="kw-hit">acreditación</span><span class="kw-hit">Superintendencia</span><span class="kw-hit">convenio</span><span class="kw-hit">FONASA</span><span class="kw-hit">Decreto 54</span></div>
+      </div>
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--orange)">RAG Agent</span><span class="score-badge" style="background:rgba(239,68,68,0.12);color:var(--red);">2/5</span></div>
+        <div class="tool">rag_search &times; 1</div>
+        <div class="query-text">"requisitos para que un hospital atienda pacientes Ley Ricarte Soto"</div>
+        <div class="stats">Context: 4,387 tok &middot; 3 LLM calls &middot; 29s</div>
+        <div class="kw"><span class="kw-hit">acreditación</span><span class="kw-hit">Superintendencia</span><span class="kw-miss">convenio</span><span class="kw-miss">FONASA</span><span class="kw-miss">Decreto 54</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-3);margin-top:8px;"><strong>GRAIL's decisive win.</strong> The agent made TWO cascade searches — the first found accreditation/standards, the second found the specific FONASA convention and Decreto 54 approval process. 23K tokens of context across both calls. RAG only searched once and missed the convention/FONASA/D54 details (scattered across different chunks). The multi-tool capability is the key advantage.</p>
+  </div>
+
+  <!-- Q17 -->
+  <div class="q-card">
+    <h3>Q17 — Mediation before lawsuit <span class="verdict v-tie">TIE 4-4</span></h3>
+    <p class="question">"Si un hospital público me hizo daño durante mi tratamiento, ¿qué tengo que hacer antes de poder demandarlo?"</p>
+    <p class="gold"><strong>Gold keywords:</strong> mediación, Consejo de Defensa, 60 días, confidencial, acta</p>
+    <div class="agent-row">
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--green)">GRAIL Agent</span><span class="score-badge" style="background:rgba(16,185,129,0.15);color:var(--green);">4/5</span></div>
+        <div class="tool">cascade_search</div>
+        <div class="query-text">"reclamo administrativo previo demandar hospital público daño tratamiento..."</div>
+        <div class="stats">Context: 10,842 tok &middot; 2 LLM calls &middot; 43s</div>
+        <div class="kw"><span class="kw-hit">mediación</span><span class="kw-hit">Consejo de Defensa</span><span class="kw-hit">60 días</span><span class="kw-miss">confidencial</span><span class="kw-hit">acta</span></div>
+      </div>
+      <div class="agent-box">
+        <div class="head"><span class="name" style="color:var(--orange)">RAG Agent</span><span class="score-badge" style="background:rgba(16,185,129,0.15);color:var(--green);">4/5</span></div>
+        <div class="tool">rag_search</div>
+        <div class="query-text">"qué hacer antes de demandar a un hospital público responsabilidad patrimonial..."</div>
+        <div class="stats">Context: 4,269 tok &middot; 3 LLM calls &middot; 27s</div>
+        <div class="kw"><span class="kw-hit">mediación</span><span class="kw-hit">Consejo de Defensa</span><span class="kw-hit">60 días</span><span class="kw-miss">confidencial</span><span class="kw-hit">acta</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-3);margin-top:8px;">Identical results. Both miss "confidencial" (the secrecy requirement). The mediation procedure is well-structured in the source text and both retrieval approaches find it effectively with a single search.</p>
+  </div>
+</div>
+
+<!-- KEY FINDINGS -->
+<div class="section">
+  <h2>Key Findings</h2>
+  <p class="sub">What this experiment reveals about agent-based search</p>
+  <div class="summary-grid">
+    <div class="summary-box">
+      <div class="stat" style="color:var(--green);">Q13: 5 vs 2</div>
+      <h3>Multi-search is GRAIL's advantage</h3>
+      <p>When the answer spans multiple legal provisions (accreditation + convention + D54 process), GRAIL's ability to make two targeted cascade searches with refined queries finds details that a single RAG search misses. The agent intelligently iterates — first for general requirements, then specifically for the approval process.</p>
+    </div>
+    <div class="summary-box">
+      <div class="stat" style="color:var(--orange);">Q09: 2 vs 5</div>
+      <h3>Wrong tool choice hurts</h3>
+      <p>GRAIL chose local_search with an entity-description query for Q09, but the specific criteria (epidemiological studies, cost-effectiveness) are in raw article text, not entity descriptions. Cascade would have found them via BM25 text matching. The agent needs better heuristics for when details are in text vs entities.</p>
+    </div>
+    <div class="summary-box">
+      <h3>Context volume matters</h3>
+      <p>GRAIL agent gets 10-12K tokens of structured context per search (entities + relationships + communities + text units). RAG agent gets 4K tokens of raw chunks. When the answer requires connecting multiple concepts, the richer context helps. When it's a single fact in one chunk, both suffice.</p>
+    </div>
+    <div class="summary-box">
+      <h3>Tool selection patterns</h3>
+      <p><strong>GRAIL:</strong> cascade &times;7, local &times;1. The agent follows the "factual → cascade" heuristic. The one local_search (Q09) was a reasonable choice but suboptimal for this specific question.<br><strong>RAG:</strong> rag_search &times;5. Always the same tool — no strategic decisions.</p>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT NEXT -->
+<div class="section">
+  <h2>Next Steps</h2>
+  <p class="sub">Improvements identified from this experiment</p>
+  <div class="summary-grid">
+    <div class="summary-box">
+      <h3>1. Fix Q09 pattern</h3>
+      <p>When the agent picks local_search but gets an incomplete answer, it should retry with cascade_search on the second call. Currently it doesn't iterate when local results seem sufficient but miss key details.</p>
+    </div>
+    <div class="summary-box">
+      <h3>2. Fix Q10 pattern</h3>
+      <p>Both agents fail to surface specific numbers (cien mil millones) despite having them in context. The system prompt should instruct the agent to always include specific amounts, deadlines, and article numbers from the retrieved context.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>GRAIL Agent Experiment &mdash; May 2026 &middot; 5 patient-language questions &middot; Model: Qwen3.6-35B-A3B &middot; Embeddings: Qwen3-Embedding-8B</p>
+</div>
+
+</body>
+</html>

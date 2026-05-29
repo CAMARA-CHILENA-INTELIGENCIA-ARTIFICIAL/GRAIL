@@ -128,10 +128,11 @@ export async function* parseSSE(
 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
-    // Keep the last potentially incomplete line in the buffer
     buffer = lines.pop() || "";
 
-    for (const line of lines) {
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/\r$/, "");
+
       if (line.startsWith("event: ")) {
         currentEvent = line.slice(7).trim();
       } else if (line.startsWith("data: ")) {
@@ -144,7 +145,6 @@ export async function* parseSSE(
     }
   }
 
-  // Flush remaining
   if (currentEvent && currentData) {
     yield { event: currentEvent, data: currentData };
   }

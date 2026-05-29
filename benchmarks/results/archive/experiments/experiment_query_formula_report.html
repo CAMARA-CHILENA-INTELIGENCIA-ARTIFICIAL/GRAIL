@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Agent — Query Formula Experiment</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#171717;--s2:#1e1e1e;--border:#2e2e2e;--text:#ececec;--t2:#a1a1a1;--t3:#737373;--green:#10b981;--blue:#3b82f6;--orange:#f97316;--red:#ef4444;--yellow:#eab308;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1080px;margin:0 auto;padding:0 24px;}
+  .hero{padding:56px 0 32px;text-align:center;border-bottom:1px solid var(--border);}
+  .hero .badge{display:inline-flex;padding:4px 14px;border-radius:999px;background:rgba(16,185,129,0.12);color:var(--green);font-size:13px;font-weight:600;margin-bottom:16px;}
+  .hero h1{font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px;}
+  .hero p{font-size:15px;color:var(--t2);max-width:640px;margin:0 auto;}
+  .section{padding:40px 0;border-bottom:1px solid var(--border);}
+  .section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:6px;}
+  .section .sub{color:var(--t2);font-size:14px;margin-bottom:24px;}
+
+  .big-scores{display:flex;justify-content:center;gap:48px;padding:32px 0;}
+  .big-score{text-align:center;}
+  .big-score .label{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .big-score .num{font-size:56px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .big-score .of{font-size:20px;color:var(--t3);}
+  .big-score .delta{font-size:14px;margin-top:4px;}
+
+  .formula-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px;}
+  .formula-box h3{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--green);}
+  .formula-box code{background:var(--s2);padding:12px 16px;border-radius:8px;display:block;font-family:var(--mono);font-size:13px;color:var(--text);margin:8px 0;line-height:1.5;}
+  .formula-box .bad{color:var(--red);} .formula-box .good{color:var(--green);}
+
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px;}
+  .q-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .q-card h3{font-size:15px;font-weight:600;}
+  .q-card .question{color:var(--t2);font-size:13px;font-style:italic;margin-bottom:14px;}
+
+  .agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .a-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .a-box .a-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .a-box .a-name{font-size:13px;font-weight:600;}
+  .a-box .a-score{font-family:var(--mono);font-weight:700;font-size:18px;}
+  .a-box .a-tool{font-size:11px;font-family:var(--mono);color:var(--t3);margin-bottom:2px;}
+  .a-box .a-query{font-size:12px;color:var(--t2);padding:6px 10px;background:var(--bg);border-radius:6px;margin:6px 0;border-left:3px solid var(--border);}
+  .a-box .a-stats{font-size:11px;color:var(--t3);margin-top:6px;}
+  .kw-hit{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:600;margin:1px;background:rgba(16,185,129,0.15);color:#34d399;}
+  .kw-miss{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:600;margin:1px;background:rgba(239,68,68,0.12);color:#f87171;text-decoration:line-through;}
+
+  .verdict{padding:2px 10px;border-radius:7px;font-size:11px;font-weight:700;}
+  .v-g{background:rgba(16,185,129,0.15);color:#34d399;}
+  .v-r{background:rgba(249,115,22,0.15);color:#f97316;}
+  .v-t{background:rgba(59,130,246,0.15);color:#60a5fa;}
+
+  .improve{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .improve-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .improve-card .arrow{font-size:24px;margin-bottom:8px;}
+  .improve-card h4{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .improve-card p{font-size:13px;color:var(--t2);line-height:1.5;}
+
+  .footer{padding:28px 0;text-align:center;color:var(--t3);font-size:12px;}
+  @media(max-width:768px){.agent-grid,.improve,.big-scores{flex-direction:column;grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <div class="badge">Query Formula Experiment</div>
+  <h1>GRAIL Agent: 22/25</h1>
+  <p>Testing the WHO + WHAT + TERMS query formula for local_search. 5 patient-language questions, GRAIL agent vs RAG agent. After fixing: mini-agent removed, raw context passed through, entity-description query optimization.</p>
+</div></div>
+
+<div class="container">
+
+<!-- BIG SCORES -->
+<div class="section">
+  <div class="big-scores">
+    <div class="big-score">
+      <div class="label" style="color:var(--green)">GRAIL Agent</div>
+      <div class="num" style="color:var(--green)">22<span class="of">/25</span></div>
+      <div class="delta" style="color:var(--green)">+47% vs old prompt (15/25)</div>
+    </div>
+    <div class="big-score">
+      <div class="label" style="color:var(--orange)">RAG Agent</div>
+      <div class="num" style="color:var(--orange)">17<span class="of">/25</span></div>
+      <div class="delta" style="color:var(--t3)">baseline</div>
+    </div>
+  </div>
+</div>
+
+<!-- FORMULA -->
+<div class="section">
+  <h2>The Query Formula</h2>
+  <p class="sub">How the agent should craft local_search queries for maximum entity matching</p>
+  <div class="formula-box">
+    <h3>WHO + WHAT + SPECIFIC TERMS</h3>
+    <code>[WHO does it] + [WHAT is the process/concept] + [SPECIFIC TERMS from entity descriptions]</code>
+    <p style="font-size:13px;color:var(--t2);margin-top:10px;">Local search embeds the query and matches against entity descriptions (<code>name: description retrieval_queries</code>). More term overlap = higher cosine similarity = better entity retrieval.</p>
+    <div style="margin-top:16px;">
+      <p class="bad" style="font-size:13px;">BAD: "comité o comisión que decide qué enfermedades están cubiertas" → 1/5 keywords</p>
+      <p class="good" style="font-size:13px;margin-top:4px;">GOOD: "proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas en salud, basado en estudios epidemiológicos, carga de enfermedad, evaluaciones económicas y costo-efectividad" → 5/5 keywords</p>
+    </div>
+  </div>
+</div>
+
+<!-- IMPROVEMENT CARDS -->
+<div class="section">
+  <h2>Before vs After</h2>
+  <p class="sub">Impact of the query formula on each question</p>
+  <div class="improve">
+    <div class="improve-card"><div class="arrow">Q08</div><h4>5/5 ← 4/5</h4><p>cascade_search. Picked up "reembolso" with raw context pass-through. Previously lost in mini-agent summary.</p></div>
+    <div class="improve-card"><div class="arrow" style="color:var(--green)">Q09</div><h4 style="color:var(--green)">5/5 ← 2/5</h4><p><strong>Biggest improvement.</strong> Agent used local_search with the full formula query: "proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas..." — matched GARANTÍAS EXPLÍCITAS and ESTUDIOS EPIDEMIOLÓGICOS entities directly.</p></div>
+    <div class="improve-card"><div class="arrow">Q10</div><h4>3/5 ← 0/5</h4><p>cascade_search found 3 of 4 funding sources. Specific numbers ("cien mil millones") and article citation still missed — generation variance.</p></div>
+    <div class="improve-card"><div class="arrow">Q13</div><h4>5/5 ← 5/5</h4><p>Already perfect. Single cascade_search found all requirements this time (previously needed 2 calls).</p></div>
+  </div>
+</div>
+
+<!-- PER QUESTION -->
+<div class="section">
+  <h2>Per-Question Detail</h2>
+  <p class="sub">Tool choices, queries, context tokens, and keyword analysis</p>
+
+  <!-- Q08 -->
+  <div class="q-card">
+    <div class="head"><h3>Q08 — Emergency outside network</h3><span class="verdict v-t">TIE 5-5</span></div>
+    <p class="question">"Me llevaron de urgencia a un hospital que no está en la red aprobada, ¿pierdo la cobertura?"</p>
+    <div class="agent-grid">
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL</span><span class="a-score" style="color:var(--green)">5/5</span></div>
+        <div class="a-tool">cascade_search</div>
+        <div class="a-query">"hospital no aprobado red emergencias urgencias cobertura tratamiento alto costo..."</div>
+        <div class="a-stats">11,411 tok context &middot; 2 calls &middot; 64s</div>
+        <div><span class="kw-hit">urgencia vital</span><span class="kw-hit">trasladado</span><span class="kw-hit">reembolso</span><span class="kw-hit">FONASA</span><span class="kw-hit">Artículo 3</span></div>
+      </div>
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG</span><span class="a-score" style="color:var(--green)">5/5</span></div>
+        <div class="a-tool">rag_search</div>
+        <div class="a-query">"cobertura hospital fuera de red urgencia tratamiento alto costo"</div>
+        <div class="a-stats">4,324 tok context &middot; 3 calls &middot; 377s</div>
+        <div><span class="kw-hit">urgencia vital</span><span class="kw-hit">trasladado</span><span class="kw-hit">reembolso</span><span class="kw-hit">FONASA</span><span class="kw-hit">Artículo 3</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q09 -->
+  <div class="q-card">
+    <div class="head"><h3>Q09 — How government decides coverage</h3><span class="verdict v-g">GRAIL 5-4</span></div>
+    <p class="question">"¿Cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos por el sistema de salud?"</p>
+    <div class="agent-grid">
+      <div class="a-box" style="border-color:var(--green);">
+        <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL</span><span class="a-score" style="color:var(--green)">5/5</span></div>
+        <div class="a-tool" style="color:var(--green)">local_search ← used the formula!</div>
+        <div class="a-query" style="border-color:var(--green);">"proceso del Ministerio de Salud para elaborar la propuesta de garantías explícitas en salud..."</div>
+        <div class="a-stats">10,841 tok context &middot; 2 calls &middot; 137s</div>
+        <div><span class="kw-hit">epidemiológic</span><span class="kw-hit">carga de enfermedad</span><span class="kw-hit">costo-efectividad</span><span class="kw-hit">evidencia científica</span><span class="kw-hit">Ministerio de Salud</span></div>
+      </div>
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG</span><span class="a-score" style="color:var(--orange)">4/5</span></div>
+        <div class="a-tool">rag_search</div>
+        <div class="a-query">"cómo decide el gobierno qué enfermedades y tratamientos van a estar cubiertos..."</div>
+        <div class="a-stats">4,243 tok context &middot; 3 calls &middot; 956s</div>
+        <div><span class="kw-hit">epidemiológic</span><span class="kw-hit">carga de enfermedad</span><span class="kw-hit">costo-efectividad</span><span class="kw-miss">evidencia científica</span><span class="kw-hit">Ministerio de Salud</span></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--green);margin-top:8px;">The formula in action: local_search with "proceso del Ministerio de Salud... garantías explícitas... estudios epidemiológicos" matched GARANTÍAS EXPLÍCITAS EN SALUD and ESTUDIOS EPIDEMIOLÓGICOS entities. RAG's chunk search missed "evidencia científica".</p>
+  </div>
+
+  <!-- Q10 -->
+  <div class="q-card">
+    <div class="head"><h3>Q10 — Where does the money come from</h3><span class="verdict v-g">GRAIL 3-0</span></div>
+    <p class="question">"¿De dónde sale el dinero para pagar los tratamientos caros de los pacientes con cáncer?"</p>
+    <div class="agent-grid">
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL</span><span class="a-score" style="color:var(--yellow)">3/5</span></div>
+        <div class="a-tool">cascade_search</div>
+        <div class="a-query">"financiamiento tratamientos alto costo cáncer fondo reserva presupuesto salud..."</div>
+        <div class="a-stats">11,346 tok context &middot; 2 calls &middot; 134s</div>
+        <div><span class="kw-miss">cien mil millones</span><span class="kw-hit">donaciones</span><span class="kw-hit">cooperación internacional</span><span class="kw-hit">rentabilidad</span><span class="kw-miss">Artículo 20</span></div>
+      </div>
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG</span><span class="a-score" style="color:var(--red)">0/5</span></div>
+        <div class="a-tool">rag_search</div>
+        <div class="a-query">"financiación tratamientos cáncer dinero"</div>
+        <div class="a-stats">4,312 tok context &middot; 3 calls &middot; 475s</div>
+        <div><span class="kw-miss">cien mil millones</span><span class="kw-miss">donaciones</span><span class="kw-miss">cooperación internacional</span><span class="kw-miss">rentabilidad</span><span class="kw-miss">Artículo 20</span></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--t3);margin-top:8px;">GRAIL's entity graph connects the Fund to its funding sources (donaciones, cooperación, rentabilidad). RAG's generic "financiación tratamientos cáncer dinero" query doesn't surface Article 20 details.</p>
+  </div>
+
+  <!-- Q13 -->
+  <div class="q-card">
+    <div class="head"><h3>Q13 — Hospital requirements</h3><span class="verdict v-g">GRAIL 5-4</span></div>
+    <p class="question">"¿Qué necesita un hospital para poder atender pacientes bajo la Ley Ricarte Soto?"</p>
+    <div class="agent-grid">
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL</span><span class="a-score" style="color:var(--green)">5/5</span></div>
+        <div class="a-tool">cascade_search</div>
+        <div class="a-query">"Ley Ricarte Soto hospital requisitos para atender pacientes cobertura..."</div>
+        <div class="a-stats">12,108 tok context &middot; 2 calls &middot; 117s</div>
+        <div><span class="kw-hit">acreditación</span><span class="kw-hit">Superintendencia</span><span class="kw-hit">convenio</span><span class="kw-hit">FONASA</span><span class="kw-hit">Decreto 54</span></div>
+      </div>
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG</span><span class="a-score" style="color:var(--orange)">4/5</span></div>
+        <div class="a-tool">rag_search</div>
+        <div class="a-query">"Requisitos para que un hospital atienda pacientes Ley Ricarte Soto"</div>
+        <div class="a-stats">4,418 tok context &middot; 3 calls &middot; 368s</div>
+        <div><span class="kw-hit">acreditación</span><span class="kw-hit">Superintendencia</span><span class="kw-hit">convenio</span><span class="kw-hit">FONASA</span><span class="kw-miss">Decreto 54</span></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--t3);margin-top:8px;">GRAIL's entity graph links the provider approval process to Decreto 54. RAG found 4/5 from raw chunks but missed the regulatory decree reference.</p>
+  </div>
+
+  <!-- Q17 -->
+  <div class="q-card">
+    <div class="head"><h3>Q17 — Mediation before lawsuit</h3><span class="verdict v-t">TIE 4-4</span></div>
+    <p class="question">"Si un hospital público me hizo daño durante mi tratamiento, ¿qué tengo que hacer antes de poder demandarlo?"</p>
+    <div class="agent-grid">
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL</span><span class="a-score" style="color:var(--green)">4/5</span></div>
+        <div class="a-tool">cascade_search</div>
+        <div class="a-query">"reclamo administrativo previo demanda hospital público daño negligencia médica..."</div>
+        <div class="a-stats">10,478 tok context &middot; 2 calls &middot; 122s</div>
+        <div><span class="kw-hit">mediación</span><span class="kw-hit">Consejo de Defensa</span><span class="kw-hit">60 días</span><span class="kw-miss">confidencial</span><span class="kw-hit">acta</span></div>
+      </div>
+      <div class="a-box">
+        <div class="a-head"><span class="a-name" style="color:var(--orange)">RAG</span><span class="a-score" style="color:var(--green)">4/5</span></div>
+        <div class="a-tool">rag_search</div>
+        <div class="a-query">"reclamo administrativo antes de demandar hospital público responsabilidad..."</div>
+        <div class="a-stats">4,269 tok context &middot; 3 calls &middot; 378s</div>
+        <div><span class="kw-hit">mediación</span><span class="kw-hit">Consejo de Defensa</span><span class="kw-hit">60 días</span><span class="kw-miss">confidencial</span><span class="kw-hit">acta</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT COMPARISON -->
+<div class="section">
+  <h2>Context & Speed</h2>
+  <p class="sub">GRAIL gets 3x more context and uses fewer LLM calls</p>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <thead><tr style="border-bottom:1px solid var(--border);">
+      <th style="text-align:left;padding:8px;color:var(--t3);font-size:11px;text-transform:uppercase;">Question</th>
+      <th style="text-align:center;padding:8px;color:var(--green);font-size:11px;">GRAIL ctx</th>
+      <th style="text-align:center;padding:8px;color:var(--orange);font-size:11px;">RAG ctx</th>
+      <th style="text-align:center;padding:8px;color:var(--green);font-size:11px;">GRAIL calls</th>
+      <th style="text-align:center;padding:8px;color:var(--orange);font-size:11px;">RAG calls</th>
+      <th style="text-align:center;padding:8px;color:var(--green);font-size:11px;">GRAIL tool</th>
+    </tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Q08</td><td style="text-align:center;font-family:var(--mono);">11,411</td><td style="text-align:center;font-family:var(--mono);">4,324</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--blue);">cascade</td></tr>
+      <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Q09</td><td style="text-align:center;font-family:var(--mono);">10,841</td><td style="text-align:center;font-family:var(--mono);">4,243</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--green);">local</td></tr>
+      <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Q10</td><td style="text-align:center;font-family:var(--mono);">11,346</td><td style="text-align:center;font-family:var(--mono);">4,312</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--blue);">cascade</td></tr>
+      <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Q13</td><td style="text-align:center;font-family:var(--mono);">12,108</td><td style="text-align:center;font-family:var(--mono);">4,418</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--blue);">cascade</td></tr>
+      <tr><td style="padding:8px;">Q17</td><td style="text-align:center;font-family:var(--mono);">10,478</td><td style="text-align:center;font-family:var(--mono);">4,269</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--blue);">cascade</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--t2);margin-top:12px;">GRAIL averages <strong>11,237 tok</strong> of structured context (entities + relationships + communities + text units) vs RAG's <strong>4,313 tok</strong> of raw chunks. GRAIL uses <strong>2 LLM calls</strong> (tool pick + synthesis) vs RAG's <strong>3 calls</strong> (tool pick + RAG search LLM + synthesis).</p>
+</div>
+
+</div>
+
+<div class="footer">
+  GRAIL Agent Query Formula Experiment &middot; May 2026 &middot; Model: Qwen3.6-35B-A3B &middot; Embeddings: Qwen3-Embedding-8B &middot; FAISS cosine
+</div>
+
+</body>
+</html>

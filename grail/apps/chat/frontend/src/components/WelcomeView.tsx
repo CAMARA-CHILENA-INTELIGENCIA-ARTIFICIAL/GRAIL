@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, Search, Globe } from "lucide-react";
+import { Sparkles, Search, Globe, ArrowRight } from "lucide-react";
 import { useSessionStore, useChatStore, type SearchMode } from "../lib/store";
 import ChatInput from "./ChatInput";
 
@@ -10,27 +10,26 @@ const CARDS = [
     id: "agent" as SearchMode,
     icon: Sparkles,
     title: "Agent",
-    description: "Best for most queries. AI picks the right strategy.",
+    description: "AI picks the right search strategy for your question automatically.",
     recommended: true,
   },
   {
     id: "local" as SearchMode,
     icon: Search,
-    title: "Local",
-    description: "Find specific entities, relationships, and facts.",
+    title: "Local Search",
+    description: "Find specific entities, relationships, and facts in your knowledge base.",
   },
   {
     id: "global" as SearchMode,
     icon: Globe,
-    title: "Global",
-    description: "Broad themes and patterns across the knowledge base.",
+    title: "Global Search",
+    description: "Discover broad themes and patterns across your entire knowledge base.",
   },
 ];
 
 export default function WelcomeView() {
   const { createSession } = useSessionStore();
-  const { currentMode, setMode, setUseRerankerMode, sendMessage } =
-    useChatStore();
+  const { currentMode, setMode, setUseRerankerMode, sendMessage } = useChatStore();
 
   async function handleSend(message: string) {
     const session = await createSession(currentMode);
@@ -43,37 +42,54 @@ export default function WelcomeView() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center">
-      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4 px-4">
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease }}
-          className="text-balance text-center text-3xl font-bold tracking-tight sm:text-4xl md:text-[46px]"
+    <div className="flex h-full flex-col items-center justify-center px-4">
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6">
+        {/* Logo mark */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease }}
+          className="flex h-14 w-14 items-center justify-center rounded-2xl"
           style={{
-            background:
-              "linear-gradient(135deg, #5eead4, #14b8a6, #0d9488)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            background: "var(--accent-soft)",
+            border: "1px solid var(--accent-border)",
+            boxShadow: "0 0 40px -8px rgba(20, 184, 166, 0.2)",
           }}
         >
-          Search. Discover. Learn.
-        </motion.h1>
+          <Sparkles size={24} style={{ color: "var(--accent)" }} />
+        </motion.div>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease, delay: 0.1 }}
-          className="-mt-1 pb-2 text-center text-lg text-zinc-400"
+          className="text-center"
         >
-          Your knowledge graph, one question away
-        </motion.p>
+          <h1
+            className="text-3xl font-bold tracking-tight sm:text-4xl"
+            style={{ color: "var(--text-primary)", letterSpacing: "-0.025em" }}
+          >
+            What do you want to{" "}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #5eead4 0%, #14b8a6 50%, #0d9488 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              discover
+            </span>
+            ?
+          </h1>
+          <p className="mt-2 text-base" style={{ color: "var(--text-secondary)" }}>
+            Ask anything about your knowledge graph
+          </p>
+        </motion.div>
 
         {/* Input */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease, delay: 0.2 }}
           className="w-full"
@@ -81,12 +97,12 @@ export default function WelcomeView() {
           <ChatInput onSend={handleSend} />
         </motion.div>
 
-        {/* Explanation cards */}
+        {/* Mode cards */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease, delay: 0.3 }}
-          className="mt-2 grid w-full grid-cols-3 gap-3"
+          className="mt-1 grid w-full grid-cols-1 gap-3 sm:grid-cols-3"
         >
           {CARDS.map((card, i) => {
             const Icon = card.icon;
@@ -96,35 +112,66 @@ export default function WelcomeView() {
                 key={card.id}
                 type="button"
                 onClick={() => handleCardClick(card.id)}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease, delay: 0.35 + i * 0.05 }}
-                whileHover={{ scale: 1.02 }}
-                className={`flex flex-col items-start rounded-xl border p-4 text-left transition-colors ${
-                  isActive
-                    ? "border-teal-500/40 bg-teal-500/5"
-                    : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900"
-                }`}
+                transition={{ duration: 0.4, ease, delay: 0.35 + i * 0.06 }}
+                whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                className="group flex flex-col items-start rounded-xl p-4 text-left transition-all duration-200"
+                style={{
+                  background: isActive ? "var(--accent-soft)" : "var(--surface-1)",
+                  border: `1px solid ${isActive ? "var(--accent-border)" : "var(--border)"}`,
+                  ...(isActive ? { boxShadow: "0 0 24px -6px rgba(20, 184, 166, 0.12)" } : {}),
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.background = "var(--surface-2)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.background = "var(--surface-1)";
+                  }
+                }}
               >
-                <div className="mb-2 flex w-full items-center gap-2">
-                  <Icon
-                    size={16}
-                    className={isActive ? "text-teal-400" : "text-zinc-500"}
-                  />
+                <div className="mb-3 flex w-full items-center gap-2">
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-lg"
+                    style={{
+                      background: isActive ? "rgba(20,184,166,0.15)" : "var(--surface-3)",
+                    }}
+                  >
+                    <Icon size={14} style={{ color: isActive ? "var(--accent)" : "var(--text-tertiary)" }} />
+                  </div>
                   <span
-                    className={`text-sm font-medium ${isActive ? "text-teal-400" : "text-zinc-300"}`}
+                    className="text-sm font-medium"
+                    style={{ color: isActive ? "var(--accent)" : "var(--text-primary)" }}
                   >
                     {card.title}
                   </span>
                   {card.recommended && (
-                    <span className="ml-auto rounded-full bg-teal-500/10 px-1.5 py-0.5 text-[9px] font-medium text-teal-400">
+                    <span
+                      className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      style={{
+                        background: "var(--accent-soft)",
+                        color: "var(--accent)",
+                        border: "1px solid var(--accent-border)",
+                      }}
+                    >
                       Recommended
                     </span>
                   )}
                 </div>
-                <p className="text-xs leading-relaxed text-zinc-500">
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text-tertiary)" }}>
                   {card.description}
                 </p>
+                <div
+                  className="mt-3 flex items-center gap-1 text-[11px] font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                  style={{ color: "var(--accent)" }}
+                >
+                  Select <ArrowRight size={10} />
+                </div>
               </motion.button>
             );
           })}

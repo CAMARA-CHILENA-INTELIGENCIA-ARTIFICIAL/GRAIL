@@ -66,6 +66,7 @@ class GlobalSearch:
         conversation_history: Optional[list[dict[str, Any]]] = None,
         artifact_instructions: str = "",
         extra_knowledge: str = "",
+        context_only: bool = False,
     ) -> SearchResult:
         started = time.perf_counter()
         self.reporter.info("Loading indexed artifacts…")
@@ -88,6 +89,16 @@ class GlobalSearch:
             max_tokens=self.chunk_size,
             use_community_summary=self.use_community_summary,
         )
+
+        if context_only:
+            raw = context_text if isinstance(context_text, str) else "\n\n".join(context_text)
+            return SearchResult(
+                response="",
+                context_data={"reports": used_reports},
+                context_text=raw,
+                completion_time=time.perf_counter() - started,
+                llm_calls=0,
+            )
 
         llm_calls = 0
         if isinstance(context_text, str):

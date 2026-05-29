@@ -5,7 +5,7 @@ Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
 Same on-disk layout and semantics as the legacy implementation: a single
 PyArrow-typed table with columns ``id|text|vector|attributes(json-string)``,
-Euclidean distance, and prefilter-aware ID filtering. Drop-in compatible with
+Cosine distance and prefilter-aware ID filtering. Drop-in compatible with
 data produced by the legacy code.
 """
 from __future__ import annotations
@@ -81,7 +81,7 @@ class LanceDBVectorStore(BaseVectorStore):
     def similarity_search_by_vector(
         self, query_embedding: list[float], k: int = 10, **kwargs: Any
     ) -> list[VectorStoreSearchResult]:
-        query = self.document_collection.search(query=query_embedding)
+        query = self.document_collection.search(query=query_embedding).metric("cosine")
         if self.query_filter:
             query = query.where(self.query_filter, prefilter=True)
         docs = query.limit(k).to_list()
@@ -93,7 +93,7 @@ class LanceDBVectorStore(BaseVectorStore):
                     vector=doc["vector"],
                     attributes=json.loads(doc["attributes"]),
                 ),
-                score=1 - abs(float(doc["_distance"])),
+                score=1 - float(doc["_distance"]),
             )
             for doc in docs
         ]

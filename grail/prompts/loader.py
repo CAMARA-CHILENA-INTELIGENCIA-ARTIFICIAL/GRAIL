@@ -40,6 +40,7 @@ BUILTIN_PROMPT_NAMES: tuple[str, ...] = (
     "global_map",
     "global_reduce",
     "claim_extraction",
+    "entity_dedup",
 )
 
 

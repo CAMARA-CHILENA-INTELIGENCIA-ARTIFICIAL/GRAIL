@@ -25,14 +25,15 @@ llm:
   extra_pricing:
     "deepinfra|google/gemma-4-26B-A4B-it": [0.07, 0.34]
     "deepinfra|Qwen/Qwen3-Embedding-0.6B": [0.005, 0.0]
+    "deepinfra|Qwen/Qwen3-Embedding-8B": [0.01, 0.0]
     "deepinfra|Qwen/Qwen3.6-35B-A3B": [0.15, 0.95]
 
 # --- Embeddings ---
-# Qwen3-Embedding-0.6B is a small but strong multilingual embedding model.
+# Qwen3-Embedding-8B is a strong multilingual embedding model (same price as 0.6B).
 # Critical rule: indexing and querying must use the same embedding model.
 embeddings:
   endpoint: deepinfra
-  model: Qwen/Qwen3-Embedding-0.6B
+  model: Qwen/Qwen3-Embedding-8B
 
 # --- Indexing ---
 indexing:

@@ -78,9 +78,116 @@ _stream_callback_var: contextvars.ContextVar[StreamCallback | None] = contextvar
     "grail_stream_callback", default=None,
 )
 
+_debug_mode_var: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "grail_llm_debug", default=False,
+)
+
 
 def set_stream_callback(cb: StreamCallback | None) -> None:
     _stream_callback_var.set(cb)
+
+
+def set_debug_mode(enabled: bool) -> None:
+    _debug_mode_var.set(enabled)
+
+
+def _debug_log_messages(
+    messages: list[dict[str, Any]],
+    endpoint: str,
+    model: str,
+    tag: str | None,
+) -> None:
+    """Print LLM messages to the terminal with Rich colors."""
+    try:
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.text import Text
+    except ImportError:
+        return
+
+    console = Console(stderr=True)
+
+    label = f"{endpoint}/{model}"
+    if tag:
+        label += f" [{tag}]"
+    console.print()
+    console.print(f"[bold dim]{'─' * 60}[/bold dim]")
+    console.print(f"[bold white]LLM CALL[/bold white]  [dim]{label}[/dim]")
+    console.print(f"[bold dim]{'─' * 60}[/bold dim]")
+
+    role_styles: dict[str, tuple[str, str]] = {
+        "system":    ("#e9d5ff", "SYSTEM"),     # light purple
+        "user":      ("#93c5fd", "USER"),        # light blue
+        "assistant": ("#86efac", "ASSISTANT"),    # light green
+        "tool":      ("#fde68a", "TOOL"),         # light amber
+    }
+
+    for msg in messages:
+        role = msg.get("role", "unknown")
+        color, label_text = role_styles.get(role, ("#d4d4d4", role.upper()))
+
+        content = msg.get("content", "")
+        tool_calls = msg.get("tool_calls")
+        name = msg.get("name")
+        tool_call_id = msg.get("tool_call_id")
+
+        header = f"[bold {color}]{label_text}[/bold {color}]"
+        if name:
+            header += f"  [#a1a1aa]name={name}[/#a1a1aa]"
+        if tool_call_id:
+            header += f"  [#a1a1aa]call_id={tool_call_id}[/#a1a1aa]"
+
+        console.print(header)
+
+        if content:
+            preview = content if len(content) <= 6000 else content[:6000] + f"\n[#a1a1aa]… ({len(content):,} chars total)[/#a1a1aa]"
+            console.print(Text(preview, style=color))
+
+        if tool_calls:
+            for tc in tool_calls:
+                fn = tc.get("function", tc)
+                fn_name = fn.get("name", "?")
+                fn_args = fn.get("arguments", "")
+                args_preview = fn_args if len(fn_args) <= 500 else fn_args[:500] + "…"
+                console.print(f"  [bold #fde68a]→ {fn_name}[/bold #fde68a]({args_preview})")
+
+        console.print()
+
+
+def _debug_log_response(
+    content: str | None,
+    tool_calls: list[dict[str, Any]] | None,
+    endpoint: str,
+    model: str,
+    tag: str | None,
+    duration_s: float,
+) -> None:
+    try:
+        from rich.console import Console
+    except ImportError:
+        return
+
+    console = Console(stderr=True)
+    label = f"{endpoint}/{model}"
+    if tag:
+        label += f" [{tag}]"
+
+    console.print(f"[bold #86efac]RESPONSE[/bold #86efac]  [#a1a1aa]{label} · {duration_s:.1f}s[/#a1a1aa]")
+
+    if content:
+        preview = content if len(content) <= 6000 else content[:6000] + f"\n[#a1a1aa]… ({len(content):,} chars total)[/#a1a1aa]"
+        console.print(f"[#86efac]{preview}[/#86efac]")
+
+    if tool_calls:
+        for tc in tool_calls:
+            fn = tc.get("function", tc)
+            fn_name = fn.get("name", "?")
+            fn_args = fn.get("arguments", "")
+            args_preview = fn_args if len(fn_args) <= 500 else fn_args[:500] + "…"
+            console.print(f"  [bold #fde68a]→ {fn_name}[/bold #fde68a]({args_preview})")
+
+    console.print(f"[bold dim]{'─' * 60}[/bold dim]")
+    console.print()
 
 
 _THINKING_RE = re.compile(r"<think>.*?</think>\s*", flags=re.S)
@@ -227,6 +334,9 @@ class LLMClient(BaseModel):
                     )
                 return cached
 
+        if _debug_mode_var.get(False) or self.debug:
+            _debug_log_messages(adapted_messages, endpoint_name, model_name, tag)
+
         handle = self._client_for(endpoint_name)
         kwargs: dict[str, Any] = {
             "model": model_name,
@@ -315,6 +425,9 @@ class LLMClient(BaseModel):
 
         content = await self._retry()(_call)()
 
+        if _debug_mode_var.get(False) or self.debug:
+            _debug_log_response(content, None, endpoint_name, model_name, tag, now() - start)
+
         if self.cache is not None and self.cache.enabled and cache_key is not None:
             await self.cache.set(sid, cache_key, content)
 
@@ -392,6 +505,9 @@ class LLMClient(BaseModel):
             default_endpoint=self.default_endpoint,
             default_model=self.default_model,
         )
+        if _debug_mode_var.get(False) or self.debug:
+            _debug_log_messages(messages, endpoint_name, model_name, tag)
+
         handle = self._client_for(endpoint_name)
         canonical = f"{endpoint_name}|{model_name}"
         start = now()
@@ -400,13 +516,15 @@ class LLMClient(BaseModel):
             assert self._semaphore is not None
             async with self._semaphore:
                 try:
-                    response = await asyncio.wait_for(
+                    stream = await asyncio.wait_for(
                         handle.client.chat.completions.create(
                             model=model_name,
                             messages=messages,
                             tools=tools,
                             max_tokens=max_tokens,
                             temperature=temperature,
+                            stream=True,
+                            stream_options={"include_usage": True},
                         ),
                         timeout=self.request_timeout,
                     )
@@ -414,29 +532,91 @@ class LLMClient(BaseModel):
                     await asyncio.sleep(self.sleep_on_rate_limit)
                     raise
 
-            msg = response.choices[0].message
-            usage = getattr(response, "usage", None)
+                content_chunks: list[str] = []
+                # Tool calls arrive incrementally, keyed by their index in the response.
+                # Each fragment may contribute: id (first only), function.name (first only),
+                # function.arguments (accumulating chunks).
+                tool_call_buffers: dict[int, dict[str, Any]] = {}
+                usage_prompt = 0
+                usage_completion = 0
+                _cb = _stream_callback_var.get(None)
+
+                try:
+                    async for chunk in stream:
+                        usage = getattr(chunk, "usage", None)
+                        if usage is not None:
+                            usage_prompt = getattr(usage, "prompt_tokens", 0) or 0
+                            usage_completion = getattr(usage, "completion_tokens", 0) or 0
+                        if not chunk.choices:
+                            continue
+                        delta = chunk.choices[0].delta
+                        if delta is None:
+                            continue
+                        # Content tokens — stream them
+                        if getattr(delta, "content", None):
+                            content_chunks.append(delta.content)
+                            if _cb is not None:
+                                try:
+                                    await _cb(delta.content)
+                                except Exception:
+                                    pass
+                        # Tool call fragments — accumulate by index
+                        tc_deltas = getattr(delta, "tool_calls", None)
+                        if tc_deltas:
+                            for tc_delta in tc_deltas:
+                                idx = tc_delta.index
+                                buf = tool_call_buffers.setdefault(
+                                    idx, {"id": None, "name": None, "arguments": ""}
+                                )
+                                if tc_delta.id:
+                                    buf["id"] = tc_delta.id
+                                fn = getattr(tc_delta, "function", None)
+                                if fn is not None:
+                                    if fn.name:
+                                        buf["name"] = fn.name
+                                    if fn.arguments:
+                                        buf["arguments"] += fn.arguments
+                except Exception:
+                    if content_chunks or tool_call_buffers:
+                        log.warning(
+                            "Stream interrupted for %s/%s (tag=%s); returning partial.",
+                            endpoint_name, model_name, tag,
+                        )
+                    else:
+                        raise
+
             if self.cost_tracker is not None:
                 self.cost_tracker.record(
                     model=canonical,
-                    prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
-                    completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                    prompt_tokens=usage_prompt,
+                    completion_tokens=usage_completion,
                     duration_s=now() - start,
                     tag=tag,
                 )
             tool_calls = None
-            if msg.tool_calls:
+            if tool_call_buffers:
+                ordered = sorted(tool_call_buffers.items())
                 tool_calls = [
                     {
-                        "id": tc.id,
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                        "id": buf["id"],
+                        "function": {"name": buf["name"], "arguments": buf["arguments"]},
                     }
-                    for tc in msg.tool_calls
+                    for _, buf in ordered
+                    if buf["name"]  # skip empty buffers
                 ]
-            content = _strip_thinking(msg.content) if msg.content else msg.content
+                if not tool_calls:
+                    tool_calls = None
+            raw_content = "".join(content_chunks) if content_chunks else None
+            content = _strip_thinking(raw_content) if raw_content else raw_content
             return {"content": content, "tool_calls": tool_calls}
 
         result = await self._retry()(_call)()
+
+        if _debug_mode_var.get(False) or self.debug:
+            _debug_log_response(
+                result.get("content"), result.get("tool_calls"),
+                endpoint_name, model_name, tag, now() - start,
+            )
 
         if self.tracer is not None and hasattr(self.tracer, "record") and self.tracer.active:
             self.tracer.record(

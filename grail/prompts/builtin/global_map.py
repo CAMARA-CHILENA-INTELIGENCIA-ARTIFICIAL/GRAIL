@@ -1,9 +1,11 @@
-"""Global-search MAP phase prompt.
+"""
+Global-search MAP phase prompt.
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
 Asks the LLM to extract a JSON list of key points from a chunk of community-report
-context, each scored 0–100 for relevance.
+context, each scored 0-100 for relevance. The output must be wrapped in
+``<json>...</json>`` tags for reliable parsing.
 """
 from typing import Any
 
@@ -33,40 +35,72 @@ JSON_SCHEMA: dict[str, Any] = {
     },
 }
 
-SYSTEM_TEMPLATE = """You are a helpful assistant responding to questions about data in the tables provided. Your task is to create a list of relevant points for the user query using the data tables.
+SYSTEM_TEMPLATE = """\
+<role>
+You are an analytical researcher extracting key points from knowledge-base \
+reports to answer a user question.
+</role>
 
-The response shall preserve the original meaning and use of modal verbs such as "shall", "may" or "will".
+<context>
+You are part of a map-reduce pipeline in GRAIL. Your job is the MAP phase: \
+extract relevant points from one batch of community reports. Another stage will \
+later synthesize all extracted points into a final answer.
 
-Points supported by data should list the relevant reports as references like this:
-"This is an example sentence supported by data references [Data: report title (id), report2 title2 (id2), ...]"
+Focus on extracting every point that is relevant to the question, scoring each \
+by importance. Even marginally relevant points should be included with low \
+scores — the reduce phase will filter.
+</context>
 
-Do not list more than 5 record titles in a single reference. Instead, list the top 5 most relevant record titles and add "+more" to indicate that there are more.
+<task>
+1. Read the community reports in the data below.
+2. Identify every point that helps answer the user's question.
+3. For each point, write a description and assign a relevance score (0-100).
+4. Reference source reports in your descriptions.
+5. Return the points as JSON inside <json>...</json> tags.
+</task>
 
----Goal---
-Generate a response consisting of a list of key points that responds to the user's question, summarizing all relevant information in the input data tables.
+<output_format>
+You may reason about the data before producing output. When ready, return \
+JSON inside <json>...</json> tags:
 
-Use the data provided in the data tables below as the primary context. If the data tables do not contain sufficient information, say so. Do not make anything up.
-
-Each key point in the response should have:
-- description: A comprehensive description of the point.
-- score: An integer 0-100 indicating how important the point is to answering the question. An 'I don't know' type response should have score 0.
-
-Return JSON enclosed by the tag <json>:
 <json>
 {{
-    "points": [
-        {{"description": "...", "score": 0}}
-    ]
+  "points": [
+    {{"description": "...", "score": 85}},
+    {{"description": "...", "score": 40}}
+  ]
 }}
 </json>
 
----Data tables---
-{context_data}"""
+Score scale:
+- 0-20: Tangentially related, minimal relevance to the question
+- 21-50: Somewhat relevant, provides background or indirect support
+- 51-80: Directly relevant, addresses part of the question with evidence
+- 81-100: Critical point that directly and substantially answers the question
 
-USER_TEMPLATE = """<query>
+Reference format for data-supported points:
+"Description of the point [Data: Report Title (id), Report Title2 (id2), ...]"
+Use at most 5 report references per point; add "+more" if there are more.
+</output_format>
+
+<rules>
+- Preserve the original meaning and use of modal verbs (shall, may, will).
+- Do not invent information — only extract what appears in the provided data.
+- A point with no relevant information should receive score 0.
+- Include ALL relevant points, even low-scoring ones — the reduce phase will filter.
+</rules>
+
+<data>
+{context_data}
+</data>"""
+
+USER_TEMPLATE = """\
+<query>
 {user_query}
 </query>
-Return the most important points in JSON format enclosed by <json> tags."""
+
+Extract all relevant points from the data and return them as JSON inside \
+<json>...</json> tags, each with a description and relevance score (0-100)."""
 
 
 def build_messages(**params: Any) -> list[dict[str, Any]]:

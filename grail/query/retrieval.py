@@ -115,19 +115,85 @@ def map_query_to_entities(
     return out.sort_values("__score__", ascending=False).head(top_k)
 
 
+# ----------------------------------------------------------------------- helpers
+
+
+def resolve_doc_titles(
+    documents: Optional[pd.DataFrame] = None,
+    mapping: Optional[dict[str, Any]] = None,
+) -> dict[str, str]:
+    """Build a ``{doc_id: human_title}`` lookup from documents DataFrame and mapping.json."""
+    doc_titles: dict[str, str] = {}
+    if documents is not None and not documents.empty:
+        doc_titles = dict(zip(documents["id"], documents["title"]))
+    if mapping:
+        for doc_id, info in mapping.items():
+            doc_titles.setdefault(doc_id, info.get("title", doc_id))
+    return doc_titles
+
+
+def extract_source_references(
+    context_data: dict[str, Any] | None,
+    documents: Optional[pd.DataFrame] = None,
+    mapping: Optional[dict[str, Any]] = None,
+) -> list[dict[str, str]]:
+    """Extract deduplicated source document references from *context_data*.
+
+    Returns ``[{"id": ..., "title": ..., "path": ...}, ...]``.
+    """
+    if not context_data:
+        return []
+
+    doc_titles = resolve_doc_titles(documents, mapping)
+
+    doc_paths: dict[str, str] = {}
+    if documents is not None and not documents.empty:
+        if "path" in documents.columns:
+            doc_paths = dict(zip(documents["id"], documents["path"].fillna("")))
+    if mapping:
+        for doc_id, info in mapping.items():
+            doc_paths.setdefault(doc_id, info.get("original_path", ""))
+
+    seen: set[str] = set()
+    sources: list[dict[str, str]] = []
+
+    for _key, df in context_data.items():
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            continue
+        if "document_ids" not in df.columns:
+            continue
+        for _, row in df.iterrows():
+            raw_ids = row.get("document_ids")
+            if raw_ids is None:
+                continue
+            ids = list(raw_ids) if hasattr(raw_ids, "__iter__") and not isinstance(raw_ids, str) else [raw_ids]
+            for doc_id in ids:
+                if doc_id and str(doc_id) not in seen:
+                    did = str(doc_id)
+                    seen.add(did)
+                    sources.append({
+                        "id": did,
+                        "title": doc_titles.get(did, did),
+                        "path": doc_paths.get(did, ""),
+                    })
+
+    return sources
+
+
 # ----------------------------------------------------------------------- contexts
 
 
 def build_entity_context(
     entities: pd.DataFrame, *, max_tokens: int = 2000
 ) -> tuple[str, pd.DataFrame]:
-    """Render a CSV-like entity table that fits in ``max_tokens``."""
+    """Render a CSV-like entity table wrapped in ``<entities>`` tags."""
     if entities.empty:
         return "", entities
-    header = "Entities\nid,entity,type,description"
+    header = "<entities>\nid,entity,type,description"
+    footer = "</entities>"
     rows = []
     selected_idx = []
-    used = tiktoken_len(header)
+    used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in entities.iterrows():
         line = f"{row.get('human_readable_id', idx)},{row['name']},{row.get('type','')},{(row.get('description') or '').replace(chr(10), ' ')[:300]}"
         tok = tiktoken_len(line)
@@ -136,7 +202,7 @@ def build_entity_context(
         rows.append(line)
         selected_idx.append(idx)
         used += tok
-    text = "\n".join([header, *rows])
+    text = "\n".join([header, *rows, footer])
     return text, entities.loc[selected_idx]
 
 
@@ -146,7 +212,7 @@ def build_relationship_context(
     *,
     max_tokens: int = 2000,
 ) -> tuple[str, pd.DataFrame]:
-    """Render a CSV-like relationship table prioritising edges between selected entities."""
+    """Render a CSV-like relationship table wrapped in ``<relationships>`` tags."""
     if relationships.empty:
         return "", relationships
     name_set = set(entity_names)
@@ -157,10 +223,11 @@ def build_relationship_context(
         relationships["source"].isin(name_set) ^ relationships["target"].isin(name_set)
     ]
     ordered = pd.concat([in_network, out_network])
-    header = "Relationships\nid,source,target,description,weight"
+    header = "<relationships>\nid,source,target,description,weight"
+    footer = "</relationships>"
     rows = []
     selected_idx = []
-    used = tiktoken_len(header)
+    used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in ordered.iterrows():
         line = (
             f"{row.get('human_readable_id', idx)},{row['source']},{row['target']},"
@@ -172,7 +239,7 @@ def build_relationship_context(
         rows.append(line)
         selected_idx.append(idx)
         used += tok
-    text = "\n".join([header, *rows])
+    text = "\n".join([header, *rows, footer])
     return text, ordered.loc[selected_idx]
 
 
@@ -207,11 +274,12 @@ def _build_community_context_full(
     *,
     max_tokens: int,
 ) -> tuple[str | list[str], pd.DataFrame]:
-    header = "Reports"
+    header = "<reports>"
+    footer = "</reports>"
     chunks: list[str] = []
     selected_idx = []
     blocks: list[str] = []
-    used = tiktoken_len(header)
+    used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in sorted_reports.iterrows():
         title = row.get("title", "")
         rank = row.get("rank", 1.0)
@@ -219,14 +287,14 @@ def _build_community_context_full(
         block = f"---\nReport: {title} (rank: {rank})\n\n{content}\n---"
         tok = tiktoken_len(block)
         if used + tok > max_tokens and blocks:
-            chunks.append("\n\n".join([header, *blocks]))
+            chunks.append("\n\n".join([header, *blocks, footer]))
             blocks = []
-            used = tiktoken_len(header)
+            used = tiktoken_len(header) + tiktoken_len(footer)
         blocks.append(block)
         selected_idx.append(idx)
         used += tok
     if blocks:
-        chunks.append("\n\n".join([header, *blocks]))
+        chunks.append("\n\n".join([header, *blocks, footer]))
 
     if len(chunks) <= 1:
         return chunks[0] if chunks else "", sorted_reports.loc[selected_idx]
@@ -238,24 +306,25 @@ def _build_community_context_summary(
     *,
     max_tokens: int,
 ) -> tuple[str | list[str], pd.DataFrame]:
-    header = "Reports\nid,title,summary,rank"
+    header = "<reports>\nid,title,summary,rank"
+    footer = "</reports>"
     chunks: list[str] = []
     selected_idx = []
     rows: list[str] = []
-    used = tiktoken_len(header)
+    used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in sorted_reports.iterrows():
         summary = (row.get("summary") or "").replace("\n", " ")
         line = f"{row.get('id', idx)},{row.get('title','')},{summary},{row.get('rank', 1.0)}"
         tok = tiktoken_len(line)
         if used + tok > max_tokens and rows:
-            chunks.append("\n".join([header, *rows]))
+            chunks.append("\n".join([header, *rows, footer]))
             rows = []
-            used = tiktoken_len(header)
+            used = tiktoken_len(header) + tiktoken_len(footer)
         rows.append(line)
         selected_idx.append(idx)
         used += tok
     if rows:
-        chunks.append("\n".join([header, *rows]))
+        chunks.append("\n".join([header, *rows, footer]))
 
     if len(chunks) <= 1:
         return chunks[0] if chunks else "", sorted_reports.loc[selected_idx]
@@ -297,30 +366,27 @@ def build_text_unit_context(
     relevant = relevant.sort_values("__entity_overlap__", ascending=False)
     relevant = relevant.drop(columns=["__entity_overlap__"])
 
-    doc_titles: dict[str, str] = {}
-    if documents is not None and not documents.empty:
-        doc_titles = dict(zip(documents["id"], documents["title"]))
-    if mapping:
-        for doc_id, info in mapping.items():
-            doc_titles.setdefault(doc_id, info.get("title", doc_id))
+    doc_titles = resolve_doc_titles(documents, mapping)
 
-    header = "Sources\nid,document,text"
+    header = "<sources>"
+    footer = "</sources>"
     rows = []
     selected_idx = []
-    used = tiktoken_len(header)
+    used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in relevant.iterrows():
         raw_doc_ids = row.get("document_ids")
         if raw_doc_ids is None or (hasattr(raw_doc_ids, "__len__") and len(raw_doc_ids) == 0):
             doc_ids = [row.get("document_id")]
         else:
             doc_ids = list(raw_doc_ids)
-        doc_label = "; ".join(doc_titles.get(d, str(d)) for d in doc_ids if d)
-        line = f"{row['id']},{doc_label},{(row['text'] or '').replace(chr(10), ' ')}"
+        doc_id_str = "; ".join(str(d) for d in doc_ids if d)
+        text_content = (row["text"] or "").replace(chr(10), " ")
+        line = f'<source id="{row["id"]}" document_id="{doc_id_str}">\n{text_content}\n</source>'
         tok = tiktoken_len(line)
         if used + tok > max_tokens:
             break
         rows.append(line)
         selected_idx.append(idx)
         used += tok
-    text = "\n".join([header, *rows])
+    text = "\n".join([header, *rows, footer])
     return text, relevant.loc[selected_idx]

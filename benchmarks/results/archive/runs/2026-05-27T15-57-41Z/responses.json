@@ -1,0 +1,21 @@
+{
+  "Q01": {
+    "question": "¿Cuál es el objeto de la Ley 20.850?",
+    "grail_local": {
+      "response": "\n\nEl objeto de la **Ley 20.850** es crear un **Sistema de Protección Financiera** para el otorgamiento de aquellos diagnósticos y tratamientos de alto costo que sean declarados mediante decreto supremo del Ministerio de Salud. Este sistema se integra al Régimen General de Garantías en Salud y busca asegurar que el Fondo Nacional de Salud cubra el valor total de estas prestaciones, evitando que su costo impacte catastróficamente en el gasto de los beneficiarios de los sistemas previsionales de salud en Chile. \n\nAdicionalmente, la normativa rinde un homenaje póstumo a Don Luis Ricarte Soto Gallegos.\n\n**Fuente:** Ley 20.850, Artículo 1º (Biblioteca del Congreso Nacional de Chile).",
+      "completion_time": 9.995734791009454,
+      "llm_calls": 1
+    },
+    "grail_global": {
+      "response": "\n\nEl objeto principal de la **Ley 20.850** es establecer el marco normativo del **Sistema de Protección Financiera para Diagnósticos y Tratamientos de Alto Costo** en Chile. Su finalidad central es garantizar el acceso obligatorio a prestaciones médicas de alta complejidad y proteger a los beneficiarios de gastos catastróficos de bolsillo [Reporte: Marco Normativo de la Ley 20.850 y el Sistema de Protección Financiera para Alto Costo].\n\nPara materializar este objetivo, la ley estructura el sistema en los siguientes ejes:\n\n* **Cobertura obligatoria y umbral monetario:** Asegura la atención de diagnósticos y tratamientos de alto costo, los cuales son regulados por un límite financiero específico y administrados operativamente por el Fondo Nacional de Salud [Reporte: Sistema de Protección Financiera para Alto Costo y Cobertura en Instituciones de Seguridad y Defensa de Chile].\n* **Incorporación progresiva y obligaciones:** Regula la inclusión gradual de nuevas prestaciones al sistema y define las responsabilidades legales de los fondos previsionales y los prestadores de servicios [Reporte: Marco Normativo de la Ley 20.850...].\n* **Requisitos de acceso y exclusiones:** Establece condiciones previas para el acceso (como agotar la Cobertura Adicional para Enfermedades Catastróficas y el contrato de salud previsional) y excluye expresamente las prestaciones derivadas de accidentes laborales o de tránsito [Reporte: Marco Normativo de la Ley 20.850...].\n* **Supervisión técnica y vigilancia ciudadana:** Crea mecanismos de fiscalización clínica y farmacovigilancia a cargo del Instituto de Salud Pública, además de instaurar una Comisión Ciudadana de Vigilancia y Control para ejercer supervisión directa sobre el funcionamiento del sistema [Reporte: Sistema de Protección Financiera... y Reporte: Marco Normativo...].\n\nEn síntesis, la normativa busca asegurar que las personas que requieren diagnósticos o tratamientos de alto costo cuenten con cobertura plena y protección económica, evitando que la necesidad médica se traduzca en una carga financiera insostenible para los pacientes y sus familias.",
+      "completion_time": 12.090895708999597,
+      "llm_calls": 1
+    },
+    "grail_agent": {
+      "response": "\n\nEl objeto de la **Ley N° 20.850** es crear un **Sistema de Protección Financiera para el otorgamiento de diagnósticos y tratamientos de alto costo**, los cuales serán declarados mediante decreto supremo del Ministerio de Salud.\n\nEste sistema forma parte del Régimen General de Garantías en Salud y tiene como propósito fundamental:\n\n*   **Garantizar el acceso** a estas prestaciones médicas.\n*   **Proteger a los beneficiarios** de los sistemas previsionales de salud de Chile frente a gastos catastróficos.\n\nPara ello, el Fondo Nacional de Salud (Fonasa) está obligado a asegurar la cobertura del valor total de las prestaciones de confirmación diagnóstica y tratamientos de alto costo para todos sus beneficiarios.",
+      "completion_time": 38.501436874998035,
+      "llm_calls": 3,
+      "tool_used": "cascade_search"
+    }
+  }
+}

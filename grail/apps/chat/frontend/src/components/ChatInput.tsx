@@ -11,7 +11,15 @@ interface ChatInputProps {
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { isStreaming, setShowInfo } = useChatStore();
+  const { isStreaming, setShowInfo, draftInput, setDraftInput } = useChatStore();
+
+  useEffect(() => {
+    if (draftInput) {
+      setValue(draftInput);
+      setDraftInput(null);
+      textareaRef.current?.focus();
+    }
+  }, [draftInput, setDraftInput]);
 
   const canSend = value.trim().length > 0 && !disabled && !isStreaming;
 
@@ -45,7 +53,23 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   return (
     <form
-      className="overflow-visible rounded-xl border border-zinc-800 bg-zinc-900 transition-colors duration-200 focus-within:border-zinc-700"
+      className="overflow-visible rounded-xl transition-all duration-200"
+      style={{
+        background: "var(--surface-1)",
+        border: "1px solid var(--border)",
+      }}
+      onFocus={(e) => {
+        const form = e.currentTarget;
+        form.style.borderColor = "var(--accent-border)";
+        form.style.boxShadow = "0 0 0 1px var(--accent-border), 0 0 24px -6px rgba(20,184,166,0.08)";
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          const form = e.currentTarget;
+          form.style.borderColor = "var(--border)";
+          form.style.boxShadow = "none";
+        }
+      }}
       onSubmit={(e) => {
         e.preventDefault();
         handleSend();
@@ -61,23 +85,26 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder="Ask anything..."
           disabled={isStreaming}
           rows={1}
-          className="max-h-[200px] min-h-[44px] w-full resize-none border-none bg-transparent text-sm text-zinc-50 placeholder-zinc-500 outline-none"
+          className="max-h-[200px] min-h-[44px] w-full resize-none border-none bg-transparent text-sm outline-none"
+          style={{ color: "var(--text-primary)" }}
         />
       </div>
 
       {/* Bottom toolbar */}
-      <div className="flex items-center gap-1.5 border-t border-zinc-800/60 px-2 py-1.5">
-        {/* Mode chips */}
+      <div
+        className="flex items-center gap-1.5 px-2 py-1.5"
+        style={{ borderTop: "1px solid var(--border-subtle)" }}
+      >
         <ModeChips />
-
-        {/* Document scope */}
         <DocumentScope />
 
-        {/* Info button */}
         <button
           type="button"
           onClick={() => setShowInfo(true)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-150"
+          style={{ color: "var(--text-tertiary)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
           title="How search works"
         >
           <CircleHelp size={14} />
@@ -85,18 +112,18 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
 
         <div className="flex-1" />
 
-        {/* Send button */}
         <button
           type="submit"
           disabled={!canSend}
-          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
-            canSend
-              ? "bg-teal-600 text-white hover:bg-teal-500"
-              : "bg-zinc-800 text-zinc-600"
-          }`}
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200"
+          style={{
+            background: canSend ? "var(--accent)" : "var(--surface-3)",
+            color: canSend ? "white" : "var(--text-tertiary)",
+            ...(canSend ? { boxShadow: "0 1px 3px rgba(0,0,0,0.2), 0 0 12px -3px rgba(20,184,166,0.3)" } : {}),
+          }}
           aria-label="Send message"
         >
-          <ArrowUp size={16} />
+          <ArrowUp size={15} />
         </button>
       </div>
     </form>

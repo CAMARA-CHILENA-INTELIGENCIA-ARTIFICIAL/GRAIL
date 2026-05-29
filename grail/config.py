@@ -139,9 +139,16 @@ class IndexingConfig(BaseModel):
     extraction_max_tokens: int = 8192
     extraction_concurrency: Optional[int] = None
     summarization_concurrency: Optional[int] = None
-    entity_discovery_max_tokens: int = 2048
-    max_summarization_tokens: int = 756
+    entity_discovery_max_tokens: int = 4096
+    max_summarization_tokens: int = 8192
+    summarization_batch_size: int = 10
     max_gleanings: int = 0
+
+    deduplicate_entities: bool = True
+    dedup_similarity_threshold: float = 0.90
+    dedup_endpoint: Optional[str] = None
+    dedup_model: Optional[str] = None
+    dedup_max_entities_per_call: int = 50
 
     @field_validator("entity_types", mode="after")
     @classmethod
@@ -220,10 +227,19 @@ class SearchConfig(BaseModel):
     local_top_k_entities: int = 10
     local_top_k_relationships: int = 10
     use_community_summary: bool = False
-    global_map_max_tokens: int = 2000
+    global_map_max_tokens: int = 2048
     global_reduce_max_tokens: int = 8192
     global_chunk_size: int = 100_000
     global_concurrency: int = 5
+    document_search_endpoint: Optional[str] = None
+    document_search_model: Optional[str] = None
+    document_search_max_tokens: int = 8192
+    document_search_response_max_tokens: int = 16_384
+    agent_search_endpoint: Optional[str] = None
+    agent_search_model: Optional[str] = None
+    agent_search_max_tokens: int = 12_000
+    agent_search_response_max_tokens: int = 16_384
+    agent_max_iterations: int = 5
     response_max_tokens: int = 16_384
     response_type: str = "Multiple Paragraphs"
 
@@ -262,10 +278,10 @@ class PromptsConfig(BaseModel):
 class VectorStoreConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    backend: str = "lancedb"
+    backend: str = "faiss"
     collection_name: str = "entity_descriptions"
     uri: Optional[str] = None
-    distance_fn: str = "l2"
+    distance_fn: str = "cosine"
 
     @field_validator("backend")
     @classmethod

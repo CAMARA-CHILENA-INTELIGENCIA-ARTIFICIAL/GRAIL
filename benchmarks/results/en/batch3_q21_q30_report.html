@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Benchmark — Batch 3 (Q21-Q30) + Final Summary</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#151515;--s2:#1c1c1c;--s3:#232323;--border:#2a2a2a;--text:#ececec;--t2:#a1a1a1;--t3:#6b6b6b;--green:#10b981;--green-dim:rgba(16,185,129,0.10);--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.10);--orange:#f97316;--orange-dim:rgba(249,115,22,0.10);--red:#ef4444;--yellow:#eab308;--purple:#a855f7;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono','Fira Code',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+  .hero{padding:48px 0 36px;text-align:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(16,185,129,0.08) 0%,transparent 70%);pointer-events:none;}
+  .ascii-logo{font-family:var(--mono);font-size:11px;line-height:1.2;color:var(--green);opacity:0.7;margin-bottom:16px;letter-spacing:1px;}
+  .hero .batch-tag{display:inline-flex;padding:5px 16px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:16px;border:1px solid rgba(16,185,129,0.2);}
+  .logo{margin-bottom:20px;}.logo svg{width:280px;height:auto;}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px;background:linear-gradient(135deg,var(--text) 0%,var(--t2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p{font-size:15px;color:var(--t2);max-width:660px;margin:0 auto;}
+  .hero-meta{display:flex;justify-content:center;gap:24px;margin-top:16px;font-size:12px;color:var(--t3);}
+  .section{padding:40px 0;border-bottom:1px solid var(--border);}.section:last-child{border-bottom:none;}
+  .section h2{font-size:22px;font-weight:700;margin-bottom:4px;}.section .sub{color:var(--t2);font-size:14px;margin-bottom:24px;}
+  .headline{display:flex;justify-content:center;gap:1px;margin:24px 0;}
+  .h-card{background:var(--surface);padding:28px 40px;text-align:center;flex:1;max-width:280px;}
+  .h-card:first-child{border-radius:16px 0 0 16px;}.h-card:last-child{border-radius:0 16px 16px 0;}
+  .h-card .h-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .h-card .h-num{font-size:48px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .h-card .h-sub{font-size:12px;color:var(--t3);margin-top:4px;}
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px;}
+  .m-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;}
+  .m-card .m-val{font-size:20px;font-weight:700;font-family:var(--mono);line-height:1.2;}.m-card .m-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+  .tool-section{display:flex;justify-content:center;gap:40px;padding:24px 0;}
+  .tool-item{text-align:center;}.tool-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative;}
+  .tool-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--bg);}.tool-ring .ring-num{position:relative;z-index:1;font-size:24px;font-weight:700;font-family:var(--mono);}
+  .tool-name{font-size:12px;font-weight:600;font-family:var(--mono);}.tool-desc{font-size:10px;color:var(--t3);max-width:100px;}
+  .chart-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}.chart-row:last-child{border-bottom:none;}
+  .chart-qid{width:36px;font-family:var(--mono);font-weight:600;font-size:13px;flex-shrink:0;}
+  .chart-cat{width:100px;font-size:11px;color:var(--t3);flex-shrink:0;}
+  .chart-bars{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .chart-bar-row{display:flex;align-items:center;gap:6px;}
+  .chart-bar-label{width:40px;font-size:10px;color:var(--t3);text-align:right;flex-shrink:0;}
+  .chart-bar-track{flex:1;height:14px;background:var(--s2);border-radius:7px;overflow:hidden;}
+  .chart-bar-fill{height:100%;border-radius:7px;transition:width 0.8s cubic-bezier(0.22,1,0.36,1);}
+  .chart-bar-val{width:32px;font-size:11px;font-family:var(--mono);font-weight:600;flex-shrink:0;}
+  .chart-tools{width:130px;font-size:10px;font-family:var(--mono);color:var(--t3);flex-shrink:0;text-align:right;}
+  .chart-winner{width:50px;font-size:10px;font-weight:700;text-align:center;flex-shrink:0;}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;transition:border-color 0.2s;}.q-card:hover{border-color:#444;}
+  .q-card .q-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;}
+  .q-card .q-title{font-size:14px;font-weight:600;}.q-card .q-text{color:var(--t2);font-size:13px;font-style:italic;margin-bottom:12px;}
+  .q-card .q-gold{font-size:12px;color:var(--yellow);margin-bottom:14px;padding:10px 14px;background:rgba(234,179,8,0.06);border-radius:8px;border:1px solid rgba(234,179,8,0.15);border-left:3px solid var(--yellow);}.q-card .q-gold strong{color:#facc15;}
+  .agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .a-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .a-box .a-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .a-box .a-name{font-size:12px;font-weight:600;}.a-box .a-score{font-family:var(--mono);font-weight:700;font-size:20px;}
+  .a-box .a-dims{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;}
+  .a-dim{text-align:center;padding:4px;background:var(--bg);border-radius:6px;}
+  .a-dim .d-val{font-size:14px;font-weight:700;font-family:var(--mono);}.a-dim .d-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;}
+  .a-preview{font-size:11px;color:var(--t2);margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:2px solid var(--border);line-height:1.5;font-style:italic;}
+  .pill{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10px;font-weight:600;}
+  .p-e{background:rgba(16,185,129,0.12);color:#34d399;}.p-m{background:rgba(59,130,246,0.12);color:#60a5fa;}.p-h{background:rgba(239,68,68,0.12);color:#f87171;}
+  .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);font-weight:600;margin:1px;}
+  .tag-l{background:rgba(16,185,129,0.12);color:#34d399;}.tag-c{background:rgba(59,130,246,0.12);color:#60a5fa;}.tag-g{background:rgba(234,179,8,0.12);color:#eab308;}.tag-r{background:rgba(249,115,22,0.12);color:#f97316;}
+  .verdict{padding:2px 10px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .v-g{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.2);}.v-r{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,0.2);}.v-t{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.2);}
+  .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .insight .i-icon{font-size:24px;margin-bottom:8px;}.insight h4{font-size:14px;font-weight:600;margin-bottom:6px;}.insight p{font-size:13px;color:var(--t2);line-height:1.5;}
+
+  /* Final summary banner */
+  .final-banner{background:linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(59,130,246,0.05) 100%);border:1px solid rgba(16,185,129,0.2);border-radius:16px;padding:32px;text-align:center;margin:24px 0;}
+  .final-banner h2{font-size:28px;margin-bottom:16px;color:var(--green);}
+  .final-stats{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;}
+  .final-stat{text-align:center;}
+  .final-stat .fs-num{font-size:36px;font-weight:700;font-family:var(--mono);}
+  .final-stat .fs-lbl{font-size:12px;color:var(--t3);margin-top:2px;}
+
+  .footer{padding:32px 0;text-align:center;color:var(--t3);font-size:12px;}
+  @media(max-width:768px){.metrics{grid-template-columns:repeat(3,1fr);}.agent-grid,.insight-grid{grid-template-columns:1fr;}.headline,.final-stats{flex-direction:column;align-items:center;gap:12px;}.h-card{border-radius:12px!important;max-width:100%;}.chart-tools,.chart-cat{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="container">
+  <div class="logo"><svg viewBox="0 0 280 60" xmlns="http://www.w3.org/2000/svg"><text x="0" y="48" font-family="'JetBrains Mono','SF Mono','Fira Code',monospace" font-size="56" font-weight="900" fill="#10b981" opacity="0.85" letter-spacing="-2">GRAIL</text></svg></div>
+  <div class="batch-tag" style="background:var(--green-dim);color:var(--green);">Batch 3 of 3 &mdash; Q21 to Q30 + Final Summary</div>
+  <h1>Agent Benchmark Report</h1>
+  <p>10 questions: 2 Comparative + 3 Negation/Boundary + 5 Global Synthesis. Plus the complete 30-question final tally across all batches.</p>
+  <div class="hero-meta"><span>Model: Qwen3.6-35B-A3B</span><span>Embeddings: Qwen3-Embedding-8B</span><span>Judge: Claude Opus 4.6</span></div>
+</div></div>
+
+<div class="container">
+
+<!-- FINAL 30-QUESTION SUMMARY -->
+<div class="section">
+  <div class="final-banner">
+    <h2>Complete Benchmark: 30 Questions</h2>
+    <div class="final-stats">
+      <div class="final-stat"><div class="fs-num" style="color:var(--green)">4.80</div><div class="fs-lbl">GRAIL Agent avg</div></div>
+      <div class="final-stat"><div class="fs-num" style="color:var(--orange)">4.14</div><div class="fs-lbl">RAG Agent avg</div></div>
+      <div class="final-stat"><div class="fs-num" style="color:var(--green)">27</div><div class="fs-lbl">GRAIL wins</div></div>
+      <div class="final-stat"><div class="fs-num" style="color:var(--blue)">3</div><div class="fs-lbl">ties</div></div>
+      <div class="final-stat"><div class="fs-num" style="color:var(--green)">0</div><div class="fs-lbl">GRAIL losses</div></div>
+      <div class="final-stat"><div class="fs-num" style="color:var(--green)">+16%</div><div class="fs-lbl">improvement</div></div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="m-card"><div class="m-val" style="color:var(--green)">4.77</div><div class="m-lbl">Batch 1 (Q01-Q10)</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">4.78</div><div class="m-lbl">Batch 2 (Q11-Q20)</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--green)">4.87</div><div class="m-lbl">Batch 3 (Q21-Q30)</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">4.15</div><div class="m-lbl">RAG Batch 1</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">4.05</div><div class="m-lbl">RAG Batch 2</div></div>
+    <div class="m-card"><div class="m-val" style="color:var(--orange)">4.23</div><div class="m-lbl">RAG Batch 3</div></div>
+  </div>
+</div>
+
+<!-- BATCH 3 HEADLINE -->
+<div class="section">
+  <h2>Batch 3 Scores</h2>
+  <div class="headline">
+    <div class="h-card" style="border-right:1px solid var(--border);"><div class="h-label" style="color:var(--green);">GRAIL Agent</div><div class="h-num" style="color:var(--green);">4.87</div><div class="h-sub">avg score / 5.00</div></div>
+    <div class="h-card" style="border-right:1px solid var(--border);"><div class="h-label" style="color:var(--orange);">RAG Agent</div><div class="h-num" style="color:var(--orange);">4.23</div><div class="h-sub">avg score / 5.00</div></div>
+    <div class="h-card"><div class="h-label">W - L - T</div><div class="h-num" style="color:var(--green);">9-0-1</div><div class="h-sub">consistent dominance</div></div>
+  </div>
+</div>
+
+<!-- TOOL USAGE -->
+<div class="section">
+  <h2>GRAIL Tool Selection — Batch 3</h2>
+  <p class="sub">Global search appears for the first time on synthesis questions</p>
+  <div class="tool-section">
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--green) 0% 33%,var(--s3) 33%);"><span class="ring-num" style="color:var(--green)">5</span></div><div class="tool-name" style="color:var(--green)">local</div><div class="tool-desc">Entity matching</div></div>
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--blue) 0% 47%,var(--s3) 47%);"><span class="ring-num" style="color:var(--blue)">7</span></div><div class="tool-name" style="color:var(--blue)">cascade</div><div class="tool-desc">Entity + text</div></div>
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--yellow) 0% 20%,var(--s3) 20%);"><span class="ring-num" style="color:var(--yellow)">3</span></div><div class="tool-name" style="color:var(--yellow)">global</div><div class="tool-desc">Community reports</div></div>
+    <div class="tool-item"><div class="tool-ring" style="background:conic-gradient(var(--orange) 0% 100%,var(--s3) 100%);"><span class="ring-num" style="color:var(--orange)">10</span></div><div class="tool-name" style="color:var(--orange)">rag</div><div class="tool-desc">Always chunk search</div></div>
+  </div>
+</div>
+
+<!-- SCORE CHART -->
+<div class="section">
+  <h2>Score Comparison</h2>
+  <div id="chart"></div>
+  <script>
+  const data=[
+    {qid:"Q21",cat:"Comparative",gw:4.70,rw:3.95,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q22",cat:"Comparative",gw:4.85,rw:3.95,tools:"local×2",w:"GRAIL"},
+    {qid:"Q23",cat:"Negation",gw:5.00,rw:5.00,tools:"cascade",w:"TIE"},
+    {qid:"Q24",cat:"Negation",gw:4.85,rw:4.75,tools:"cascade×2",w:"GRAIL"},
+    {qid:"Q25",cat:"Negation",gw:5.00,rw:4.85,tools:"local",w:"GRAIL"},
+    {qid:"Q26",cat:"Global",gw:4.85,rw:3.95,tools:"global",w:"GRAIL"},
+    {qid:"Q27",cat:"Global",gw:4.85,rw:3.95,tools:"local+cascade",w:"GRAIL"},
+    {qid:"Q28",cat:"Global",gw:4.85,rw:3.95,tools:"local",w:"GRAIL"},
+    {qid:"Q29",cat:"Global",gw:4.85,rw:3.95,tools:"global+local×2",w:"GRAIL"},
+    {qid:"Q30",cat:"Global",gw:4.85,rw:3.95,tools:"global+cascade",w:"GRAIL"},
+  ];
+  const wC={GRAIL:"v-g",RAG:"v-r",TIE:"v-t"};const ch=document.getElementById("chart");
+  data.forEach(d=>{ch.innerHTML+=`<div class="chart-row"><div class="chart-qid">${d.qid}</div><div class="chart-cat">${d.cat}</div><div class="chart-bars"><div class="chart-bar-row"><div class="chart-bar-label" style="color:var(--green)">GRAIL</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.gw/5*100}%;background:var(--green);"></div></div><div class="chart-bar-val" style="color:var(--green)">${d.gw.toFixed(2)}</div></div><div class="chart-bar-row"><div class="chart-bar-label" style="color:var(--orange)">RAG</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${d.rw/5*100}%;background:var(--orange);"></div></div><div class="chart-bar-val" style="color:var(--orange)">${d.rw.toFixed(2)}</div></div></div><div class="chart-tools">${d.tools}</div><div class="chart-winner"><span class="verdict ${wC[d.w]}">${d.w}</span></div></div>`;});
+  </script>
+</div>
+
+<!-- PER-QUESTION DETAIL -->
+<div class="section">
+  <h2>Per-Question Detail</h2>
+  <div id="details"></div>
+  <script>
+  const qs=[
+    {qid:"Q21",cat:"Comparative",diff:"hard",q:"¿Qué castigos hay si un hospital no me da el tratamiento que me corresponde versus si alguien manipula el sistema?",gold:"Título III Art.12: multa 100-10.000 UTM, cancelación, prescripción 4 años. Título IV Art.13: amonestación o multa 10-1.000 UTM, prescripción 2 años.",gw:4.70,rw:3.95,gs:[5,5,4,5,4],rs:[4,4,3,5,4],tools:["cascade","cascade"],w:"GRAIL",gp:"Las sanciones difieren según el tipo de infracción: manipulación del sistema (Título III) tiene multas de 100-10.000 UTM, mientras que negar el otorgamiento (Título IV) tiene amonestación o multa de 10-1.000 UTM...",rp:"Las diferencias en sanciones y consecuencias según la Ley 20.850 y Decreto 54..."},
+    {qid:"Q22",cat:"Comparative",diff:"hard",q:"¿Quiénes forman parte del comité que asesora sobre las garantías de salud y quiénes vigilan el sistema de alto costo? ¿Son los mismos?",gold:"Consejo Consultivo: 9 miembros (academia, universidades, presidente). Comisión Ciudadana: 12 miembros (4 pacientes, 2 científicos, 2 académicos, 4 expertos MinSalud).",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["local","local"],w:"GRAIL",gp:"No, no son los mismos. El Consejo Consultivo (9 miembros: academia, universidades, presidente) asesora sobre garantías de salud. La Comisión Ciudadana (12 miembros: pacientes, científicos, académicos) vigila el sistema de alto costo...",rp:"No son los mismos. Existen dos órganos distintos con funciones diferentes..."},
+    {qid:"Q23",cat:"Negation",diff:"medium",q:"¿La Ley Ricarte Soto cubre los accidentes laborales o los accidentes de tránsito?",gold:"NO. Art.1 excluye Ley 16.744 (accidentes del trabajo) y Ley 18.490 (seguro obligatorio accidentes vehículos).",gw:5.00,rw:5.00,gs:[5,5,5,5,5],rs:[5,5,5,5,5],tools:["cascade"],w:"TIE",gp:"No, la Ley Ricarte Soto NO cubre accidentes laborales ni de tránsito. Los excluye expresamente de su cobertura, citando Ley 16.744 y Ley 18.490...",rp:"No, la Ley Ricarte Soto no cubre los accidentes laborales ni de tránsito. El Artículo 1° los excluye expresamente..."},
+    {qid:"Q24",cat:"Negation",diff:"medium",q:"¿Puede un prestador de salud suspender voluntariamente la distribución de un producto cubierto por la Ley 20.850?",gold:"NO, salvo que el producto cause daños a la salud. Art.16 prohíbe suspensión voluntaria.",gw:4.85,rw:4.75,gs:[5,5,4,5,5],rs:[5,4,5,5,5],tools:["cascade","cascade"],w:"GRAIL",gp:"No, un titular de registro sanitario no puede suspender voluntariamente la distribución, salvo que el producto cause daños a la salud...",rp:"No, en principio no puede. Art. 16 de la Ley 20.850 prohíbe la suspensión voluntaria..."},
+    {qid:"Q25",cat:"Negation",diff:"easy",q:"¿Los que vigilan el sistema de tratamientos caros pueden también manejar el dinero del fondo?",gold:"NO. Art.22 Ley 20.850: la Comisión no estará facultada para intervenir en la administración del Fondo.",gw:5.00,rw:4.85,gs:[5,5,5,5,5],rs:[5,5,4,5,5],tools:["local"],w:"GRAIL",gp:"No, los que vigilan el sistema no pueden manejar el dinero del fondo. La ley establece una clara separación de funciones...",rp:"No, no pueden. Según la Ley 20.850, existe una separación entre vigilancia y administración del fondo..."},
+    {qid:"Q26",cat:"Global",diff:"easy",q:"¿De qué trata esta base de conocimiento?",gold:"Conjunto de normativas legales chilenas: Ley 19.966 (GES), Ley 20.850 (Ricarte Soto), Decreto 54 (reglamento).",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["global"],w:"GRAIL",gp:"Esta base de conocimiento trata sobre el marco normativo del sistema de salud chileno, con enfoque en las garantías y protecciones para pacientes con enfermedades de alto costo...",rp:"Esta base contiene legislación chilena relacionada con el sistema de salud, específicamente leyes y decretos sobre garantías de acceso..."},
+    {qid:"Q27",cat:"Global",diff:"medium",q:"¿Qué derechos tiene un paciente con cáncer en Chile según estas leyes?",gold:"Garantías de acceso, calidad, oportunidad, protección financiera (GES); cobertura total sin copago (Ricarte Soto); derecho a reclamar; continuidad de tratamientos; participación ciudadana.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["local","cascade"],w:"GRAIL",gp:"Un paciente con cáncer tiene derechos fundamentales: garantías de acceso, calidad, oportunidad y protección financiera; cobertura sin copago para alto costo; continuidad de tratamientos...",rp:"Según la Ley 19.966 y el Decreto 54, un paciente con cáncer tiene garantías de acceso y protección financiera..."},
+    {qid:"Q28",cat:"Global",diff:"hard",q:"¿Cuáles son las principales instituciones involucradas en la protección de pacientes oncológicos y qué rol cumple cada una?",gold:"FONASA, Ministerio de Salud, Superintendencia, Subsecretaría de Salud Pública, CENABAST, Comisión de Recomendación Priorizada, Comisión Ciudadana, Consejo Consultivo, ISAPREs, Red de Prestadores.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["local"],w:"GRAIL",gp:"Las principales instituciones: FONASA (administra el Fondo), Ministerio de Salud (dicta decretos), Superintendencia (fiscaliza), Subsecretaría (evaluación científica), CENABAST (adquisición), Comisiones...",rp:"Las principales instituciones según la Ley 20.850: FONASA, Ministerio de Salud, Superintendencia..."},
+    {qid:"Q29",cat:"Global",diff:"hard",q:"¿Cuáles son los principales mecanismos de control y fiscalización que establecen estas leyes?",gold:"Superintendencia (fiscalización, sanciones), Comisión Ciudadana (monitoreo), Comisión Asesora (acreditación), conflictos de interés, sistema de información FONASA, informes trimestrales, mediación.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["global","local","local"],w:"GRAIL",gp:"Los mecanismos de control incluyen: Superintendencia de Salud (fiscalización y sanciones), Comisión Ciudadana de Vigilancia (monitoreo), Comisión Asesora (acreditación), sistema de información FONASA...",rp:"Los mecanismos incluyen: Superintendencia de Salud, fiscalización y sanciones, sistema de información según la Ley 20.850 y Decreto 54..."},
+    {qid:"Q30",cat:"Global",diff:"hard",q:"Haz un resumen ejecutivo de cómo estas tres normativas se conectan entre sí para proteger a un paciente de cáncer.",gold:"Ley 19.966 (GES base) + Ley 20.850 (alto costo) + Decreto 54 (operacionaliza) = red de seguridad con doble cobertura para cáncer.",gw:4.85,rw:3.95,gs:[5,5,4,5,5],rs:[4,4,3,5,4],tools:["global","cascade"],w:"GRAIL",gp:"Las tres normativas — Ley 19.966 (GES), Ley 20.850 (Protección Financiera Alto Costo), Decreto 54 (reglamento) — se conectan jerárquicamente para crear una red integral de protección...",rp:"Las tres normativas conforman un sistema escalonado y complementario de protección para pacientes con enfermedades de alto costo..."},
+  ];
+  const dims=["Correct","Complete","Source","Coher.","No Hal."];const det=document.getElementById("details");
+  const dP={easy:"p-e",medium:"p-m",hard:"p-h"};const wCl={GRAIL:"v-g",RAG:"v-r",TIE:"v-t"};const tC={local:"tag-l",cascade:"tag-c",global:"tag-g"};
+  qs.forEach(q=>{
+    const tt=q.tools.map(t=>`<span class="tag ${tC[t]||'tag-c'}">${t}</span>`).join(" ");
+    const gD=q.gs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    const rD=q.rs.map((s,i)=>`<div class="a-dim"><div class="d-val" style="color:${s>=4?'var(--green)':s>=3?'var(--yellow)':'var(--red)'}">${s}</div><div class="d-lbl">${dims[i]}</div></div>`).join("");
+    det.innerHTML+=`<div class="q-card"><div class="q-head"><div class="q-title">${q.qid} &mdash; ${q.cat} <span class="pill ${dP[q.diff]}">${q.diff}</span></div><span class="verdict ${wCl[q.w]}">${q.w} ${q.w!=="TIE"?`+${Math.abs(q.gw-q.rw).toFixed(2)}`:""}</span></div><div class="q-text">${q.q}</div><div class="q-gold"><strong>Gold:</strong> ${q.gold}</div><div class="agent-grid"><div class="a-box"><div class="a-head"><span class="a-name" style="color:var(--green)">GRAIL ${tt}</span><span class="a-score" style="color:var(--green)">${q.gw.toFixed(2)}</span></div><div class="a-dims">${gD}</div><div class="a-preview">${q.gp}</div></div><div class="a-box"><div class="a-head"><span class="a-name" style="color:var(--orange)">RAG <span class="tag tag-r">rag</span></span><span class="a-score" style="color:var(--orange)">${q.rw.toFixed(2)}</span></div><div class="a-dims">${rD}</div><div class="a-preview">${q.rp}</div></div></div></div>`;
+  });
+  </script>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section">
+  <h2>Key Insights — Batch 3</h2>
+  <div class="insight-grid">
+    <div class="insight"><div class="i-icon" style="color:var(--yellow);">global</div><h4>Global search shines</h4><p>Q26, Q29, Q30 used global_search — the first time in the benchmark. Community report summaries give GRAIL a bird's-eye view that RAG's chunk retrieval can't replicate. Q26 answered in 6 seconds.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--green);">local×2</div><h4>Comparative mastery (Q22)</h4><p>For "are they the same body?", the agent used two local_search calls with WHO+WHAT+TERMS: one for Consejo Consultivo, one for Comisión Ciudadana. Each found the exact entity with full composition details.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--blue);">5.00</div><h4>Perfect negation (Q23, Q25)</h4><p>Both agents handle explicit exclusions well (Q23 = TIE at 5.00). But GRAIL edges ahead on Q25 because local_search finds the "no estará facultada" entity relationship directly.</p></div>
+    <div class="insight"><div class="i-icon" style="color:var(--green);">+16%</div><h4>Consistent across all 30</h4><p>GRAIL scored 4.77, 4.78, 4.87 across batches — improving as question complexity increases. RAG scored 4.15, 4.05, 4.23. The gap widens on cross-source and synthesis questions.</p></div>
+  </div>
+</div>
+
+</div>
+<div class="footer"><p>GRAIL Benchmark Complete (Q01-Q30) &middot; May 2026 &middot; GRAIL 4.80 vs RAG 4.14 &middot; 27 wins, 3 ties, 0 losses &middot; <a href="#" style="color:var(--green);text-decoration:none;">github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL</a></p></div>
+</body>
+</html>

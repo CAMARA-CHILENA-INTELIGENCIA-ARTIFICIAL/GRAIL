@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAIL Benchmark Report</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #171717;
+    --surface-2: #1e1e1e;
+    --surface-3: #262626;
+    --border: #2e2e2e;
+    --text: #ececec;
+    --text-2: #a1a1a1;
+    --text-3: #737373;
+    --accent: #10b981;
+    --accent-dim: rgba(16,185,129,0.12);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --purple: #a855f7;
+    --purple-dim: rgba(168,85,247,0.12);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    padding: 80px 0 48px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--text) 0%, var(--text-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--text-2);
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ---- Score Cards ---- */
+  .score-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 48px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .score-card:hover { border-color: #444; }
+  .score-card .label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .score-card .value {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: var(--mono);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .score-card .sub {
+    font-size: 13px;
+    color: var(--text-3);
+  }
+  .score-card.rag .label { color: var(--orange); }
+  .score-card.rag .value { color: var(--orange); }
+  .score-card.local .label { color: var(--blue); }
+  .score-card.local .value { color: var(--blue); }
+  .score-card.reranked .label { color: var(--accent); }
+  .score-card.reranked .value { color: var(--accent); }
+  .score-card.global .label { color: var(--purple); }
+  .score-card.global .value { color: var(--purple); }
+
+  /* ---- Section ---- */
+  .section {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .section:last-child { border-bottom: none; }
+  .section h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .section .subtitle {
+    color: var(--text-2);
+    font-size: 16px;
+    margin-bottom: 36px;
+  }
+
+  /* ---- Radar / Bar chart ---- */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+  .chart-box h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+  canvas { width: 100% !important; }
+
+  /* ---- Category bars ---- */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 22px;
+  }
+  .bar-label {
+    width: 56px;
+    font-size: 11px;
+    color: var(--text-3);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--surface-3);
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bar-val {
+    width: 36px;
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ---- Question table ---- */
+  .q-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+  }
+  .q-table thead th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1;
+  }
+  .q-table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .q-table tbody tr:hover { background: var(--surface); }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill.easy { background: rgba(16,185,129,0.15); color: #34d399; }
+  .pill.medium { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .pill.hard { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  .score-cell {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  /* ---- Key findings ---- */
+  .findings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+  .finding .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  .finding h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .finding p {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .finding .stat {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+
+  /* ---- Footer ---- */
+  .footer {
+    padding: 40px 0;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* ---- Legend ---- */
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 768px) {
+    .score-strip { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid { grid-template-columns: 1fr; }
+    .findings { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 32px; }
+    .cat-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================ HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge">Benchmark Report</div>
+    <h1>GRAIL vs RAG</h1>
+    <p>30 questions across 7 categories on Chilean oncology law. Graph-enhanced retrieval compared against a naive chunk-retrieval baseline using the same LLM, embeddings, and source documents.</p>
+    <div class="hero-meta">
+      <span>30 questions</span>
+      <span>3 source documents</span>
+      <span>281 entities / 435 relationships</span>
+      <span>Judge: Claude Opus 4.6</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ SCORE STRIP -->
+<div class="container">
+  <div class="score-strip">
+    <div class="score-card rag">
+      <div class="label">RAG Baseline</div>
+      <div class="value">2.38</div>
+      <div class="sub">19/30 empty responses</div>
+    </div>
+    <div class="score-card local">
+      <div class="label">GRAIL Local</div>
+      <div class="value">4.23</div>
+      <div class="sub">0 empty &middot; +78% vs RAG</div>
+    </div>
+    <div class="score-card reranked">
+      <div class="label">GRAIL Local + Rerank</div>
+      <div class="value">4.38</div>
+      <div class="sub">0 empty &middot; +84% vs RAG</div>
+    </div>
+    <div class="score-card global">
+      <div class="label">GRAIL Global</div>
+      <div class="value">2.95</div>
+      <div class="sub">Best on synthesis (4.29)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ KEY FINDINGS -->
+<div class="container">
+  <div class="section">
+    <h2>Key Findings</h2>
+    <p class="subtitle">What the benchmark reveals about graph-enhanced retrieval</p>
+    <div class="findings">
+      <div class="finding">
+        <div class="icon" style="background: var(--red-dim); color: var(--red);">!</div>
+        <div class="stat" style="color: var(--red);">63%</div>
+        <h4>RAG failure rate</h4>
+        <p>RAG returned empty responses on 19 of 30 questions. When the answer spans multiple chunks or documents, naive retrieval collapses entirely.</p>
+      </div>
+      <div class="finding">
+        <div class="icon" style="background: var(--accent-dim); color: var(--accent);">+</div>
+        <div class="stat" style="color: var(--accent);">+3.49</div>
+        <h4>Cross-source advantage</h4>
+        <p>The largest delta. Questions requiring synthesis across multiple documents scored 4.49 (GRAIL) vs 1.00 (RAG). The knowledge graph connects entities across document boundaries.</p>
+      </div>
+      <div class="finding">
+        <div class="icon" style="background: var(--blue-dim); color: var(--blue);">=</div>
+        <div class="stat" style="color: var(--blue);">4.44</div>
+        <h4>Matches RAG on needles</h4>
+        <p>Even on single-fact retrieval where RAG should excel, GRAIL Local+Rerank scores 4.44 vs RAG's 4.20. Full text units + entity context + reranking close the gap.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ CATEGORY BREAKDOWN -->
+<div class="container">
+  <div class="section">
+    <h2>Performance by Category</h2>
+    <p class="subtitle">Weighted score (1-5) across correctness, completeness, source grounding, coherence, and hallucination avoidance</p>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background: var(--orange);"></div>RAG</div>
+      <div class="legend-item"><div class="legend-dot" style="background: var(--blue);"></div>GRAIL Local</div>
+      <div class="legend-item"><div class="legend-dot" style="background: var(--accent);"></div>GRAIL Local+Rerank</div>
+      <div class="legend-item"><div class="legend-dot" style="background: var(--purple);"></div>GRAIL Global</div>
+    </div>
+
+    <div id="category-bars"></div>
+  </div>
+</div>
+
+<!-- ============================================ PER-QUESTION TABLE -->
+<div class="container">
+  <div class="section">
+    <h2>Per-Question Breakdown</h2>
+    <p class="subtitle">All 30 questions scored individually</p>
+    <div style="overflow-x:auto;">
+      <table class="q-table" id="q-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Category</th>
+            <th>Difficulty</th>
+            <th style="text-align:right">RAG</th>
+            <th style="text-align:right">Local</th>
+            <th style="text-align:right">Local+Rerank</th>
+            <th style="text-align:right">Global</th>
+          </tr>
+        </thead>
+        <tbody id="q-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ METHODOLOGY -->
+<div class="container">
+  <div class="section">
+    <h2>Methodology</h2>
+    <p class="subtitle">How the benchmark was designed and executed</p>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>Corpus</h3>
+        <p style="color: var(--text-2); font-size: 14px; line-height: 1.7;">
+          Three Chilean legal documents on health rights for cancer patients:<br><br>
+          <strong style="color: var(--text);">Ley 19.966</strong> (2004) &mdash; Health guarantee system (GES/AUGE)<br>
+          <strong style="color: var(--text);">Ley 20.850</strong> (2015) &mdash; Ricarte Soto Law, high-cost financial protection<br>
+          <strong style="color: var(--text);">Decreto 54</strong> (2015) &mdash; Implementing regulation<br><br>
+          58 pages total, chunked into 35 text units at 1500 tokens each.
+          GRAIL extracted 281 entities, 435 relationships, and 13 community reports.
+        </p>
+      </div>
+      <div class="chart-box">
+        <h3>Fair comparison</h3>
+        <p style="color: var(--text-2); font-size: 14px; line-height: 1.7;">
+          Both systems use identical infrastructure:<br><br>
+          <strong style="color: var(--text);">Same LLM:</strong> Qwen3.6-35B-A3B via DeepInfra<br>
+          <strong style="color: var(--text);">Same embeddings:</strong> Qwen3-Embedding-0.6B<br>
+          <strong style="color: var(--text);">Same chunks:</strong> Both read from partial_text_units.parquet<br>
+          <strong style="color: var(--text);">Same top-k:</strong> 10 candidates retrieved<br><br>
+          The only difference: GRAIL adds entities, relationships, community summaries, and reranking on top of the raw chunks. RAG gets chunks only.
+        </p>
+      </div>
+      <div class="chart-box">
+        <h3>Scoring rubric</h3>
+        <p style="color: var(--text-2); font-size: 14px; line-height: 1.7;">
+          Each response scored on 5 dimensions (1-5 scale):<br><br>
+          <strong style="color: var(--text);">Correctness</strong> (35%) &mdash; Factual accuracy vs gold answer<br>
+          <strong style="color: var(--text);">Completeness</strong> (25%) &mdash; Coverage of all key points<br>
+          <strong style="color: var(--text);">Source grounding</strong> (15%) &mdash; Correct legal citations<br>
+          <strong style="color: var(--text);">Coherence</strong> (10%) &mdash; Clarity for a non-expert<br>
+          <strong style="color: var(--text);">No hallucination</strong> (15%) &mdash; Avoiding fabricated facts<br><br>
+          Empty responses score 1.0 on all dimensions.
+        </p>
+      </div>
+      <div class="chart-box">
+        <h3>Question design</h3>
+        <p style="color: var(--text-2); font-size: 14px; line-height: 1.7;">
+          7 categories designed to test different retrieval capabilities:<br><br>
+          <strong style="color: var(--text);">Single Fact</strong> (5) &mdash; Needle-in-haystack baseline<br>
+          <strong style="color: var(--text);">Multi-Chunk</strong> (5) &mdash; Answer spans 2+ chunks<br>
+          <strong style="color: var(--text);">Cross-Source</strong> (5) &mdash; Answer spans 2+ documents<br>
+          <strong style="color: var(--text);">Procedural</strong> (4) &mdash; Step-by-step processes<br>
+          <strong style="color: var(--text);">Comparative</strong> (3) &mdash; Compare concepts across locations<br>
+          <strong style="color: var(--text);">Negation</strong> (3) &mdash; "Does X cover Y?" where answer is no<br>
+          <strong style="color: var(--text);">Global</strong> (5) &mdash; Bird's-eye corpus summaries
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ FOOTER -->
+<div class="footer">
+  <div class="container">
+    <p>Built with <a href="#">GRAIL</a> &mdash; Graph RAG with Advanced Integration and Learning</p>
+    <p style="margin-top:8px;">Benchmark run: 2026-05-23 &middot; Total LLM cost: $0.54 &middot; Index cost: $0.42</p>
+  </div>
+</div>
+
+<script>
+// ---- Data ----
+const categories = [
+  { id: "single_fact",       label: "Single Fact",       rag: 4.20, local: 4.36, reranked: 4.44, global: 2.28 },
+  { id: "multi_chunk",       label: "Multi-Chunk",       rag: 3.40, local: 4.48, reranked: 4.60, global: 2.31 },
+  { id: "cross_source",      label: "Cross-Source",      rag: 1.00, local: 4.02, reranked: 4.49, global: 3.42 },
+  { id: "procedural",        label: "Procedural",        rag: 1.00, local: 4.40, reranked: 4.40, global: 2.76 },
+  { id: "comparative",       label: "Comparative",       rag: 1.00, local: 3.77, reranked: 4.07, global: 2.20 },
+  { id: "negation_boundary", label: "Negation",          rag: 4.75, local: 4.65, reranked: 4.65, global: 3.10 },
+  { id: "global_synthesis",  label: "Global Synthesis",  rag: 1.42, local: 3.95, reranked: 4.03, global: 4.29 },
+];
+
+const questions = [
+  { id:"Q01", cat:"Single Fact", diff:"easy", rag:5.00, local:4.60, reranked:5.00, global:3.80 },
+  { id:"Q02", cat:"Single Fact", diff:"easy", rag:5.00, local:4.70, reranked:4.70, global:1.90 },
+  { id:"Q03", cat:"Single Fact", diff:"easy", rag:5.00, local:5.00, reranked:5.00, global:1.90 },
+  { id:"Q04", cat:"Single Fact", diff:"medium", rag:1.00, local:2.50, reranked:2.50, global:1.90 },
+  { id:"Q05", cat:"Single Fact", diff:"medium", rag:5.00, local:5.00, reranked:5.00, global:1.90 },
+  { id:"Q06", cat:"Multi-Chunk", diff:"medium", rag:5.00, local:5.00, reranked:5.00, global:1.75 },
+  { id:"Q07", cat:"Multi-Chunk", diff:"hard", rag:1.00, local:4.10, reranked:4.35, global:3.05 },
+  { id:"Q08", cat:"Multi-Chunk", diff:"hard", rag:5.00, local:5.00, reranked:5.00, global:2.35 },
+  { id:"Q09", cat:"Multi-Chunk", diff:"medium", rag:1.00, local:3.95, reranked:4.70, global:1.90 },
+  { id:"Q10", cat:"Multi-Chunk", diff:"medium", rag:5.00, local:4.35, reranked:3.95, global:2.50 },
+  { id:"Q11", cat:"Cross-Source", diff:"hard", rag:1.00, local:3.95, reranked:4.70, global:3.95 },
+  { id:"Q12", cat:"Cross-Source", diff:"hard", rag:1.00, local:4.10, reranked:4.10, global:3.80 },
+  { id:"Q13", cat:"Cross-Source", diff:"hard", rag:1.00, local:4.85, reranked:4.85, global:3.05 },
+  { id:"Q14", cat:"Cross-Source", diff:"hard", rag:1.00, local:3.95, reranked:4.70, global:3.95 },
+  { id:"Q15", cat:"Cross-Source", diff:"hard", rag:1.00, local:3.25, reranked:4.10, global:2.35 },
+  { id:"Q16", cat:"Procedural", diff:"hard", rag:1.00, local:4.10, reranked:4.10, global:2.35 },
+  { id:"Q17", cat:"Procedural", diff:"hard", rag:1.00, local:4.70, reranked:4.70, global:3.10 },
+  { id:"Q18", cat:"Procedural", diff:"medium", rag:1.00, local:4.85, reranked:4.85, global:3.10 },
+  { id:"Q19", cat:"Procedural", diff:"medium", rag:1.00, local:3.95, reranked:3.95, global:2.50 },
+  { id:"Q20", cat:"Comparative", diff:"easy", rag:1.00, local:4.85, reranked:5.00, global:2.20 },
+  { id:"Q21", cat:"Comparative", diff:"hard", rag:1.00, local:2.50, reranked:2.50, global:1.90 },
+  { id:"Q22", cat:"Comparative", diff:"hard", rag:1.00, local:3.95, reranked:4.70, global:2.50 },
+  { id:"Q23", cat:"Negation", diff:"medium", rag:5.00, local:4.85, reranked:4.85, global:3.10 },
+  { id:"Q24", cat:"Negation", diff:"medium", rag:4.25, local:4.25, reranked:4.25, global:3.10 },
+  { id:"Q25", cat:"Negation", diff:"easy", rag:5.00, local:4.85, reranked:4.85, global:3.10 },
+  { id:"Q26", cat:"Global", diff:"easy", rag:3.10, local:3.95, reranked:3.60, global:4.55 },
+  { id:"Q27", cat:"Global", diff:"medium", rag:1.00, local:3.95, reranked:4.70, global:3.95 },
+  { id:"Q28", cat:"Global", diff:"hard", rag:1.00, local:3.95, reranked:3.95, global:4.20 },
+  { id:"Q29", cat:"Global", diff:"hard", rag:1.00, local:3.95, reranked:3.95, global:4.20 },
+  { id:"Q30", cat:"Global", diff:"hard", rag:1.00, local:3.95, reranked:3.95, global:4.55 },
+];
+
+// ---- Render category bars ----
+const barContainer = document.getElementById("category-bars");
+const colors = {
+  rag: "#f97316",
+  local: "#3b82f6",
+  reranked: "#10b981",
+  global: "#a855f7",
+};
+const labels = { rag: "RAG", local: "Local", reranked: "Rerank", global: "Global" };
+
+categories.forEach(cat => {
+  const row = document.createElement("div");
+  row.className = "cat-row";
+  row.innerHTML = `<div class="cat-name">${cat.label}</div><div class="bar-group"></div>`;
+  const group = row.querySelector(".bar-group");
+
+  ["rag", "local", "reranked", "global"].forEach(sys => {
+    const val = cat[sys];
+    const pct = (val / 5) * 100;
+    const br = document.createElement("div");
+    br.className = "bar-row";
+    br.innerHTML = `
+      <div class="bar-label">${labels[sys]}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0%;background:${colors[sys]};"></div>
+      </div>
+      <div class="bar-val" style="color:${colors[sys]}">${val.toFixed(2)}</div>
+    `;
+    group.appendChild(br);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        br.querySelector(".bar-fill").style.width = pct + "%";
+      });
+    });
+  });
+
+  barContainer.appendChild(row);
+});
+
+// ---- Render question table ----
+const tbody = document.getElementById("q-tbody");
+
+function scoreColor(v) {
+  if (v >= 4.5) return "#10b981";
+  if (v >= 3.5) return "#3b82f6";
+  if (v >= 2.5) return "#f59e0b";
+  if (v > 1.0) return "#f97316";
+  return "#ef4444";
+}
+
+questions.forEach(q => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td style="font-weight:600;font-family:var(--mono);">${q.id}</td>
+    <td>${q.cat}</td>
+    <td><span class="pill ${q.diff}">${q.diff}</span></td>
+    <td class="score-cell" style="text-align:right;color:${scoreColor(q.rag)}">${q.rag.toFixed(2)}</td>
+    <td class="score-cell" style="text-align:right;color:${scoreColor(q.local)}">${q.local.toFixed(2)}</td>
+    <td class="score-cell" style="text-align:right;color:${scoreColor(q.reranked)}">${q.reranked.toFixed(2)}</td>
+    <td class="score-cell" style="text-align:right;color:${scoreColor(q.global)}">${q.global.toFixed(2)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+
+</body>
+</html>

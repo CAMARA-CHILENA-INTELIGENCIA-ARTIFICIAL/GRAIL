@@ -401,8 +401,8 @@ def _render_markdown(parsed: dict[str, Any]) -> str:
 
 def _strip_to_json(text: str) -> str:
     """Strip ``<report_json>``, ``<correct_json>``, markdown fences, and trim to outer braces."""
-    text = re.sub(r"^.*?(?:<report_json>|<correct_json>|```json|```)", "", text, count=1, flags=re.S)
-    text = re.sub(r"(?:</report_json>|</correct_json>|```)\s*$", "", text, count=1, flags=re.S)
+    text = re.sub(r"^.*?(?:<report_json>|<corrected_json>|<correct_json>|```json|```)", "", text, count=1, flags=re.S)
+    text = re.sub(r"(?:</report_json>|</corrected_json>|</correct_json>|```)\s*$", "", text, count=1, flags=re.S)
     text = text.strip()
     if not text.startswith("{"):
         idx = text.find("{")

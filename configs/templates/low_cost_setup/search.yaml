@@ -1,4 +1,4 @@
-# Local and global search budgets.
+# Local, global, document, and agent search budgets.
 # See docs/query.md for the algorithms; docs/glossary.md for every key.
 
 # --- Per-mode model overrides (null = inherit from llm.yaml) ---
@@ -6,6 +6,10 @@ local_search_endpoint: null
 local_search_model: null
 global_search_endpoint: null
 global_search_model: null
+document_search_endpoint: null
+document_search_model: null
+agent_search_endpoint: null
+agent_search_model: null
 
 # --- Local search ---
 # Total context budget for entity-anchored search. Drop for cheaper
@@ -28,15 +32,30 @@ local_top_k_entities: 10
 local_top_k_relationships: 10
 
 # --- Global search ---
-global_map_max_tokens: 1500
+global_map_max_tokens: 2048
 global_reduce_max_tokens: 4000
 
 # Above this many tokens of community-report context, we switch from a single
-# reduce pass to map-reduce. Lower → more chunked calls, higher → one big call.
+# reduce pass to map-reduce. Lower = more chunked calls, higher = one big call.
 global_chunk_size: 80000
 global_concurrency: 4
 
-# Maximum tokens the LLM can generate in its response.
+# --- Document search ---
+# Context budget for document-scoped retrieval. Smaller than local because
+# it's scoped to one document.
+document_search_max_tokens: 8192
+document_search_response_max_tokens: 8192
+
+# --- Agent search ---
+# Context and response budgets for the agentic multi-tool search loop.
+agent_search_max_tokens: 12000
+agent_search_response_max_tokens: 16384
+agent_max_iterations: 5
+
+# --- Response ---
+# Maximum tokens the LLM can generate in its response. This covers BOTH
+# reasoning tokens (<think> blocks in models like Qwen3) AND visible output.
+# Reasoning models may use 50-80% of this budget on internal thinking.
 response_max_tokens: 8192
 
 # Free-text instruction injected into the global-reduce prompt's

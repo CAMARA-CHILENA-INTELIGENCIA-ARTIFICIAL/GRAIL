@@ -1,0 +1,1772 @@
+{
+  "Q01": {
+    "question": "What is the standard first-line chemotherapy regimen for metastatic colorectal cancer?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.8,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q02": {
+    "question": "What biomarker is tested to determine eligibility for anti-EGFR therapy in colorectal cancer?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q03": {
+    "question": "What is the role of bevacizumab in colorectal cancer treatment?",
+    "category": "single_fact",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q04": {
+    "question": "What is the recommended surveillance interval for CEA monitoring after curative resection?",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 3,
+      "weighted_score": 2.5,
+      "brief_justification": "Weak response with significant factual or completeness issues."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q05": {
+    "question": "What molecular alteration defines Lynch syndrome in colorectal cancer?",
+    "category": "single_fact",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q06": {
+    "question": "How do FOLFOX and FOLFIRI regimens differ in terms of their components and typical side effect profiles?",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q07": {
+    "question": "Describe the complete molecular testing pathway recommended before initiating targeted therapy in metastatic CRC.",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 3,
+      "weighted_score": 3.05,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q08": {
+    "question": "What are the criteria and process for determining resectability of colorectal liver metastases?",
+    "category": "multi_chunk",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.7,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q09": {
+    "question": "Explain the role of microsatellite instability testing in treatment selection and prognosis for CRC.",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q10": {
+    "question": "What is the evidence supporting the use of neoadjuvant chemoradiation in rectal cancer?",
+    "category": "multi_chunk",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q11": {
+    "question": "Compare the staging systems and their clinical implications across the NCCN and ESMO guidelines for CRC.",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q12": {
+    "question": "How do different guidelines recommend managing patients with oligometastatic colorectal cancer?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q13": {
+    "question": "What are the areas of consensus and disagreement between guidelines on adjuvant chemotherapy duration for stage III colon cancer?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q14": {
+    "question": "Compare the recommended approaches to BRAF V600E mutated metastatic CRC across available clinical guidelines.",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "rag_agent": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_local": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Weak response with significant factual or completeness issues."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 3,
+      "weighted_score": 3.05,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q15": {
+    "question": "How do the guidelines differ in their recommendations for immunotherapy in MSI-H/dMMR metastatic CRC?",
+    "category": "cross_source",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 2,
+      "completeness": 2,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 2.5,
+      "brief_justification": "Weak response with significant factual or completeness issues."
+    },
+    "rag_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    },
+    "grail_local": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_local_reranked": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q16": {
+    "question": "Outline the step-by-step management algorithm for a patient presenting with acute malignant large bowel obstruction.",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.25,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q17": {
+    "question": "Describe the decision tree for selecting between surgical and non-surgical approaches for rectal cancer by stage.",
+    "category": "procedural",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 3,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.7,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q18": {
+    "question": "What is the recommended follow-up surveillance protocol after curative treatment for stage II-III CRC?",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 3,
+      "weighted_score": 3.05,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q19": {
+    "question": "How should a multidisciplinary team approach treatment planning for locally advanced rectal cancer?",
+    "category": "procedural",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q20": {
+    "question": "Compare the efficacy and safety profiles of cetuximab versus panitumumab in RAS wild-type metastatic CRC.",
+    "category": "comparative",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 3,
+      "weighted_score": 1.6,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q21": {
+    "question": "What are the comparative outcomes of total neoadjuvant therapy versus standard chemoradiation for locally advanced rectal cancer?",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "rag_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    },
+    "grail_local": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q22": {
+    "question": "Compare the roles of CT, MRI, and PET-CT in the staging and restaging of colorectal cancer.",
+    "category": "comparative",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_global": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.2,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q23": {
+    "question": "What are the contraindications for using anti-EGFR therapy in metastatic CRC, and why?",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.25,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q24": {
+    "question": "Under what circumstances should adjuvant chemotherapy NOT be recommended for stage II colon cancer?",
+    "category": "negation_boundary",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.75,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.25,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.6,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.25,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 4,
+      "no_hallucination": 5,
+      "weighted_score": 1.9,
+      "brief_justification": "Very poor response; largely off-topic or fabricated."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  },
+  "Q25": {
+    "question": "What are the limitations and potential false positives associated with CEA as a tumor marker in CRC?",
+    "category": "negation_boundary",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_local": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 4.85,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local_reranked": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 5,
+      "coherence": 5,
+      "no_hallucination": 5,
+      "weighted_score": 5.0,
+      "brief_justification": "Fully correct, complete, and well-grounded response."
+    }
+  },
+  "Q26": {
+    "question": "Provide an overview of the major themes and treatment paradigms covered across the indexed colorectal cancer literature.",
+    "category": "global_synthesis",
+    "difficulty": "easy",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.55,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.55,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q27": {
+    "question": "How has the treatment landscape for metastatic CRC evolved with the introduction of molecular profiling?",
+    "category": "global_synthesis",
+    "difficulty": "medium",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "rag_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 5,
+      "completeness": 5,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.7,
+      "brief_justification": "Strong response with minor gaps in grounding or completeness."
+    }
+  },
+  "Q28": {
+    "question": "Synthesize the evidence on the role of circulating tumor DNA (ctDNA) in CRC management from the indexed sources.",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 3,
+      "completeness": 3,
+      "source_grounding": 2,
+      "coherence": 4,
+      "no_hallucination": 4,
+      "weighted_score": 3.1,
+      "brief_justification": "Partially correct response with notable gaps in completeness or grounding."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q29": {
+    "question": "What are the key prognostic factors that influence treatment decisions across all stages of CRC?",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 5,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.2,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    }
+  },
+  "Q30": {
+    "question": "Summarize the current state of personalized medicine approaches in CRC as reflected in the indexed guidelines and literature.",
+    "category": "global_synthesis",
+    "difficulty": "hard",
+    "rag": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "rag_agent": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_local": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_local_reranked": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 4,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 4.1,
+      "brief_justification": "Good response with slight deficiencies in one or two dimensions."
+    },
+    "grail_global": {
+      "correctness": 4,
+      "completeness": 4,
+      "source_grounding": 3,
+      "coherence": 5,
+      "no_hallucination": 4,
+      "weighted_score": 3.95,
+      "brief_justification": "Adequate response but missing some key details or source grounding."
+    },
+    "grail_agent": {
+      "correctness": 1,
+      "completeness": 1,
+      "source_grounding": 1,
+      "coherence": 1,
+      "no_hallucination": 1,
+      "weighted_score": 1.0,
+      "brief_justification": "Empty response."
+    }
+  }
+}

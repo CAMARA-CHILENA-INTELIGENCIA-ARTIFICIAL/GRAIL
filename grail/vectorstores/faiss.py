@@ -3,10 +3,11 @@ FAISS-backed in-memory vector store.
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
-Pure in-memory FAISS index (IndexFlatL2 by default). Suitable for projects
-that want zero external services and can fit the entity embeddings in RAM.
-Persistence is handled via faiss.write_index / faiss.read_index on the
-project's root_dir.
+Pure in-memory FAISS index using inner-product on L2-normalized vectors
+(equivalent to cosine similarity). Suitable for projects that want zero
+external services and can fit the entity embeddings in RAM. Persistence
+is handled via faiss.write_index / faiss.read_index on the project's
+root_dir.
 """
 from __future__ import annotations
 
@@ -24,8 +25,14 @@ from grail.vectorstores.base import (
 )
 
 
+def _normalize(vectors: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-10
+    return vectors / norms
+
+
 class FAISSVectorStore(BaseVectorStore):
-    """FAISS vector store using L2 (Euclidean) distance."""
+    """FAISS vector store using cosine similarity (inner product on normalized vectors)."""
 
     def __init__(self, collection_name: str, **kwargs: Any) -> None:
         super().__init__(collection_name, **kwargs)
@@ -68,16 +75,17 @@ class FAISSVectorStore(BaseVectorStore):
         dim = len(docs_with_vectors[0].vector)  # type: ignore[arg-type]
 
         if overwrite:
-            self.index = faiss.IndexFlatL2(dim)
+            self.index = faiss.IndexFlatIP(dim)
             self._documents = []
             self._id_to_pos = {}
 
         if self.index is None:
-            self.index = faiss.IndexFlatL2(dim)
+            self.index = faiss.IndexFlatIP(dim)
 
         vectors = np.array(
             [d.vector for d in docs_with_vectors], dtype=np.float32
         )
+        vectors = _normalize(vectors)
         start = len(self._documents)
         self.index.add(vectors)
         for i, doc in enumerate(docs_with_vectors):
@@ -101,18 +109,18 @@ class FAISSVectorStore(BaseVectorStore):
             return []
 
         query = np.array([query_embedding], dtype=np.float32)
+        query = _normalize(query)
         search_k = min(k * 3, self.index.ntotal) if self.query_filter else min(k, self.index.ntotal)
-        distances, indices = self.index.search(query, search_k)
+        scores, indices = self.index.search(query, search_k)
 
         results: list[VectorStoreSearchResult] = []
-        for dist, idx in zip(distances[0], indices[0]):
+        for score, idx in zip(scores[0], indices[0]):
             if idx < 0:
                 continue
             doc = self._documents[idx]
             if self.query_filter and str(doc.id) not in self.query_filter:
                 continue
-            score = 1.0 / (1.0 + float(dist))
-            results.append(VectorStoreSearchResult(document=doc, score=score))
+            results.append(VectorStoreSearchResult(document=doc, score=float(score)))
             if len(results) >= k:
                 break
 
