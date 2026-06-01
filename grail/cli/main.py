@@ -1447,7 +1447,7 @@ def ui(
     except ImportError as exc:
         rprint(
             f"[red]Missing dependencies for the chat UI.[/red] "
-            f"Install with: [bold]pip install grail\\[ui][/bold]\n{exc}"
+            f"Install with: [bold]pip install graphgrail\\[ui][/bold]\n{exc}"
         )
         raise typer.Exit(1)
 

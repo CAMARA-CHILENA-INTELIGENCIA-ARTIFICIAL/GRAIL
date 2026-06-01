@@ -38,8 +38,9 @@ cp -R skills/grail ~/.claude/skills/grail
 
 ## Runtime requirements
 
-The skill installs `grail` via `pip` on first use through
-`scripts/setup.sh`. The setup script is idempotent — safe to call every
+The skill installs `graphgrail` via `pip` on first use through
+`scripts/setup.sh` (PyPI distribution name; the Python import stays
+`import grail`). The setup script is idempotent — safe to call every
 session.
 
 | Runtime | Network | Outcome |

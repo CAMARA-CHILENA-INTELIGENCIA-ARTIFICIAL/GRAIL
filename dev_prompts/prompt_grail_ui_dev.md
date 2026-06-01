@@ -53,7 +53,7 @@ event: done               data: {}
 
 The streaming callback is implemented via `contextvars` in `grail/llm/wrapper.py` — `set_stream_callback(cb)` sets an async callback that receives each token chunk from the OpenAI stream. The server sets this before running the search and clears it after.
 
-**Dependencies** (optional `pip install grail[ui]`): fastapi, uvicorn[standard], python-jose[cryptography], passlib[bcrypt], aiosqlite, sse-starlette, bcrypt==4.0.1
+**Dependencies** (optional `pip install 'graphgrail[ui]'`): fastapi, uvicorn[standard], python-jose[cryptography], passlib[bcrypt], aiosqlite, sse-starlette, bcrypt==4.0.1
 
 ### Frontend (`grail/apps/chat/frontend/`)
 
@@ -220,7 +220,7 @@ asyncio.run(test())
 ### Important gotchas
 - **SSE line endings**: `sse-starlette` uses `\r\n`. The parseSSE function strips `\r` — do NOT remove this.
 - **bcrypt version**: `bcrypt==4.0.1` is pinned because `passlib` is incompatible with bcrypt 5.x.
-- **Frontend build**: The built `dist/` directory is committed so `pip install grail[ui]` users get it. After changing frontend code, always run `npm run build` from `grail/apps/chat/frontend/`.
+- **Frontend build**: The built `dist/` directory is committed so `pip install 'graphgrail[ui]'` users get it. After changing frontend code, always run `npm run build` from `grail/apps/chat/frontend/`.
 - **Tailwind v4**: Uses `@import "tailwindcss"` in CSS with `@theme` blocks for custom colors. No `tailwind.config.js` file.
 - **GRAIL lazy loading**: The GRAIL instance is created on first chat request (not at server startup). The first request will be slow due to loading parquet files, LanceDB, etc.
 - **Database location**: `~/.grail/chat.db` and `~/.grail/jwt_secret`. Delete these to reset auth state.

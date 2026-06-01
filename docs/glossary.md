@@ -192,7 +192,7 @@ Built-in prompt names: `entity_relation`, `summarize_description`,
 
 | Key | Type | Default | What it controls |
 |---|---|---|---|
-| `backend` | str | `"lancedb"` | `"lancedb"` (default), `"faiss"` (requires `pip install grail[faiss]`), or `"chromadb"` (requires `pip install grail[chroma]`). |
+| `backend` | str | `"lancedb"` | `"lancedb"` (default), `"faiss"` (requires `pip install 'graphgrail[faiss]'`), or `"chromadb"` (requires `pip install 'graphgrail[chroma]'`). |
 | `collection_name` | str | `"entity_descriptions"` | Table / collection name for entity description embeddings. |
 | `uri` | str \| null | `null` | Store path. `null` → `{root_dir}/{backend}`. |
 | `distance_fn` | str | `"l2"` | Distance function for ChromaDB (`"l2"` or `"cosine"`). Ignored by LanceDB and FAISS. |

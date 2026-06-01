@@ -3,7 +3,7 @@ S3-backed storage (optional).
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
-Install with ``pip install grail[s3]``. This module is imported lazily — it is safe
+Install with ``pip install 'graphgrail[s3]'``. This module is imported lazily — it is safe
 to leave it out of the dependency closure for users who only run locally.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ try:
     from botocore.exceptions import ClientError
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "S3 storage requires the [s3] extra. Install with: pip install grail[s3]"
+        "S3 storage requires the [s3] extra. Install with: pip install 'graphgrail[s3]'"
     ) from exc
 
 from grail.storage.base import StorageBackend, normalize_key

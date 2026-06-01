@@ -118,4 +118,4 @@ reranker calls, so the cost appears as `Undefined` unless you supply
 
 The API-based reranker needs no extra dependencies — it uses `httpx` (already a
 core dependency). For future local cross-encoder inference via
-`sentence-transformers`, install with `pip install grail[rerank]`.
+`sentence-transformers`, install with `pip install 'graphgrail[rerank]'`.

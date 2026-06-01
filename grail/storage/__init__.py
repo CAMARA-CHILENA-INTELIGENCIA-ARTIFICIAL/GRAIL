@@ -2,7 +2,7 @@
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
-Default is :class:`LocalStorage`. Install ``grail[s3]`` and use :class:`S3Storage`
+Default is :class:`LocalStorage`. Install ``graphgrail[s3]`` and use :class:`S3Storage`
 for S3-backed projects. Implement :class:`StorageBackend` for anything else
 (GCS, Azure, IPFS, ...).
 """
@@ -23,7 +23,7 @@ def get_backend(kind: str = "local", **kwargs) -> StorageBackend:
         except ImportError as exc:  # pragma: no cover
             raise ImportError(
                 "S3 backend requires the optional [s3] extra. "
-                "Install with: pip install grail[s3]"
+                "Install with: pip install 'graphgrail[s3]'"
             ) from exc
         return S3Storage(**kwargs)
     raise ValueError(f"Unknown storage backend kind: {kind!r}")

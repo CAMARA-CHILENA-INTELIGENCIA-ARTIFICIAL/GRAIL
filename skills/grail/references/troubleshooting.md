@@ -2,7 +2,8 @@
 
 ## "grail is not installed" / setup.sh fails
 
-The skill needs `pip install grail`. Causes:
+The skill needs `pip install graphgrail` (PyPI distribution name; the
+Python import stays `import grail`). Causes:
 
 - **No network**: the Anthropic API code-execution runtime has no
   network access — pip can't reach PyPI. This skill is not supported in

@@ -7,11 +7,16 @@
 </p>
 
 <p align="center">
+  <sub><em>Vectors:</em> FAISS · LanceDB · ChromaDB &nbsp;|&nbsp; <em>Storage:</em> Local · S3 &nbsp;|&nbsp; <em>LLM endpoints:</em> OpenAI · Anthropic · DeepInfra · Together · Groq · OpenRouter · Ollama · vLLM · SGLang · LM Studio</sub>
+</p>
+
+<p align="center">
   <a href="#installation">Install</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#two-modes-one-engine">Modes</a> ·
   <a href="#cli-reference">CLI</a> ·
   <a href="#python-sdk">SDK</a> ·
+  <a href="#storage--vector-backends">Backends</a> ·
   <a href="#benchmarks">Benchmarks</a> ·
   <a href="docs/getting-started.md">Docs</a>
 </p>
@@ -34,11 +39,12 @@
 8. [Agent skill](#agent-skill)
 9. [CLI reference](#cli-reference)
 10. [Search modes](#search-modes)
-11. [Benchmarks](#benchmarks)
-12. [Documentation](#documentation)
-13. [Acknowledgements](#acknowledgements)
-14. [Author](#author)
-15. [License](#license)
+11. [Storage & vector backends](#storage--vector-backends)
+12. [Benchmarks](#benchmarks)
+13. [Documentation](#documentation)
+14. [Acknowledgements](#acknowledgements)
+15. [Author](#author)
+16. [License](#license)
 
 ---
 
@@ -620,6 +626,49 @@ Introspection commands for artefacts, resolved config, and the prompt registry.
 **Query-shape tip for `local` / `cascade`:** structure as `[WHO does it] + [WHAT is the process] + [SPECIFIC TERMS from entity descriptions]`. This matches entity embeddings ~3× better than keyword-only queries.
 
 Full details: [`docs/search_modes.md`](docs/search_modes.md).
+
+---
+
+## Storage & vector backends
+
+Both layers are pluggable. Pick the defaults to ship today and swap when the deployment changes.
+
+### Vector stores
+
+| Backend | Default? | Distance | Best for | Config |
+|---|---|---|---|---|
+| **FAISS** | ✓ | cosine (`IndexFlatIP` on L2-normalised vectors) | In-memory speed; ships in the wheel; no separate service; ideal for projects up to ~1M vectors | `vectorstore.backend: faiss` |
+| **LanceDB** | | cosine / L2 | On-disk columnar; lazy-loaded; good for >1M vectors and multi-process readers | `vectorstore.backend: lancedb` |
+| **ChromaDB** | | cosine / L2 | Long-running services; built-in metadata filtering; existing Chroma deployments | `vectorstore.backend: chromadb` |
+
+Override per-run from the CLI without editing config: `grail index --vectorstore faiss|lancedb|chromadb` and the same flag on `grail query`. Custom backends plug in by subclassing `BaseVectorStore` in [`grail/vectorstores/base.py`](grail/vectorstores/base.py).
+
+Details: [`docs/vectorstores.md`](docs/vectorstores.md).
+
+### Storage backends
+
+| Backend | Best for | Config |
+|---|---|---|
+| **Local filesystem** | Default · single machine · tests · embedded CLI | `storage.backend: local`, `storage.root: ...` |
+| **S3 (and S3-compatible)** | Production · multi-machine · MinIO · Cloudflare R2 · any S3 API | `storage.backend: s3` + `s3_bucket`, `s3_prefix`, `s3_region`, `s3_endpoint_url` |
+
+S3 reads/writes the same parquet + GraphML artefacts — the search code is backend-agnostic. Install with the `s3` extra: `uv pip install -e ".[s3]"`. Custom backends implement the seven required methods on `StorageBackend` in [`grail/storage/base.py`](grail/storage/base.py).
+
+Details: [`docs/storage.md`](docs/storage.md).
+
+### LLM endpoints
+
+Built-in: `openai`, `anthropic`, `deepinfra`, `together`, `groq`, `openrouter`, `ollama`, `vllm`, `sglang`, `lmstudio`, `local`. Endpoint (base URL + key env var) and model are separate fields, so changing providers is a one-line config edit. Add your own by appending to `endpoints.yaml`:
+
+```yaml
+endpoints:
+  my-vllm:
+    base_url: http://my-vllm.local:8000/v1
+    api_key_env: MY_VLLM_KEY
+    requires_key: false
+```
+
+Details: [`docs/llm.md`](docs/llm.md).
 
 ---
 

@@ -115,7 +115,7 @@ agent reviews via `memory/list_proposals.py` and acts via
   `embeddings` in `grail.yaml`.
 - **Mixing modes** → running `index` on a memory project is allowed but
   warned. Running `consolidate` on a KB project is allowed but warned.
-- **API runtime (no network)** → this skill needs `pip install grail`,
+- **API runtime (no network)** → this skill needs `pip install graphgrail`,
   so it works in Claude Code, Codex, and Hermes but **not** in the
   Anthropic API code-execution container.
 

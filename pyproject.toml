@@ -3,7 +3,12 @@ requires = ["hatchling>=1.18"]
 build-backend = "hatchling.build"
 
 [project]
-name = "grail"
+# PyPI distribution name. The ``grail`` name on PyPI is taken by an
+# unrelated test-script framework, so we publish under ``graphgrail``.
+# The Python import name stays ``grail`` (``from grail import GRAIL``)
+# and the CLI binary stays ``grail`` — only the ``pip install`` /
+# ``uv add`` line uses the distribution name.
+name = "graphgrail"
 version = "0.1.0"
 description = "Graph RAG with Advanced Integration and Learning — an open-source GraphRAG library with incremental updates, file-level provenance, and pluggable LLM/storage backends."
 requires-python = ">=3.10"
