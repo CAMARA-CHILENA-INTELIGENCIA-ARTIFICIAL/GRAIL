@@ -143,6 +143,8 @@ class IndexingConfig(BaseModel):
     max_summarization_tokens: int = 8192
     summarization_batch_size: int = 10
     max_gleanings: int = 0
+    extract_relationship_types: bool = False
+    relationship_types: list[str] = Field(default_factory=list)
 
     deduplicate_entities: bool = True
     dedup_similarity_threshold: float = 0.90
@@ -167,6 +169,26 @@ class IndexingConfig(BaseModel):
                 continue
             seen.add(token)
             normalized.append(token)
+        return normalized
+
+    @field_validator("relationship_types", mode="after")
+    @classmethod
+    def _normalize_relationship_types(cls, value: list[str]) -> list[str]:
+        """Normalize relationship types to UPPER_SNAKE_CASE. RELATED is always
+        appended as a fallback type so the LLM can use it when no specific
+        type fits. Empty list means the LLM picks types freely."""
+        seen: set[str] = set()
+        normalized: list[str] = []
+        for raw in value or []:
+            if not isinstance(raw, str):
+                continue
+            token = "_".join(raw.strip().upper().split())
+            if not token or token in seen:
+                continue
+            seen.add(token)
+            normalized.append(token)
+        if normalized and "RELATED" not in seen:
+            normalized.append("RELATED")
         return normalized
 
     MIN_ENTITY_TYPES: int = 5

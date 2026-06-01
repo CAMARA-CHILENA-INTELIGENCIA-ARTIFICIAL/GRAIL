@@ -223,15 +223,16 @@ def build_relationship_context(
         relationships["source"].isin(name_set) ^ relationships["target"].isin(name_set)
     ]
     ordered = pd.concat([in_network, out_network])
-    header = "<relationships>\nid,source,target,description,weight"
+    header = "<relationships>\nid,source,target,description,type,weight"
     footer = "</relationships>"
     rows = []
     selected_idx = []
     used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in ordered.iterrows():
+        rel_type = row.get("type", "RELATED") or "RELATED"
         line = (
             f"{row.get('human_readable_id', idx)},{row['source']},{row['target']},"
-            f"{(row.get('description') or '').replace(chr(10),' ')[:300]},{row.get('weight', 1.0):.2f}"
+            f"{(row.get('description') or '').replace(chr(10),' ')[:300]},{rel_type},{row.get('weight', 1.0):.2f}"
         )
         tok = tiktoken_len(line)
         if used + tok > max_tokens:

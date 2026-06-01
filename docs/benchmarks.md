@@ -78,39 +78,62 @@ python -m Evaluation.generation_eval \
 
 ---
 
-### 2. LongMemEval (Zep)
+### 2. LongMemEval v1 (Memory Mode Validation)
 
-**Blog:** https://blog.getzep.com/state-of-the-art-agent-memory/
+**Paper:** arXiv:2410.10813 (ICLR 2025)  
+**Repo:** https://github.com/xiaowu0162/LongMemEval  
+**Dataset:** `xiaowu0162/longmemeval-cleaned` on HuggingFace
 
-**Dataset:** LongMemEval — 500 human-curated QA pairs in scalable chat histories
-- Size S: ~115,000 tokens
-- Size M: ~1,500,000 tokens
+**Status:** Blocked on GRAIL memory mode implementation. Run after Phases 2-3 of
+the agentic memory design ship (see `dev_prompts/prompt_grail_agentic_memory_design.md`).
 
-**6 task categories:**
-- Single-session-preference
-- Single-session-assistant
-- Single-session-user
-- Temporal-reasoning
-- Multi-session
-- Knowledge-update
+**Dataset:** 500 human-curated QA pairs, each with its own haystack of 40-500
+chat sessions (Size S: ~115K tokens, Size M: ~1.5M tokens per question).
+
+**5 memory ability categories:**
+- Information Extraction (single-session recall)
+- Multi-Session Reasoning (aggregate across sessions)
+- Knowledge Updates (recognize changed facts)
+- Temporal Reasoning (time-aware queries)
+- Abstention (correctly say "I don't know")
+
+**Why this maps to GRAIL memory mode:**
+
+| Category | GRAIL Feature |
+|----------|---------------|
+| Multi-Session Reasoning | Entity graph connects concepts across sessions (count, aggregate) |
+| Knowledge Updates | `SUPERSEDES` relationship + `edit_extract` + orphan pruning |
+| Temporal Reasoning | `recall --since/--before` + `observed_at` on entities |
+| Information Extraction | Cascade search + `retrieval_queries` enrichment |
+| Abstention | Empty cascade → "I don't know" |
 
 **Evaluation stack to replicate:**
 
 | Component | Exact version | Why it matters |
 |---|---|---|
-| LLM judge | `gpt-4o` | Accuracy scores calibrated to this judge |
-| Baselines | Full transcript in context, recursive summarization | Must test same baselines |
-| Models | GPT-4-Turbo, GPT-4o, GPT-4o-mini | Report results per model |
+| LLM judge | `gpt-4o` (`gpt-4o-2024-08-06`) | Binary yes/no, >97% human agreement |
+| Retrieval eval | Recall@k, NDCG@k (k=5,10,50) | Session-level retrieval quality |
 
-**Key findings to beat:**
-- +18.5% accuracy over full-context baseline (aggregate)
-- +38.4-48.2% on temporal-reasoning (biggest win)
-- 90% latency reduction using <2% of baseline tokens
+**Baselines to beat:**
+- Best RAG: K=V+fact with Stella V5 1.5B → **0.720 accuracy** (GPT-4o, Top-10)
+- Full-context GPT-4o: 0.606 (S tier) — drops 30% from oracle
+- Multi-session reasoning is the hardest category for all baselines
 
-**Relevance to GRAIL:** LongMemEval tests cross-session synthesis and temporal
-reasoning — exactly where GRAIL's incremental graph updates and community
-reports should excel. The knowledge-update category maps directly to GRAIL's
-`edit` and `append` operations.
+**Cost estimate:**
+- Embedding-only mode (500 questions): ~$1.50
+- Graph mode with Gemma-4-26B (500 questions): ~$26
+- Both are per the small tier (40 sessions/question)
+
+**Two-run comparison:**
+1. GRAIL embedding-only (no entity extraction) — baseline, competitive with Stella
+2. GRAIL graph mode (entity extraction on sessions) — should dominate on
+   multi-session reasoning where graph structure connects entities across sessions
+
+**Relevance to GRAIL:** This is the primary validation benchmark for the agentic
+memory feature. Multi-session reasoning ("How many instruments do I own?") is
+where entity graphs should crush flat RAG — the graph links `GUITAR`, `PIANO`,
+`VIOLIN` entities across separate sessions. No other benchmark tests this at
+scale for memory systems.
 
 ---
 

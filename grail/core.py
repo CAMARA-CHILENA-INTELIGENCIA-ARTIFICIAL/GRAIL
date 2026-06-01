@@ -705,6 +705,8 @@ class GRAIL:
             dedup_endpoint=self.config.indexing.dedup_endpoint,
             dedup_model=self.config.indexing.dedup_model,
             dedup_max_entities_per_call=self.config.indexing.dedup_max_entities_per_call,
+            extract_relationship_types=self.config.indexing.extract_relationship_types,
+            relationship_types=self.config.indexing.relationship_types,
             reporter=self.reporter,
         )
 

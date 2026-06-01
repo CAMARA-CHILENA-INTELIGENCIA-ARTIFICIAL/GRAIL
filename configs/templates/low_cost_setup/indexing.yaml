@@ -67,3 +67,19 @@ max_summarization_tokens: 1024
 # Number of "did you miss anything?" re-asks per chunk. 0 = single pass (cheap).
 # Raise to 1-2 if recall is critical and budget allows.
 max_gleanings: 0
+
+# --- Relationship types ---
+# When true, the LLM classifies each relationship with a typed label
+# (e.g. REGULATES, FUNDS, MEMBER_OF) in UPPER_SNAKE_CASE.
+# When false (default), all relationships are typed "RELATED".
+# extract_relationship_types: false
+#
+# Optional: constrain to a fixed vocabulary (like entity_types).
+# When empty, the LLM picks types freely. Normalized to UPPER_SNAKE_CASE.
+# relationship_types:
+#   - REGULATES
+#   - FUNDS
+#   - MEMBER_OF
+#   - IMPLEMENTS
+#   - EXCLUDES
+#   - OVERSEES

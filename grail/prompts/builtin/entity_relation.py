@@ -68,7 +68,7 @@ separated by semicolons.
 connected in the text, extract:
    - source_entity: Name exactly as defined in step 1
    - target_entity: Name exactly as defined in step 1
-   - relationship_description: How and why these entities are connected
+   - relationship_description: How and why these entities are connected{relationship_type_guidance}
    - relationship_strength: Integer 1-10 using this scale:
      - 1-3: Weak or incidental (mentioned together, tangential reference)
      - 4-6: Moderate (collaboration, interaction, influence)
@@ -88,7 +88,7 @@ Everything outside these tags is ignored by the parser. Everything inside must \
 follow this exact format:
 
 ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>{tuple_delimiter}<retrieval_queries>){record_delimiter}
-("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>){record_delimiter}
+{relationship_format_line}
 
 The <retrieval_queries> field contains 2-3 questions separated by semicolons. \
 These questions should reflect what a user would ask that THIS TEXT PASSAGE \
@@ -209,6 +209,34 @@ structured tuples inside {start_delimiter}...{completion_delimiter} tags.
 Use {tuple_delimiter} between fields, {record_delimiter} between records."""
 
 
+_REL_FORMAT_UNTYPED = (
+    '("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}'
+    '<target_entity>{tuple_delimiter}<relationship_description>'
+    '{tuple_delimiter}<relationship_strength>){record_delimiter}'
+)
+
+_REL_FORMAT_TYPED = (
+    '("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}'
+    '<target_entity>{tuple_delimiter}<relationship_description>'
+    '{tuple_delimiter}<relationship_type>{tuple_delimiter}'
+    '<relationship_strength>){record_delimiter}'
+)
+
+_REL_TYPE_GUIDANCE_FREE = (
+    "\n   - relationship_type: A concise UPPER_SNAKE_CASE label classifying the "
+    "nature of the connection. Examples: REGULATES, FUNDS, MEMBER_OF, IMPLEMENTS, "
+    "EXCLUDES, OVERSEES, APPROVES, CREATED_BY, PART_OF, AMENDS, SANCTIONS, "
+    "REPORTS_TO, TREATS, AUTHORED. Choose the most specific type that accurately "
+    "describes the relationship."
+)
+
+_REL_TYPE_GUIDANCE_CONSTRAINED = (
+    "\n   - relationship_type: Classify the relationship using one of these types: "
+    "{rel_types_list}. Use the most specific type that fits. If none fit well, "
+    "use RELATED as fallback."
+)
+
+
 def build_messages(**params: Any) -> list[dict[str, Any]]:
     """Return chat messages ready for the LLM.
 
@@ -216,6 +244,21 @@ def build_messages(**params: Any) -> list[dict[str, Any]]:
     to the canonical tokens and can be overridden per call.
     """
     p = {**DEFAULT_DELIMITERS, **params}
+    extract_rel_types = p.pop("extract_relationship_types", False)
+    rel_types = p.pop("relationship_types", None) or []
+
+    if extract_rel_types:
+        p["relationship_format_line"] = _REL_FORMAT_TYPED.format(**p)
+        if rel_types:
+            p["relationship_type_guidance"] = _REL_TYPE_GUIDANCE_CONSTRAINED.format(
+                rel_types_list=", ".join(rel_types)
+            )
+        else:
+            p["relationship_type_guidance"] = _REL_TYPE_GUIDANCE_FREE
+    else:
+        p["relationship_format_line"] = _REL_FORMAT_UNTYPED.format(**p)
+        p["relationship_type_guidance"] = ""
+
     if isinstance(p.get("entity_types"), (list, tuple)):
         p["entity_types"] = ", ".join(str(x) for x in p["entity_types"])
     return [

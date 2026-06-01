@@ -53,6 +53,7 @@ class _Entity:
 class _Relationship:
     source: str
     target: str
+    type: str = "RELATED"
     descriptions: list[str] = field(default_factory=list)
     weights: list[float] = field(default_factory=list)
     text_unit_ids: set[str] = field(default_factory=set)
@@ -86,6 +87,8 @@ class EntityRelationshipExtractor:
     dedup_endpoint: Optional[str] = None
     dedup_model: Optional[str] = None
     dedup_max_entities_per_call: int = 50
+    extract_relationship_types: bool = False
+    relationship_types: list[str] = field(default_factory=list)
     reporter: Reporter = field(default_factory=NullReporter)
 
     def __post_init__(self) -> None:
@@ -111,6 +114,8 @@ class EntityRelationshipExtractor:
                 "entity_relation",
                 entity_types=self.entity_types,
                 input_text=row["text"],
+                extract_relationship_types=self.extract_relationship_types,
+                relationship_types=self.relationship_types,
                 **self.delimiters,
             )
             calls.append(
@@ -261,14 +266,24 @@ class EntityRelationshipExtractor:
                     src = fields[1].upper().strip()
                     tgt = fields[2].upper().strip()
                     desc = fields[3].strip()
-                    try:
-                        weight = float(fields[4])
-                    except ValueError:
-                        weight = 1.0
+                    # 6-field: (relationship<|>SRC<|>TGT<|>DESC<|>TYPE<|>WEIGHT)
+                    # 5-field: (relationship<|>SRC<|>TGT<|>DESC<|>WEIGHT)
+                    if len(fields) >= 6:
+                        rel_type = "_".join(fields[4].strip().upper().split()) or "RELATED"
+                        try:
+                            weight = float(fields[5])
+                        except ValueError:
+                            weight = 1.0
+                    else:
+                        rel_type = "RELATED"
+                        try:
+                            weight = float(fields[4])
+                        except ValueError:
+                            weight = 1.0
                     if not src or not tgt or src == tgt:
                         continue
                     key = tuple(sorted((src, tgt)))  # undirected
-                    rel = rels.setdefault(key, _Relationship(source=key[0], target=key[1]))
+                    rel = rels.setdefault(key, _Relationship(source=key[0], target=key[1], type=rel_type))
                     rel.descriptions.append(desc)
                     rel.weights.append(weight)
                     rel.text_unit_ids.add(tu_id)
@@ -357,6 +372,7 @@ class EntityRelationshipExtractor:
                     "target": rel.target,
                     "source_id": name_to_id.get(rel.source),
                     "target_id": name_to_id.get(rel.target),
+                    "type": rel.type,
                     "description": rel.descriptions[0] if rel.descriptions else "",
                     "weight": sum(rel.weights) / max(len(rel.weights), 1),
                     "text_unit_ids": sorted(rel.text_unit_ids),
@@ -417,6 +433,7 @@ class EntityRelationshipExtractor:
                 row["source"],
                 row["target"],
                 id=row["id"],
+                type=row.get("type", "RELATED") or "RELATED",
                 weight=float(row["weight"]),
                 description=row["description"],
                 rank=int(row["rank"]),
@@ -660,6 +677,7 @@ class EntityRelationshipExtractor:
                     "id": generate_guid(),
                     "source": key[0],
                     "target": key[1],
+                    "type": rel.type,
                     "description": rel.descriptions[0] if rel.descriptions else "",
                     "weight": sum(rel.weights) / max(len(rel.weights), 1),
                     "text_unit_ids": sorted(rel.text_unit_ids),
