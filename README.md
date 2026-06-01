@@ -133,6 +133,10 @@ The contract is binding: **everything that works in knowledge-base mode works in
 
 ### Knowledge-base indexing pipeline
 
+<p align="center">
+  <img src="assets/animations/kb_mode.svg" alt="GRAIL — Knowledge Base Mode animation: documents → chunks → LLM extraction → graph + communities → search" width="900">
+</p>
+
 ```mermaid
 flowchart LR
     A["input/<br/>.txt .md .pdf .docx code"] --> B[preprocess<br/><i>PDF/DOCX → markdown</i>]
@@ -154,6 +158,10 @@ flowchart LR
 ```
 
 ### Memory-mode write path
+
+<p align="center">
+  <img src="assets/animations/memory_mode.svg" alt="GRAIL — Agentic Memory Mode animation: agent → tool call → markdown observation → direct graph merge (no LLM) → recall &amp; consolidate" width="900">
+</p>
 
 ```mermaid
 flowchart LR

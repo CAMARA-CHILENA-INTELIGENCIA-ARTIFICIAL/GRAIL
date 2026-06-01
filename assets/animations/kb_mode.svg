@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" role="img" aria-label="GRAIL Knowledge Base Mode pipeline animation">
+  <title>GRAIL — Knowledge Base Mode</title>
+  <desc>Animated diagram of GRAIL's knowledge-base pipeline: documents are chunked, an LLM extracts entities and relationships in a single pass, communities form, and a query produces a structured answer.</desc>
+
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+      .title       { fill: #f0f0f0; font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+      .subtitle    { fill: #888;    font-size: 11px; letter-spacing: 0.3px; }
+      .stage-label { fill: #b0b0b0; font-size: 11px; font-weight: 500; text-anchor: middle; }
+      .stage-num   { fill: #444;    font-size: 28px; font-weight: 700; text-anchor: middle; }
+      .doc-fill    { fill: #1a1a1a; stroke: #ffffff; stroke-width: 1.5; }
+      .chunk-fill  { fill: #1f1f1f; stroke: #c0c0c0; stroke-width: 1; }
+      .text-mark   { stroke: #6a6a6a; stroke-width: 1; stroke-linecap: round; }
+      .arrow-base  { stroke: #3a3a3a; stroke-width: 1.5; fill: none; }
+      .arrow-active{ stroke: #ffffff; stroke-width: 1.5; fill: none; }
+      .entity      { fill: #ffffff; }
+      .edge        { stroke: #6a6a6a; stroke-width: 1; fill: none; }
+      .llm-ring    { fill: rgba(255,255,255,0.04); stroke: rgba(255,255,255,0.5); stroke-width: 1.5; }
+      .llm-core    { fill: rgba(255,255,255,0.10); stroke: #ffffff; stroke-width: 1.5; }
+      .llm-text    { fill: #ffffff; font-size: 12px; font-weight: 600; text-anchor: middle; }
+      .answer-box  { fill: rgba(255,255,255,0.05); stroke: #888; stroke-width: 1; }
+      .query-box   { fill: rgba(255,255,255,0.08); stroke: #ffffff; stroke-width: 1; }
+    </style>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#888"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="460" fill="#0a0a0a"/>
+
+  <!-- ─────────────────────── Header ─────────────────────── -->
+  <text x="450" y="34"  text-anchor="middle" class="title">GRAIL — Knowledge Base Mode</text>
+  <text x="450" y="54"  text-anchor="middle" class="subtitle">documents → chunks → LLM extraction → graph + communities → search</text>
+
+  <!-- ─────────────────────── Faint always-on arrows between stages ─────────────────────── -->
+  <line x1="170" y1="240" x2="210" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="335" y1="240" x2="375" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="490" y1="240" x2="525" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="700" y1="240" x2="740" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+
+  <!-- ═════════════════════ STAGE 1: Documents ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.02;0.06;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+    <!-- 3 stacked doc cards -->
+    <rect x="75"  y="200" width="80" height="100" rx="3" class="doc-fill"/>
+    <rect x="78"  y="197" width="80" height="100" rx="3" class="doc-fill"/>
+    <rect x="81"  y="194" width="80" height="100" rx="3" class="doc-fill"/>
+    <!-- text marks on top doc -->
+    <line x1="92"  y1="210" x2="151" y2="210" class="text-mark"/>
+    <line x1="92"  y1="220" x2="151" y2="220" class="text-mark"/>
+    <line x1="92"  y1="230" x2="144" y2="230" class="text-mark"/>
+    <line x1="92"  y1="240" x2="151" y2="240" class="text-mark"/>
+    <line x1="92"  y1="250" x2="138" y2="250" class="text-mark"/>
+    <line x1="92"  y1="260" x2="151" y2="260" class="text-mark"/>
+    <line x1="92"  y1="270" x2="131" y2="270" class="text-mark"/>
+    <line x1="92"  y1="280" x2="151" y2="280" class="text-mark"/>
+  </g>
+  <text x="118" y="395" class="stage-label">Documents</text>
+  <text x="118" y="425" class="stage-num">01</text>
+
+  <!-- ═════════════════════ STAGE 2: Chunks ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.13;0.18;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+    <rect x="220" y="170" width="115" height="20" rx="2" class="chunk-fill"/>
+    <rect x="220" y="197" width="115" height="20" rx="2" class="chunk-fill"/>
+    <rect x="220" y="224" width="115" height="20" rx="2" class="chunk-fill"/>
+    <rect x="220" y="251" width="115" height="20" rx="2" class="chunk-fill"/>
+    <rect x="220" y="278" width="115" height="20" rx="2" class="chunk-fill"/>
+    <rect x="220" y="305" width="115" height="20" rx="2" class="chunk-fill"/>
+    <!-- subtle text indicator -->
+    <line x1="230" y1="180" x2="320" y2="180" class="text-mark"/>
+    <line x1="230" y1="207" x2="310" y2="207" class="text-mark"/>
+    <line x1="230" y1="234" x2="320" y2="234" class="text-mark"/>
+    <line x1="230" y1="261" x2="300" y2="261" class="text-mark"/>
+    <line x1="230" y1="288" x2="320" y2="288" class="text-mark"/>
+    <line x1="230" y1="315" x2="290" y2="315" class="text-mark"/>
+  </g>
+  <text x="277" y="395" class="stage-label">Chunks</text>
+  <text x="277" y="425" class="stage-num">02</text>
+
+  <!-- ═════════════════════ STAGE 3: LLM ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.28;0.33;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+    <!-- outer pulse ring -->
+    <circle cx="432" cy="240" r="58" class="llm-ring">
+      <animate attributeName="r" values="58;68;58" dur="2.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.7;0.0;0.7" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <!-- core circle -->
+    <circle cx="432" cy="240" r="40" class="llm-core">
+      <animate attributeName="r" values="40;44;40" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="432" y="237" class="llm-text">single-pass</text>
+    <text x="432" y="252" class="llm-text">LLM</text>
+  </g>
+  <text x="432" y="395" class="stage-label">LLM extraction</text>
+  <text x="432" y="425" class="stage-num">03</text>
+
+  <!-- ═════════════════════ STAGE 4: Graph + Communities ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.45;0.51;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- Community translucent regions -->
+    <ellipse cx="560" cy="190" rx="55" ry="42" fill="#4a90e2" opacity="0.12"/>
+    <ellipse cx="630" cy="200" rx="48" ry="38" fill="#e67e22" opacity="0.12"/>
+    <ellipse cx="595" cy="290" rx="60" ry="38" fill="#27ae60" opacity="0.12"/>
+
+    <!-- Edges -->
+    <line x1="540" y1="175" x2="575" y2="195" class="edge"/>
+    <line x1="540" y1="175" x2="555" y2="215" class="edge"/>
+    <line x1="575" y1="195" x2="555" y2="215" class="edge"/>
+    <line x1="575" y1="195" x2="620" y2="190" class="edge"/>
+    <line x1="620" y1="190" x2="650" y2="210" class="edge"/>
+    <line x1="620" y1="190" x2="655" y2="180" class="edge"/>
+    <line x1="555" y1="215" x2="580" y2="280" class="edge"/>
+    <line x1="580" y1="280" x2="615" y2="295" class="edge"/>
+    <line x1="580" y1="280" x2="570" y2="310" class="edge"/>
+    <line x1="615" y1="295" x2="570" y2="310" class="edge"/>
+    <line x1="615" y1="295" x2="640" y2="305" class="edge"/>
+    <line x1="650" y1="210" x2="615" y2="295" class="edge"/>
+
+    <!-- Entity nodes -->
+    <circle cx="540" cy="175" r="5" class="entity"/>
+    <circle cx="575" cy="195" r="5" class="entity"/>
+    <circle cx="555" cy="215" r="5" class="entity"/>
+    <circle cx="620" cy="190" r="5" class="entity"/>
+    <circle cx="655" cy="180" r="5" class="entity"/>
+    <circle cx="650" cy="210" r="5" class="entity"/>
+    <circle cx="580" cy="280" r="5" class="entity"/>
+    <circle cx="615" cy="295" r="5" class="entity"/>
+    <circle cx="570" cy="310" r="5" class="entity"/>
+    <circle cx="640" cy="305" r="5" class="entity"/>
+  </g>
+  <text x="595" y="395" class="stage-label">Graph + communities</text>
+  <text x="595" y="425" class="stage-num">04</text>
+
+  <!-- ═════════════════════ STAGE 5: Query → Answer ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.66;0.72;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- Query box -->
+    <rect x="755" y="160" width="115" height="34" rx="4" class="query-box"/>
+    <text x="812" y="182" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="500">user query</text>
+
+    <!-- Down arrow -->
+    <line x1="812" y1="200" x2="812" y2="222" stroke="#ffffff" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+    <!-- Mode pills -->
+    <g font-size="9" fill="#888">
+      <rect x="757" y="232" width="50" height="14" rx="7" fill="none" stroke="#555"/>
+      <text x="782" y="242" text-anchor="middle">local</text>
+      <rect x="813" y="232" width="55" height="14" rx="7" fill="none" stroke="#555"/>
+      <text x="840" y="242" text-anchor="middle">cascade</text>
+      <rect x="757" y="251" width="50" height="14" rx="7" fill="none" stroke="#555"/>
+      <text x="782" y="261" text-anchor="middle">global</text>
+      <rect x="813" y="251" width="55" height="14" rx="7" fill="none" stroke="#555"/>
+      <text x="840" y="261" text-anchor="middle">document</text>
+      <rect x="785" y="270" width="55" height="14" rx="7" fill="none" stroke="#555"/>
+      <text x="812" y="280" text-anchor="middle">agent</text>
+    </g>
+
+    <!-- Answer box -->
+    <rect x="755" y="295" width="115" height="60" rx="4" class="answer-box"/>
+    <text x="812" y="312" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="500">SearchResult</text>
+    <line x1="765" y1="325" x2="860" y2="325" class="text-mark"/>
+    <line x1="765" y1="335" x2="850" y2="335" class="text-mark"/>
+    <line x1="765" y1="345" x2="855" y2="345" class="text-mark"/>
+  </g>
+  <text x="812" y="395" class="stage-label">Search (6 modes)</text>
+  <text x="812" y="425" class="stage-num">05</text>
+</svg>

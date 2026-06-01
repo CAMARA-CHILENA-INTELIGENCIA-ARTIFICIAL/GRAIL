@@ -133,6 +133,10 @@ El contrato es vinculante: **todo lo que funciona en modo base de conocimiento f
 
 ### Pipeline de indexación (base de conocimiento)
 
+<p align="center">
+  <img src="assets/animations/kb_mode.svg" alt="GRAIL — Modo Base de Conocimiento, animación: documentos → chunks → extracción por LLM → grafo + comunidades → búsqueda" width="900">
+</p>
+
 ```mermaid
 flowchart LR
     A["input/<br/>.txt .md .pdf .docx código"] --> B[preprocesamiento<br/><i>PDF/DOCX → markdown</i>]
@@ -154,6 +158,10 @@ flowchart LR
 ```
 
 ### Ruta de escritura en modo memoria
+
+<p align="center">
+  <img src="assets/animations/memory_mode.svg" alt="GRAIL — Modo Memoria Agéntica, animación: agente → tool call → observación markdown → merge directo al grafo (sin LLM) → recall y consolidate" width="900">
+</p>
 
 ```mermaid
 flowchart LR
