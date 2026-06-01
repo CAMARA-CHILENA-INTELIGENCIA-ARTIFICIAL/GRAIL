@@ -12,7 +12,16 @@ from grail._version import __version__
 from grail.config import Config, load_config
 from grail.core import GRAIL
 from grail.llm import EmbeddingClient, LLMClient
+from grail.memory import (
+    CommunityRecord,
+    EntityRecord,
+    MemoryProject,
+    Observation,
+    RelationshipRecord,
+    Reply,
+)
 from grail.prompts import PromptRegistry
+from grail.query.recall_filter import RecallFilter
 from grail.schemas import (
     Community,
     CommunityReport,
@@ -26,16 +35,23 @@ from grail.schemas import (
 
 __all__ = [
     "Community",
+    "CommunityRecord",
     "CommunityReport",
     "Config",
     "Covariate",
     "Document",
     "EmbeddingClient",
     "Entity",
+    "EntityRecord",
     "GRAIL",
     "LLMClient",
+    "MemoryProject",
+    "Observation",
     "PromptRegistry",
+    "RecallFilter",
     "Relationship",
+    "RelationshipRecord",
+    "Reply",
     "SearchResult",
     "TextUnit",
     "__version__",

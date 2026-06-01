@@ -27,11 +27,13 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+import yaml
 
 from grail.indexing.preprocess import (
     PREPROCESS_EXTENSIONS,
@@ -39,6 +41,7 @@ from grail.indexing.preprocess import (
     PreprocessResult,
     preprocess_file,
 )
+from grail.indexing.schema_migration import migrate_dataframe
 from grail.reporting import NullReporter, Reporter
 from grail.storage import LocalStorage, StorageBackend
 from grail.utils.chunker import TokenTextSplitter
@@ -49,6 +52,46 @@ log = logging.getLogger(__name__)
 
 _DEFAULT_DOC_BOUNDARY = "\n\n---DOCUMENT_BOUNDARY---\n\n"
 PROCESSED_SUBDIR = "_processed"
+
+# Frontmatter keys we lift directly into typed columns on ``final_docs``.
+# Anything else found in the frontmatter is preserved into the ``attributes``
+# JSON column so memory-mode users don't lose unstructured metadata.
+_KNOWN_FRONTMATTER_KEYS = frozenset({
+    "title",
+    "category",
+    "tags",
+    "observed_at",
+    "confidence",
+    "source",
+    "related_to",
+})
+
+# ``---\n<yaml>\n---\n`` block at the very start of a file. Matches the standard
+# Jekyll/Hugo/Pandoc frontmatter convention.
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+
+
+def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]:
+    """Split YAML frontmatter from a markdown body.
+
+    Returns ``(frontmatter_dict, body_text)``. If no frontmatter block is
+    present, returns ``({}, text)`` unchanged. Malformed YAML is logged and
+    the file content is returned with no frontmatter (lenient by design —
+    we never want a typo in YAML to silently drop a memory).
+    """
+    match = _FRONTMATTER_RE.match(text)
+    if not match:
+        return {}, text
+    raw_yaml = match.group(1)
+    try:
+        data = yaml.safe_load(raw_yaml)
+    except yaml.YAMLError as exc:
+        log.warning("Malformed frontmatter — ignoring: %s", exc)
+        return {}, text
+    if not isinstance(data, dict):
+        return {}, text
+    body = text[match.end():]
+    return data, body
 
 
 @dataclass
@@ -68,6 +111,7 @@ class FileLoader:
     encoding_name: str = "cl100k_base"
     document_boundary: str = _DEFAULT_DOC_BOUNDARY
     exclude_patterns: list[str] = field(default_factory=list)
+    parse_frontmatter: bool = True
     reporter: Reporter = field(default_factory=NullReporter)
 
     def __post_init__(self) -> None:
@@ -119,12 +163,17 @@ class FileLoader:
             self.storage.path_for(self.input_folder) / PROCESSED_SUBDIR
         )
 
-    def _read_one(self, key: str) -> tuple[str, Optional[str]]:
-        """Read ``key`` from storage and return ``(text, processed_key)``.
+    def _read_one(self, key: str) -> tuple[str, Optional[str], dict[str, Any]]:
+        """Read ``key`` from storage and return ``(text, processed_key, frontmatter)``.
 
         For text-like files, ``processed_key`` is ``None`` (no conversion happened).
         For PDFs / DOCX, ``processed_key`` is the storage-relative path to the
         cached markdown produced by preprocessing.
+
+        ``frontmatter`` is the parsed YAML frontmatter dict (empty when the file
+        had none or when ``parse_frontmatter=False``). When frontmatter is
+        present, ``text`` is the body **with the frontmatter block stripped** so
+        chunking doesn't index YAML as content.
         """
         ext = Path(key).suffix.lower()
         if ext in PREPROCESS_EXTENSIONS:
@@ -147,13 +196,27 @@ class FileLoader:
             processed_key = self.storage.join(
                 self.input_folder, PROCESSED_SUBDIR, result.processed.name
             )
-            return self.storage.read_text(processed_key), processed_key
+            text = self.storage.read_text(processed_key)
+            fm, body = self._maybe_parse_frontmatter(text, ext=".md")
+            return body, processed_key, fm
 
         try:
-            return self.storage.read_text(key), None
+            text = self.storage.read_text(key)
         except UnicodeDecodeError:
             data = self.storage.read_bytes(key)
-            return data.decode("utf-8", errors="replace"), None
+            text = data.decode("utf-8", errors="replace")
+        fm, body = self._maybe_parse_frontmatter(text, ext=ext)
+        return body, None, fm
+
+    def _maybe_parse_frontmatter(
+        self, text: str, *, ext: str
+    ) -> tuple[dict[str, Any], str]:
+        """Parse frontmatter only for markdown-family files when enabled."""
+        if not self.parse_frontmatter:
+            return {}, text
+        if ext not in {".md", ".markdown"}:
+            return {}, text
+        return parse_frontmatter(text)
 
     # ------------------------------------------------------------------ chunking
 
@@ -173,6 +236,8 @@ class FileLoader:
 
         documents: list[dict[str, Any]] = []
         mapping: dict[str, Any] = {}
+        # doc_id -> {observed_at, confidence, source} for inheritance into chunks.
+        doc_provenance: dict[str, dict[str, Any]] = {}
 
         # First pass: read every file (preprocessing PDFs/DOCX on the fly), record
         # offsets in the concatenated buffer for chunk → doc back-mapping.
@@ -181,12 +246,34 @@ class FileLoader:
         cursor = 0
         for key in keys:
             try:
-                text, processed_key = self._read_one(key)
+                text, processed_key, frontmatter = self._read_one(key)
             except (ValueError, RuntimeError) as exc:
                 self.reporter.warning(f"Skipping {key}: {exc}")
                 continue
             doc_id = generate_guid()
-            title = Path(key).name
+            # ``title`` from frontmatter takes precedence over the filename when
+            # the agent supplied one (memory mode); otherwise the basename wins.
+            title = str(frontmatter.get("title") or Path(key).name)
+            category = frontmatter.get("category")
+            tags_raw = frontmatter.get("tags", []) or []
+            tags = [str(t) for t in tags_raw] if isinstance(tags_raw, list) else [str(tags_raw)]
+            attributes = {
+                k: v for k, v in frontmatter.items() if k not in _KNOWN_FRONTMATTER_KEYS
+            }
+            doc_observed = frontmatter.get("observed_at")
+            doc_observed_iso = (
+                doc_observed.isoformat()
+                if hasattr(doc_observed, "isoformat")
+                else (str(doc_observed) if doc_observed else None)
+            )
+            doc_confidence = (
+                float(frontmatter["confidence"])
+                if "confidence" in frontmatter and frontmatter["confidence"] is not None
+                else 1.0
+            )
+            doc_source = (
+                str(frontmatter["source"]) if frontmatter.get("source") else None
+            )
             documents.append(
                 {
                     "id": doc_id,
@@ -195,6 +282,15 @@ class FileLoader:
                     "path": key,
                     "text_unit_ids": [],
                     "mapping": key,
+                    "category": str(category) if category is not None else None,
+                    "tags": tags,
+                    "attributes": json.dumps(attributes) if attributes else None,
+                    # Provenance: document-level mirror of what text_units carry,
+                    # so RecallFilter can filter docs by date / confidence / source
+                    # without joining to TUs.
+                    "observed_at": doc_observed_iso,
+                    "confidence": doc_confidence,
+                    "source": doc_source,
                 }
             )
             mapping[doc_id] = {
@@ -204,6 +300,13 @@ class FileLoader:
                 "extension": Path(key).suffix.lower(),
                 "data_type": detect_data_type(key),
                 "size_chars": len(text),
+            }
+            doc_provenance[doc_id] = {
+                "observed_at": frontmatter.get("observed_at"),
+                "confidence": float(frontmatter["confidence"])
+                if "confidence" in frontmatter and frontmatter["confidence"] is not None
+                else 1.0,
+                "source": str(frontmatter["source"]) if frontmatter.get("source") else None,
             }
             start = cursor
             buffer_parts.append(text)
@@ -240,6 +343,25 @@ class FileLoader:
             if not doc_ids:
                 doc_ids = [char_offsets[0][0]]
             tu_id = generate_guid()
+            # Provenance: when a chunk straddles multiple docs we use the
+            # *primary* doc (first / largest contribution) — observed_at takes
+            # the max across contributing docs, confidence the min, source the
+            # primary doc's value. This mirrors how we'll aggregate further up
+            # to entities/relationships in Phase A3.
+            primary = doc_provenance.get(doc_ids[0], {})
+            observed_vals = [
+                doc_provenance.get(d, {}).get("observed_at") for d in doc_ids
+            ]
+            # PyYAML may give us either strings or datetime objects. Normalise
+            # to ISO-8601 strings so ``max()`` compares lexically (works for
+            # ISO-8601, which is sortable as text).
+            observed_vals = [
+                v.isoformat() if hasattr(v, "isoformat") else str(v)
+                for v in observed_vals if v is not None
+            ]
+            confidence_vals = [
+                doc_provenance.get(d, {}).get("confidence", 1.0) for d in doc_ids
+            ]
             text_units.append(
                 {
                     "id": tu_id,
@@ -247,6 +369,9 @@ class FileLoader:
                     "n_tokens": self._splitter.count_tokens(chunk),
                     "document_id": doc_ids[0],
                     "document_ids": doc_ids,
+                    "observed_at": max(observed_vals) if observed_vals else None,
+                    "confidence": min(confidence_vals) if confidence_vals else 1.0,
+                    "source": primary.get("source"),
                 }
             )
 
@@ -288,12 +413,14 @@ class FileLoader:
             return pd.DataFrame(), pd.DataFrame(), {}
         with self.storage.open_for_read(f"{self.output_folder}/final_docs.parquet") as path:
             docs_df = pd.read_parquet(path)
+        docs_df = migrate_dataframe(docs_df, "final_docs")
         text_units_df = pd.DataFrame()
         if self.storage.exists(f"{self.output_folder}/partial_text_units.parquet"):
             with self.storage.open_for_read(
                 f"{self.output_folder}/partial_text_units.parquet"
             ) as path:
                 text_units_df = pd.read_parquet(path)
+            text_units_df = migrate_dataframe(text_units_df, "final_text_units")
         mapping: dict[str, Any] = {}
         if self.storage.exists("mapping.json"):
             mapping = json.loads(self.storage.read_text("mapping.json"))

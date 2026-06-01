@@ -19,6 +19,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
+from grail.indexing.schema_migration import migrate_dataframe
 from grail.llm import LLMClient
 from grail.prompts import PromptRegistry
 from grail.reporting import NullReporter, Reporter
@@ -176,6 +177,12 @@ class CommunityReportGenerator:
                 "rank": float(parsed.get("rating", 5.0)),
                 "rank_explanation": parsed.get("rating_explanation", ""),
                 "findings": parsed.get("findings", []),
+                # ``source`` records who authored the report: ``llm`` is the
+                # default for batch indexing, ``agent`` means a meta.md file
+                # was the canonical source (memory mode). ``source_path``
+                # points at that meta.md when applicable.
+                "source": "llm",
+                "source_path": None,
             }
 
         if self.report_concurrency is not None:
@@ -374,7 +381,9 @@ class CommunityReportGenerator:
         if not self.storage.exists(full):
             return pd.DataFrame()
         with self.storage.open_for_read(full) as path:
-            return pd.read_parquet(path)
+            df = pd.read_parquet(path)
+        table = key.removesuffix(".parquet")
+        return migrate_dataframe(df, table)
 
 
 _EMPTY_REPORT: dict[str, Any] = {

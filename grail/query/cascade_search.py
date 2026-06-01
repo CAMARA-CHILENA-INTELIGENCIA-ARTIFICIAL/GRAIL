@@ -22,7 +22,7 @@ import re
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -41,6 +41,9 @@ from grail.query.retrieval import (
 from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import StorageBackend
+
+if TYPE_CHECKING:
+    from grail.query.recall_filter import RecallFilter
 from grail.utils.tokens import tiktoken_len
 from grail.vectorstores import BaseVectorStore
 
@@ -122,10 +125,17 @@ class CascadeSearch:
         include_entity_names: Optional[list[str]] = None,
         exclude_entity_names: Optional[list[str]] = None,
         context_only: bool = False,
+        filter: Optional["RecallFilter"] = None,
     ) -> SearchResult:
         started = time.perf_counter()
         self.reporter.info("Loading indexed artifacts…")
         artifacts = self.artifacts or load_artifacts_for_search(self.storage, self.output_folder)
+        if filter is not None and not filter.is_empty():
+            artifacts = filter.apply_to_artifacts(artifacts)
+            self.reporter.info(
+                f"Recall filter applied → {len(artifacts.entities)} entities, "
+                f"{len(artifacts.text_units)} text units."
+            )
         if artifacts.entities.empty:
             return SearchResult(
                 response="No indexed data was found. Run `grail index` first.",

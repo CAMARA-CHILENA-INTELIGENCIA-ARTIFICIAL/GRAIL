@@ -24,7 +24,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -42,6 +42,25 @@ DEFAULT_ENTITY_TYPES: tuple[str, ...] = (
     "PERSON", "ORGANIZATION", "LOCATION", "EVENT", "CONCEPT",
 )
 
+# Default closed-set vocabulary for memory mode. KB mode keeps
+# ``IndexingConfig.relationship_types = []`` (LLM picks freely), but a memory
+# project scaffolded via ``grail init --memory`` seeds this list so the agent
+# has a bounded set to choose from when calling ``add_relationship``.
+DEFAULT_RELATIONSHIP_TYPES: tuple[str, ...] = (
+    "RELATED",
+    "MENTIONS",
+    "WORKS_AT",
+    "OWNS",
+    "LOCATED_IN",
+    "CAUSES",
+    "PART_OF",
+    "CONTRADICTS",
+    "SUPERSEDES",
+    "OBSERVED_AT",
+    "ASSOCIATED_WITH",
+    "DEPENDS_ON",
+)
+
 _MODULES = (
     "endpoints",
     "llm",
@@ -53,6 +72,7 @@ _MODULES = (
     "storage",
     "prompts",
     "vectorstore",
+    "memory",
 )
 
 
@@ -131,6 +151,7 @@ class IndexingConfig(BaseModel):
 
     entity_types: list[str] = Field(default_factory=lambda: list(DEFAULT_ENTITY_TYPES))
     discover_entity_types: bool = False
+    allow_unknown_types: bool = False
     max_entity_types: int = 15
     tuple_delimiter: Optional[str] = None
     record_delimiter: Optional[str] = None
@@ -145,6 +166,13 @@ class IndexingConfig(BaseModel):
     max_gleanings: int = 0
     extract_relationship_types: bool = False
     relationship_types: list[str] = Field(default_factory=list)
+
+    # Parse YAML frontmatter from markdown files at load time. When true, known
+    # keys (title, category, tags, observed_at, confidence, source, related_to)
+    # are lifted into document/text-unit columns; unknown keys are preserved as
+    # a JSON blob in ``documents.attributes``. Required for memory mode; safe
+    # for KB mode (markdown files without frontmatter are unaffected).
+    parse_frontmatter: bool = True
 
     deduplicate_entities: bool = True
     dedup_similarity_threshold: float = 0.90
@@ -279,6 +307,52 @@ class RerankerConfig(BaseModel):
     request_timeout: float = 30.0
 
 
+class MemoryConfig(BaseModel):
+    """Memory-mode + consolidate knobs.
+
+    Defaults are tuned to ``mode: knowledge_base`` (i.e. inactive) — they only
+    bite when memory tools or ``consolidate()`` actually run.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Minimum entities before consolidate() is willing to run. Communities
+    # have no value at small scales (the agent can read the underlying memory
+    # files directly); we refuse to spam proposals until there's signal.
+    min_entities_for_consolidate: int = 30
+
+    # Per-kind enable flags so users can opt particular analyses out.
+    enable_edge_density: bool = True
+    enable_alias_detect: bool = True
+    enable_membership: bool = True
+    enable_folder_split: bool = True
+
+    # Confidence floors per proposal kind — proposals below these are dropped
+    # before being persisted. Tuned conservatively so the agent doesn't drown
+    # in low-quality suggestions.
+    confidence_threshold_discover_community: float = 0.6
+    confidence_threshold_merge_aliases: float = 0.85
+    confidence_threshold_move_entity: float = 0.6
+    confidence_threshold_split_folder: float = 0.55
+
+    # Edge-density tuning: minimum cluster size + density to be proposed.
+    edge_density_min_members: int = 3
+    edge_density_min_internal: float = 0.5
+    edge_density_min_cross_folder: int = 2
+
+    # Alias detect: Jaro-Winkler threshold for the no-embedding path.
+    alias_min_jaro_winkler: float = 0.92
+    # When embeddings are present, this cosine threshold applies in addition.
+    alias_min_embedding_cosine: float = 0.93
+
+    # Folder-split: only consider folders with at least this many entities.
+    folder_split_min_entities: int = 20
+
+    # Auto-commit memory writes via git (Phase E — declared here so the
+    # config schema is stable from Phase D onward).
+    auto_commit: bool = False
+
+
 class StorageConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -334,8 +408,15 @@ class Config(BaseModel):
     project_name: str = "default"
     root_dir: str = "~/.grail/projects/default"
 
+    # Project mode. ``knowledge_base`` runs the batch indexing pipeline (LLM
+    # extraction from an ``input/`` folder). ``memory`` is built up
+    # incrementally through the ``MemoryProject`` SDK; ``memories/`` holds
+    # markdown observations with YAML frontmatter. Both modes produce the same
+    # parquet artefacts, so every search mode works on either.
+    mode: Literal["knowledge_base", "memory"] = "knowledge_base"
+
     endpoints: dict[str, EndpointConfig] = Field(default_factory=_default_endpoints)
-    llm: LLMConfig = Field(default_factory=LLMConfig)
+    llm: Optional[LLMConfig] = Field(default_factory=LLMConfig)
     embeddings: EmbeddingsConfig = Field(default_factory=EmbeddingsConfig)
     indexing: IndexingConfig = Field(default_factory=IndexingConfig)
     community: CommunityConfig = Field(default_factory=CommunityConfig)
@@ -344,6 +425,7 @@ class Config(BaseModel):
     storage: StorageConfig = Field(default_factory=StorageConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     vectorstore: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
+    memory: MemoryConfig = Field(default_factory=MemoryConfig)
 
     def resolved_root(self) -> Path:
         return Path(os.path.expanduser(self.root_dir)).resolve()
@@ -455,6 +537,7 @@ __all__ = [
     "EndpointConfig",
     "IndexingConfig",
     "LLMConfig",
+    "MemoryConfig",
     "PromptsConfig",
     "RerankerConfig",
     "SearchConfig",

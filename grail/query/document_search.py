@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import pandas as pd
 
@@ -29,6 +29,9 @@ from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import StorageBackend
 from grail.vectorstores import BaseVectorStore
+
+if TYPE_CHECKING:
+    from grail.query.recall_filter import RecallFilter
 
 
 @dataclass
@@ -62,6 +65,7 @@ class DocumentSearch:
         artifact_instructions: str = "",
         use_reranker: Optional[bool] = None,
         context_only: bool = False,
+        filter: Optional["RecallFilter"] = None,
     ) -> SearchResult:
         """Search within a single document.
 
@@ -71,6 +75,12 @@ class DocumentSearch:
         started = time.perf_counter()
         self.reporter.info("Loading indexed artifacts…")
         artifacts = self.artifacts or load_artifacts_for_search(self.storage, self.output_folder)
+        if filter is not None and not filter.is_empty():
+            artifacts = filter.apply_to_artifacts(artifacts)
+            self.reporter.info(
+                f"Recall filter applied → {len(artifacts.entities)} entities, "
+                f"{len(artifacts.text_units)} text units."
+            )
         if artifacts.entities.empty or artifacts.documents.empty:
             return SearchResult(
                 response="No indexed data was found. Run `grail index` first.",

@@ -236,25 +236,60 @@ def _load(path: Path) -> Config:
     return load_config(path)
 
 
+def _project_mode(project_dir: Path) -> str:
+    """Resolve the project's declared mode.
+
+    Prefers ``meta.json`` (written by ``grail init`` since Phase E) and falls
+    back to the ``mode`` field in ``grail.yaml``. Defaults to
+    ``knowledge_base`` when nothing declares one — that matches the legacy
+    behaviour for pre-Phase-E projects.
+    """
+    try:
+        from grail.memory.identity import read_meta
+
+        meta = read_meta(project_dir)
+        if meta is not None and meta.mode:
+            return str(meta.mode)
+    except Exception:
+        pass
+    try:
+        cfg = load_config(project_dir)
+        return str(cfg.mode or "knowledge_base")
+    except Exception:
+        return "knowledge_base"
+
+
+def _warn_mode_mismatch(
+    project_dir: Path,
+    command: str,
+    *,
+    expects: str,
+    alternative: str,
+) -> None:
+    """Print a yellow warning when a command targets the wrong project mode.
+
+    Never raises — the user can proceed if they know what they're doing.
+    """
+    actual = _project_mode(project_dir)
+    if actual == expects:
+        return
+    rprint(
+        f"[yellow]Note:[/yellow] [bold]{command}[/bold] is designed for "
+        f"{expects.replace('_', ' ')} projects; this one is "
+        f"[bold]{actual.replace('_', ' ')}[/bold]. {alternative}"
+    )
+
+
 # ----------------------------------------------------------------------- init
 
 
 _INIT_TEMPLATE = """
-# GRAIL project config.
-# Endpoints (base_url + api_key_env per name) come from configs/endpoints.yaml in
-# the repo by default — every built-in (openai, anthropic, deepinfra, together,
-# groq, openrouter, ollama, vllm, sglang, lmstudio, local) is available out of
-# the box. To override or add your own, drop an `endpoints.yaml` next to this
-# file with just the entries you need:
-#
-#   endpoints:
-#     my-vllm:
-#       base_url: http://my-vllm:8000/v1
-#       api_key_env: MY_VLLM_KEY
-#       requires_key: false
+# GRAIL project config (knowledge_base mode).
+# Drop source files into ./input/ and run `grail index <project>`.
 
 project_name: {name}
 root_dir: {root}
+mode: knowledge_base
 
 llm:
   endpoint: openai
@@ -271,23 +306,87 @@ indexing:
     - location
     - event
     - concept
-  # Let the LLM propose additional entity types from the corpus before extraction.
-  # discover_entity_types: false
-  # max_entity_types: 15
-  # Extraction delimiters — the parser is bound to these tokens.
-  # Uncomment only if you customise the entity_relation prompt.
-  # tuple_delimiter: "<|>"
-  # record_delimiter: "##"
-  # completion_delimiter: "<|COMPLETE|>"
-  # start_delimiter: "<|START_OUTPUT|>"
-  # Token budgets per LLM call:
-  # extraction_max_tokens: 8192
-  # entity_discovery_max_tokens: 2048
-  # max_summarization_tokens: 756
 
 storage:
   backend: local
   root: {root}
+"""
+
+
+_INIT_MEMORY_TEMPLATE = """
+# GRAIL project config (memory mode).
+# Observations are tool-managed under ./memories/. The agent calls
+# MemoryProject.add_observation(...) / add_entity(...) / consolidate() etc.
+# Search modes (local, cascade, global, document, recall) work just like KB
+# projects — the only difference is the write path.
+
+project_name: {name}
+root_dir: {root}
+mode: memory
+
+# LLM is OPTIONAL in memory mode. Leave the endpoint/model in place for
+# search modes that need it (local/cascade/global/document/agent); set
+# ``llm: null`` for a fully zero-LLM project (recall mode + tool writes only).
+llm:
+  endpoint: openai
+  model: gpt-4o-mini
+
+embeddings:
+  endpoint: deepinfra
+  model: intfloat/multilingual-e5-large
+
+indexing:
+  parse_frontmatter: true
+  # Memory mode benefits from a bounded vocabulary the agent picks from;
+  # leave empty to let the LLM/agent choose freely.
+  relationship_types:
+    - RELATED
+    - MENTIONS
+    - WORKS_AT
+    - OWNS
+    - LOCATED_IN
+    - CAUSES
+    - PART_OF
+    - CONTRADICTS
+    - SUPERSEDES
+    - OBSERVED_AT
+    - ASSOCIATED_WITH
+    - DEPENDS_ON
+  entity_types:
+    - person
+    - organization
+    - location
+    - event
+    - concept
+
+memory:
+  # consolidate() refuses below this threshold — communities only become
+  # useful at scale.
+  min_entities_for_consolidate: 30
+  # Set true to ``git commit -am`` after every tool write.
+  auto_commit: false
+
+storage:
+  backend: local
+  root: {root}
+"""
+
+
+# Observation file template — copied into ``memories/.template.md`` so the
+# agent has a frontmatter scaffold to copy when authoring new observations
+# by hand. The MemoryProject SDK doesn't read this file; it exists for humans.
+_OBSERVATION_TEMPLATE = """---
+title: Untitled observation
+category: misc
+tags: []
+observed_at: 2026-06-01T00:00:00Z
+confidence: 1.0
+source: human
+---
+
+# Observation body
+
+Free-form markdown goes here. The body is what gets chunked and indexed.
 """
 
 
@@ -296,6 +395,13 @@ def init(
     project_dir: Optional[Path] = typer.Argument(None, help="Directory to scaffold."),
     name: Optional[str] = typer.Option(None, help="Project name."),
     overwrite: bool = typer.Option(False, help="Overwrite existing files."),
+    memory: bool = typer.Option(
+        False, "--memory", help="Scaffold a memory-mode project (memories/, agent tools)."
+    ),
+    git: Optional[bool] = typer.Option(
+        None, "--git/--no-git",
+        help="Initialise a git repo. Default: on for memory mode, off for KB mode.",
+    ),
     template: Optional[str] = typer.Option(
         None,
         "--template",
@@ -311,7 +417,12 @@ def init(
         False, "--list-templates", help="Print available templates and exit."
     ),
 ) -> None:
-    """Create a new GRAIL project: input/, output/, grail.yaml, sample .env."""
+    """Create a new GRAIL project.
+
+    Default mode is ``knowledge_base`` — scaffolds ``input/`` for batch
+    indexing. Add ``--memory`` to scaffold ``memories/`` for an agent-driven
+    memory project (tool writes via the ``MemoryProject`` SDK).
+    """
     extra_dirs = [templates_dir] if templates_dir else []
     discovered = _discover_templates(extra_dirs)
 
@@ -333,9 +444,20 @@ def init(
         rprint("[red]Pass a project directory, or use --list-templates.[/red]")
         raise typer.Exit(code=1)
 
+    if memory and template:
+        rprint(
+            "[red]--memory and --template are mutually exclusive. Templates "
+            "ship a specific mode; pick one or the other.[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    mode = "memory" if memory else "knowledge_base"
     project_dir.mkdir(parents=True, exist_ok=True)
-    (project_dir / "input").mkdir(exist_ok=True)
     (project_dir / "output").mkdir(exist_ok=True)
+    if memory:
+        (project_dir / "memories").mkdir(exist_ok=True)
+    else:
+        (project_dir / "input").mkdir(exist_ok=True)
 
     project_name = name or project_dir.name
 
@@ -359,10 +481,53 @@ def init(
         if cfg_path.exists() and not overwrite:
             rprint(f"[yellow]Refusing to overwrite {cfg_path} (use --overwrite).[/yellow]")
             raise typer.Exit(code=1)
-        cfg_path.write_text(
-            _INIT_TEMPLATE.format(name=project_name, root=str(project_dir.resolve()))
-        )
+        tpl = _INIT_MEMORY_TEMPLATE if memory else _INIT_TEMPLATE
+        cfg_path.write_text(tpl.format(name=project_name, root=str(project_dir.resolve())))
         files_written = ["grail.yaml"]
+
+    # meta.json + workspace registry — always written, regardless of template.
+    from grail.memory.identity import (
+        ProjectMeta,
+        read_meta,
+        register_project,
+        write_meta,
+    )
+
+    existing_meta = read_meta(project_dir)
+    if existing_meta is None or overwrite:
+        meta = ProjectMeta.fresh(name=project_name, mode=mode)
+        write_meta(project_dir, meta)
+        register_project(project_dir, meta)
+        files_written.append("meta.json")
+
+    if memory:
+        # Observation template for humans who hand-author markdown.
+        tpl_path = project_dir / "memories" / ".template.md"
+        if not tpl_path.exists() or overwrite:
+            tpl_path.write_text(_OBSERVATION_TEMPLATE, encoding="utf-8")
+            files_written.append("memories/.template.md")
+
+    # Git: opt-in via --git/--no-git. Default ON for memory, OFF for KB.
+    do_git = memory if git is None else bool(git)
+    if do_git and not (project_dir / ".git").exists():
+        import subprocess
+
+        try:
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=project_dir,
+                check=True,
+                capture_output=True,
+            )
+            files_written.append(".git/")
+            # Default .gitignore: skip the output directory; observations
+            # live in git but derived artefacts don't need to.
+            gi_path = project_dir / ".gitignore"
+            if not gi_path.exists():
+                gi_path.write_text("output/\n.env\n*.faiss\nfaiss/\n")
+                files_written.append(".gitignore")
+        except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+            console.print(f"[yellow]git init skipped: {exc}[/yellow]")
 
     env_path = project_dir / ".env.example"
     if not env_path.exists():
@@ -378,9 +543,22 @@ def init(
         template=template,
         files_written=files_written,
     )
-    console.print(
-        "  [dim]Drop input files into ./input and run[/dim] [cyan]grail index <project>[/cyan]"
-    )
+    if memory:
+        console.print(
+            "  [dim]Add observations via the SDK:[/dim] "
+            "[cyan]from grail import MemoryProject[/cyan]"
+        )
+        console.print(
+            "  [dim]Or hand-author markdown under[/dim] [cyan]./memories/[/cyan] "
+            "[dim](see .template.md for frontmatter shape)[/dim]"
+        )
+        console.print(
+            "  [dim]Search:[/dim] [cyan]grail query <project> --mode recall --since 1h[/cyan]"
+        )
+    else:
+        console.print(
+            "  [dim]Drop input files into ./input and run[/dim] [cyan]grail index <project>[/cyan]"
+        )
 
 
 # ----------------------------------------------------------------------- index
@@ -402,6 +580,16 @@ def index(
 ) -> None:
     """Run the full indexing pipeline."""
     console = Console()
+    _warn_mode_mismatch(
+        project_dir,
+        "grail index",
+        expects="knowledge_base",
+        alternative=(
+            "Observations in memory mode are tool-managed via "
+            "MemoryProject.add_observation(). Run anyway only if you have "
+            "files under ./input/ you want batch-indexed alongside."
+        ),
+    )
     config = _load(project_dir)
 
     if discover_entities is not None:
@@ -432,8 +620,11 @@ def index(
 @app.command("query")
 def query(
     project_dir: Path = typer.Argument(...),
-    question: str = typer.Argument(...),
-    mode: str = typer.Option("local", "--mode", "-m", help="local | global | document | agent"),
+    question: str = typer.Argument(""),
+    mode: str = typer.Option(
+        "local", "--mode", "-m",
+        help="local | global | document | cascade | agent | recall",
+    ),
     document: Optional[str] = typer.Option(
         None, "--document", "-d",
         help="Document name/path for --mode document.",
@@ -451,18 +642,71 @@ def query(
         None, "--vectorstore", "--vs",
         help="Vector store backend: lancedb (default) | faiss | chromadb.",
     ),
+    # ----------------------------------------------------------- recall filter
+    since: Optional[str] = typer.Option(
+        None, "--since",
+        help="Restrict to observations newer than this. ISO-8601 or relative (1h, 7d).",
+    ),
+    before: Optional[str] = typer.Option(
+        None, "--before",
+        help="Restrict to observations older than this. ISO-8601 or relative.",
+    ),
+    category: Optional[str] = typer.Option(
+        None, "--category",
+        help="Folder-glob filter (e.g. 'work/clients/**').",
+    ),
+    tag: list[str] = typer.Option(
+        [], "--tag",
+        help="Tag filter; repeat for multiple (any-match).",
+    ),
+    entity_filter: list[str] = typer.Option(
+        [], "--entity-name",
+        help="Restrict to specific entity name(s); repeat for multiple.",
+    ),
+    entity_type: list[str] = typer.Option(
+        [], "--type",
+        help="Restrict to entities of this type (PERSON, ORGANIZATION, ...).",
+    ),
+    min_confidence: Optional[float] = typer.Option(
+        None, "--min-confidence",
+        help="Drop entities / TUs whose confidence is below this threshold.",
+    ),
 ) -> None:
-    """Answer a question against an indexed project."""
+    """Answer a question against an indexed project.
+
+    With ``--mode recall`` (or any of the other modes plus filter flags), the
+    candidate pool is pre-filtered before scoring. ``recall`` mode itself
+    runs no LLM and returns the matching rows directly.
+    """
     if mode == "document" and not document:
         rprint("[red]--mode document requires --document <name>.[/red]")
+        raise typer.Exit(code=1)
+    if mode != "recall" and not question:
+        rprint("[red]A question is required for every mode except --mode recall.[/red]")
         raise typer.Exit(code=1)
 
     console = Console()
     config = _load(project_dir)
 
+    # Build the recall filter (no-op when all flags are unset).
+    from grail.query.recall_filter import RecallFilter
+
+    rfilter = RecallFilter(
+        since=since,
+        before=before,
+        category=category,
+        tags=list(tag),
+        entity_names=list(entity_filter),
+        entity_types=list(entity_type),
+        min_confidence=min_confidence,
+    )
+
     if output != "json":
         print_banner(console)
-        print_query_panel(console, config, question=question, mode=mode, document=document, rerank=rerank)
+        print_query_panel(console, config, question=question or "(no query)", mode=mode, document=document, rerank=rerank)
+        if not rfilter.is_empty():
+            from rich import print as rprint
+            rprint(f"[dim]Recall filter active: {rfilter}[/dim]")
 
     reporter = _StyledReporter(console)
     grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
@@ -478,7 +722,15 @@ def query(
     if mode == "agent":
         result = asyncio.run(grail.agent_search(question))
     else:
-        result = asyncio.run(grail.search(question, mode=mode, document=document, use_reranker=rerank))
+        result = asyncio.run(
+            grail.search(
+                question,
+                mode=mode,
+                document=document,
+                use_reranker=rerank,
+                filter=rfilter if not rfilter.is_empty() else None,
+            )
+        )
 
     # Write trace if requested.
     trace_path = None
@@ -1268,6 +1520,143 @@ def chat(
         raise typer.Exit(1)
 
     run_chat(project_dir=project_dir, mode=mode, session_id=session, db_path=db)
+
+
+# ----------------------------------------------------------------------- memory tools
+
+
+def _open_memory_project(project_dir: Path):
+    """Open ``project_dir`` as a MemoryProject. Lazy import — keeps top-level fast."""
+    from grail.memory import MemoryProject
+
+    return MemoryProject(project_dir)
+
+
+@app.command("consolidate")
+def consolidate_cmd(
+    project_dir: Path = typer.Argument(..., help="Project to consolidate."),
+    output: str = typer.Option("text", "--output", "-o", help="text | json"),
+) -> None:
+    """Run the proposal analyses and write the result to output/proposals/.
+
+    Pure read pass — no parquet mutation. Use ``grail proposals list`` to
+    browse the result and ``grail proposals apply --accept`` / ``--reject``
+    to act on individual proposals.
+    """
+    console = Console()
+    if output != "json":
+        print_banner(console)
+        _warn_mode_mismatch(
+            project_dir,
+            "grail consolidate",
+            expects="memory",
+            alternative=(
+                "KB-mode communities are computed at index time. Run "
+                "`grail index` to refresh them. ``consolidate`` will still "
+                "run here as a proposal pass over the existing graph."
+            ),
+        )
+
+    mp = _open_memory_project(project_dir)
+    reply = mp.consolidate()
+    if output == "json":
+        # Use plain print: rich's rprint soft-wraps long lines and produces
+        # un-parseable JSON.
+        print(json.dumps(reply.to_dict(), indent=2, default=str))
+        return
+    if not reply.ok:
+        rprint(f"[yellow]{reply.error}[/yellow]")
+        raise typer.Exit(code=1)
+    rprint(
+        f"\n[bold]Consolidate produced {reply.data['total']} proposal(s)[/bold] "
+        f"at [cyan]{reply.data['proposal_set_path']}[/cyan]"
+    )
+    if reply.data["by_kind"]:
+        for kind, count in sorted(reply.data["by_kind"].items()):
+            rprint(f"  • {kind:<22} [dim]{count}[/dim]")
+    if reply.data["total"]:
+        rprint(
+            "\n[dim]Review with:[/dim] "
+            f"[cyan]grail proposals list {project_dir}[/cyan]"
+        )
+
+
+proposals_app = typer.Typer(help="Browse and apply proposals from ``consolidate``.")
+app.add_typer(proposals_app, name="proposals")
+
+
+@proposals_app.command("list")
+def proposals_list(
+    project_dir: Path = typer.Argument(...),
+    status: Optional[str] = typer.Option(
+        None, "--status",
+        help="Filter by status: pending | accepted | rejected | accepted-pending-manual",
+    ),
+    output: str = typer.Option("text", "--output", "-o", help="text | json"),
+) -> None:
+    """List proposals from the most-recent consolidate run."""
+    mp = _open_memory_project(project_dir)
+    reply = mp.list_proposals(status=status)
+    if output == "json":
+        # Use plain print: rich's rprint soft-wraps long lines and produces
+        # un-parseable JSON.
+        print(json.dumps(reply.to_dict(), indent=2, default=str))
+        return
+    if not reply.data["proposals"]:
+        rprint("[yellow]No proposals found.[/yellow]")
+        for hint in reply.next_steps:
+            rprint(f"  [dim]→[/dim] {hint}")
+        return
+    rprint(f"[bold]Proposal set:[/bold] [cyan]{reply.data.get('set_path')}[/cyan]\n")
+    for p in reply.data["proposals"]:
+        short_id = p["id"][:8]
+        rprint(
+            f"[bold]{short_id}[/bold]  "
+            f"[magenta]{p['kind']:<22}[/magenta]  "
+            f"[dim]conf={p['confidence']:.2f}[/dim]  "
+            f"[yellow]{p['status']}[/yellow]"
+        )
+        rprint(f"  {p['rationale']}")
+        rprint()
+
+
+@proposals_app.command("apply")
+def proposals_apply(
+    project_dir: Path = typer.Argument(...),
+    proposal_id: str = typer.Argument(..., help="Proposal id (or unambiguous prefix)."),
+    accept: bool = typer.Option(False, "--accept", help="Accept the proposal."),
+    reject: bool = typer.Option(False, "--reject", help="Reject the proposal."),
+    reason: Optional[str] = typer.Option(None, "--reason", help="Reason (for --reject)."),
+    output: str = typer.Option("text", "--output", "-o", help="text | json"),
+) -> None:
+    """Accept or reject a single proposal by id."""
+    if accept == reject:
+        rprint("[red]Pick exactly one of --accept or --reject.[/red]")
+        raise typer.Exit(code=1)
+    mp = _open_memory_project(project_dir)
+    if accept:
+        reply = mp.accept_proposal(proposal_id)
+    else:
+        reply = mp.reject_proposal(proposal_id, reason=reason)
+    if output == "json":
+        # Use plain print: rich's rprint soft-wraps long lines and produces
+        # un-parseable JSON.
+        print(json.dumps(reply.to_dict(), indent=2, default=str))
+        return
+    if not reply.ok:
+        rprint(f"[red]{reply.error}[/red]")
+        raise typer.Exit(code=1)
+    if accept:
+        rprint(
+            f"[green]Accepted[/green] [bold]{reply.data['proposal_id'][:8]}[/bold] "
+            f"({reply.data['kind']}) → status=[yellow]{reply.data['status']}[/yellow]"
+        )
+        outcome = reply.data.get("outcome") or {}
+        if outcome:
+            for k, v in outcome.items():
+                rprint(f"  [dim]{k}:[/dim] {v}")
+    else:
+        rprint(f"[yellow]Rejected[/yellow] {reply.data['proposal_id'][:8]}")
 
 
 if __name__ == "__main__":  # pragma: no cover

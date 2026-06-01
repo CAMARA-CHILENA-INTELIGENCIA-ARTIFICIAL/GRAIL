@@ -18,6 +18,7 @@ import networkx as nx
 import pandas as pd
 
 from grail.indexing.leiden import run_leiden
+from grail.indexing.schema_migration import migrate_dataframe
 from grail.reporting import NullReporter, Reporter
 from grail.storage import StorageBackend
 
@@ -70,7 +71,44 @@ class CommunityExtractor:
             for node, comm_id in node_to_comm.items():
                 if node in graph.nodes:
                     graph.nodes[node]["community"] = comm_id
+        # Backfill ``community_ids`` on final_entities so the column is
+        # populated for cascade/local search and memory-mode tools alike.
+        # KB mode produces single-element lists (Leiden's hard partition);
+        # memory mode extends the list when the agent declares folder
+        # membership or consolidate accepts a discovered community.
+        self._update_entity_community_ids(comm_df)
         return graph, communities, nodes_df, comm_df
+
+    def _update_entity_community_ids(self, comm_df: pd.DataFrame) -> None:
+        """Write ``community_ids`` back to ``final_entities.parquet``.
+
+        For each entity, collect every community it belongs to (across all
+        levels). KB-mode entities typically end up with one entry per level
+        they exist at (Leiden is a hard partition within a level).
+        """
+        if comm_df is None or comm_df.empty:
+            return
+        entities_key = f"{self.output_folder}/final_entities.parquet"
+        if not self.storage.exists(entities_key):
+            return
+        with self.storage.open_for_read(entities_key) as path:
+            entities_df = pd.read_parquet(path)
+        if entities_df.empty:
+            return
+        name_to_cids: dict[str, list[str]] = {}
+        for _, row in comm_df.iterrows():
+            cid = str(row["community"])
+            members = row.get("entity_ids") or []
+            for name in members:
+                name_to_cids.setdefault(name, [])
+                if cid not in name_to_cids[name]:
+                    name_to_cids[name].append(cid)
+        entities_df = entities_df.copy()
+        entities_df["community_ids"] = entities_df["name"].map(
+            lambda n: name_to_cids.get(n, [])
+        )
+        with self.storage.open_for_write(entities_key) as path:
+            entities_df.to_parquet(path, index=False)
 
     # ------------------------------------------------------------------ persistence
 
@@ -86,7 +124,8 @@ class CommunityExtractor:
         if not self.storage.exists(key):
             return None
         with self.storage.open_for_read(key) as path:
-            return pd.read_parquet(path)
+            df = pd.read_parquet(path)
+        return migrate_dataframe(df, "final_entities")
 
     def _build_nodes_df(
         self,
@@ -158,6 +197,12 @@ class CommunityExtractor:
                         "title": f"Community {community_id} (level {level})",
                         "entity_ids": sorted(nodes),
                         "size": len(nodes),
+                        # ``kind`` differentiates how this community came to
+                        # exist: ``leiden`` is the default KB-mode output,
+                        # ``folder`` is declared via the agent's memory tree,
+                        # ``discovered`` is added by ``consolidate()`` after
+                        # the agent accepts a proposal.
+                        "kind": "leiden",
                     }
                 )
         return pd.DataFrame(rows)

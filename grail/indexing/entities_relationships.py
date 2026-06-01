@@ -28,6 +28,7 @@ from typing import Any, Optional
 import networkx as nx
 import pandas as pd
 
+from grail.indexing.schema_migration import migrate_dataframe
 from grail.indexing.summarize_descriptions import SummarizeExtractor
 from grail.llm import EmbeddingClient, LLMClient
 from grail.prompts import PromptRegistry
@@ -47,17 +48,25 @@ class _Entity:
     retrieval_queries: list[str] = field(default_factory=list)
     text_unit_ids: set[str] = field(default_factory=set)
     document_ids: set[str] = field(default_factory=set)
+    # Provenance aggregates from contributing text units. Rolled up at
+    # df-build time: observed_at = max, confidence = min, source = first.
+    observed_ats: list[str] = field(default_factory=list)
+    confidences: list[float] = field(default_factory=list)
+    sources: list[str] = field(default_factory=list)
 
 
 @dataclass
 class _Relationship:
     source: str
     target: str
-    type: str = "RELATED"
+    relationship_type: str = "RELATED"
     descriptions: list[str] = field(default_factory=list)
     weights: list[float] = field(default_factory=list)
     text_unit_ids: set[str] = field(default_factory=set)
     document_ids: set[str] = field(default_factory=set)
+    observed_ats: list[str] = field(default_factory=list)
+    confidences: list[float] = field(default_factory=list)
+    sources: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -106,7 +115,7 @@ class EntityRelationshipExtractor:
 
     async def _extract_raw(
         self, text_units_df: pd.DataFrame
-    ) -> tuple[dict[str, _Entity], dict[tuple[str, str], _Relationship]]:
+    ) -> tuple[dict[str, _Entity], dict[tuple[str, str, str], _Relationship]]:
         """Run LLM extraction on text units and return parsed entities/relationships."""
         calls: list[dict[str, Any]] = []
         for _, row in text_units_df.iterrows():
@@ -211,9 +220,11 @@ class EntityRelationshipExtractor:
         self,
         text_units_df: pd.DataFrame,
         responses: list[Optional[str]],
-    ) -> tuple[dict[str, _Entity], dict[tuple[str, str], _Relationship]]:
+    ) -> tuple[dict[str, _Entity], dict[tuple[str, str, str], _Relationship]]:
         entities: dict[str, _Entity] = {}
-        rels: dict[tuple[str, str], _Relationship] = {}
+        # Dedup key is (src_sorted, tgt_sorted, relationship_type) — a
+        # ``WORKS_AT`` and ``OWNS`` edge between the same pair are two records.
+        rels: dict[tuple[str, str, str], _Relationship] = {}
         tup = re.escape(self.delimiters["tuple_delimiter"])
         rec = re.escape(self.delimiters["record_delimiter"])
         comp = re.escape(self.delimiters["completion_delimiter"])
@@ -232,6 +243,21 @@ class EntityRelationshipExtractor:
                 doc_ids = [row.get("document_id")]
             else:
                 doc_ids = list(raw_doc_ids)
+            # Per-text-unit provenance (lifted from frontmatter by FileLoader).
+            tu_observed = row.get("observed_at")
+            tu_confidence = row.get("confidence")
+            tu_source = row.get("source")
+            if tu_observed is not None and not pd.isna(tu_observed):
+                tu_observed = str(tu_observed)
+            else:
+                tu_observed = None
+            tu_confidence = (
+                float(tu_confidence)
+                if tu_confidence is not None and not pd.isna(tu_confidence)
+                else 1.0
+            )
+            tu_source = str(tu_source) if tu_source is not None and not pd.isna(tu_source) else None
+
             # Strip trailing completion marker + everything after it.
             cleaned = re.split(comp, response, maxsplit=1)[0]
             records = re.split(rec, cleaned)
@@ -262,6 +288,11 @@ class EntityRelationshipExtractor:
                         ent.type = etype
                     ent.text_unit_ids.add(tu_id)
                     ent.document_ids.update(doc_ids)
+                    if tu_observed is not None:
+                        ent.observed_ats.append(tu_observed)
+                    ent.confidences.append(tu_confidence)
+                    if tu_source is not None:
+                        ent.sources.append(tu_source)
                 elif kind == "relationship" and len(fields) >= 5:
                     src = fields[1].upper().strip()
                     tgt = fields[2].upper().strip()
@@ -282,12 +313,21 @@ class EntityRelationshipExtractor:
                             weight = 1.0
                     if not src or not tgt or src == tgt:
                         continue
-                    key = tuple(sorted((src, tgt)))  # undirected
-                    rel = rels.setdefault(key, _Relationship(source=key[0], target=key[1], type=rel_type))
+                    pair = tuple(sorted((src, tgt)))  # undirected
+                    key = (pair[0], pair[1], rel_type)
+                    rel = rels.setdefault(
+                        key,
+                        _Relationship(source=pair[0], target=pair[1], relationship_type=rel_type),
+                    )
                     rel.descriptions.append(desc)
                     rel.weights.append(weight)
                     rel.text_unit_ids.add(tu_id)
                     rel.document_ids.update(doc_ids)
+                    if tu_observed is not None:
+                        rel.observed_ats.append(tu_observed)
+                    rel.confidences.append(tu_confidence)
+                    if tu_source is not None:
+                        rel.sources.append(tu_source)
         return entities, rels
 
     # ------------------------------------------------------------------ summarization
@@ -353,13 +393,21 @@ class EntityRelationshipExtractor:
                     "document_ids": sorted(ent.document_ids),
                     "description_embedding": embedding,
                     "degree": 0,
+                    # Multi-membership of communities. KB mode (Leiden) fills
+                    # this with a single-element list at community-pass time;
+                    # memory mode populates it from folder paths. Empty at
+                    # extraction time.
+                    "community_ids": [],
+                    "observed_at": max(ent.observed_ats) if ent.observed_ats else None,
+                    "confidence": min(ent.confidences) if ent.confidences else 1.0,
+                    "source": ent.sources[0] if ent.sources else None,
                 }
             )
         return pd.DataFrame(rows)
 
     def _build_relationships_df(
         self,
-        rels: dict[tuple[str, str], _Relationship],
+        rels: dict[tuple[str, str, str], _Relationship],
         entities_df: pd.DataFrame,
     ) -> pd.DataFrame:
         name_to_id = dict(zip(entities_df["name"], entities_df["id"]))
@@ -372,13 +420,16 @@ class EntityRelationshipExtractor:
                     "target": rel.target,
                     "source_id": name_to_id.get(rel.source),
                     "target_id": name_to_id.get(rel.target),
-                    "type": rel.type,
+                    "relationship_type": rel.relationship_type,
                     "description": rel.descriptions[0] if rel.descriptions else "",
                     "weight": sum(rel.weights) / max(len(rel.weights), 1),
                     "text_unit_ids": sorted(rel.text_unit_ids),
                     "document_ids": sorted(rel.document_ids),
                     "human_readable_id": i,
                     "rank": 0,
+                    "observed_at": max(rel.observed_ats) if rel.observed_ats else None,
+                    "confidence": min(rel.confidences) if rel.confidences else 1.0,
+                    "source_attribution": rel.sources[0] if rel.sources else None,
                 }
             )
         df = pd.DataFrame(rows)
@@ -395,7 +446,7 @@ class EntityRelationshipExtractor:
         self,
         text_units_df: pd.DataFrame,
         entities: dict[str, _Entity],
-        rels: dict[tuple[str, str], _Relationship],
+        rels: dict[tuple[str, str, str], _Relationship],
     ) -> pd.DataFrame:
         # Map TU id → list of entity_ids / relationship_ids that mention it.
         tu_to_entities: dict[str, list[str]] = {}
@@ -429,11 +480,14 @@ class EntityRelationshipExtractor:
                 degree=int(row["degree"]),
             )
         for _, row in relationships_df.iterrows():
+            # Read either ``relationship_type`` (new) or ``type`` (back-compat
+            # with parquets written before the rename).
+            rel_type = row.get("relationship_type") or row.get("type") or "RELATED"
             graph.add_edge(
                 row["source"],
                 row["target"],
                 id=row["id"],
-                type=row.get("type", "RELATED") or "RELATED",
+                relationship_type=rel_type,
                 weight=float(row["weight"]),
                 description=row["description"],
                 rank=int(row["rank"]),
@@ -554,14 +608,18 @@ class EntityRelationshipExtractor:
         if not self.storage.exists(key):
             return pd.DataFrame()
         with self.storage.open_for_read(key) as path:
-            return pd.read_parquet(path)
+            df = pd.read_parquet(path)
+        # Phase A added columns to several artefacts; migrate in-memory so
+        # pre-Phase-A projects keep working without an explicit rewrite.
+        table = name.removesuffix(".parquet")
+        return migrate_dataframe(df, table)
 
     async def _merge_with_existing(
         self,
         existing_e: pd.DataFrame,
         existing_r: pd.DataFrame,
         new_entities: dict[str, _Entity],
-        new_rels: dict[tuple[str, str], _Relationship],
+        new_rels: dict[tuple[str, str, str], _Relationship],
     ) -> tuple[pd.DataFrame, pd.DataFrame, list[str], list[str]]:
         """Merge new extractions into existing DataFrames.
 
@@ -572,10 +630,18 @@ class EntityRelationshipExtractor:
             for _, row in existing_e.iterrows():
                 existing_by_name[row["name"]] = row.to_dict()
 
-        existing_rels_by_pair: dict[tuple[str, str], dict] = {}
+        # Dedup key matches the parser: (src, tgt, relationship_type). Fall
+        # back to ``type`` for pre-rename parquets.
+        existing_rels_by_pair: dict[tuple[str, str, str], dict] = {}
         if not existing_r.empty:
             for _, row in existing_r.iterrows():
-                key = tuple(sorted((row["source"], row["target"])))
+                pair = tuple(sorted((row["source"], row["target"])))
+                rel_type = (
+                    row.get("relationship_type")
+                    or row.get("type")
+                    or "RELATED"
+                )
+                key = (pair[0], pair[1], str(rel_type))
                 existing_rels_by_pair[key] = row.to_dict()
 
         new_entity_names: list[str] = []
@@ -605,6 +671,25 @@ class EntityRelationshipExtractor:
                     old_rq = [q.strip() for q in old_rq.split(";") if q.strip()]
                 merged_rq = list(dict.fromkeys(old_rq + ent.retrieval_queries))
                 existing["retrieval_queries"] = merged_rq
+                # Provenance aggregation: observed_at = max, confidence = min,
+                # source = first non-empty. Preserves freshness on append.
+                old_obs = existing.get("observed_at")
+                if ent.observed_ats:
+                    new_obs = max(ent.observed_ats)
+                    existing["observed_at"] = (
+                        max(old_obs, new_obs) if old_obs else new_obs
+                    )
+                if ent.confidences:
+                    new_conf = min(ent.confidences)
+                    old_conf = existing.get("confidence", 1.0)
+                    existing["confidence"] = (
+                        min(old_conf, new_conf) if old_conf is not None else new_conf
+                    )
+                if ent.sources and not existing.get("source"):
+                    existing["source"] = ent.sources[0]
+                # Preserve community_ids (set by community pass; never overwritten here).
+                if "community_ids" not in existing or existing.get("community_ids") is None:
+                    existing["community_ids"] = []
             else:
                 max_hrid += 1
                 existing_by_name[name] = {
@@ -620,6 +705,10 @@ class EntityRelationshipExtractor:
                     "document_ids": sorted(ent.document_ids),
                     "description_embedding": None,
                     "degree": 0,
+                    "community_ids": [],
+                    "observed_at": max(ent.observed_ats) if ent.observed_ats else None,
+                    "confidence": min(ent.confidences) if ent.confidences else 1.0,
+                    "source": ent.sources[0] if ent.sources else None,
                 }
                 new_entity_names.append(name)
                 names_to_reembed.append(name)
@@ -644,26 +733,28 @@ class EntityRelationshipExtractor:
             for name, emb in zip(names_to_reembed, embeddings):
                 existing_by_name[name]["description_embedding"] = emb
 
-        # Merge relationships.
+        # Merge relationships. Key is (src, tgt, relationship_type) so two
+        # different typed edges between the same pair stay distinct.
         new_rel_names: list[str] = []
         updated_rel_names: list[str] = []
-        rels_to_resummarize: list[tuple[str, list[str]]] = []
+        # Each entry: ((src, tgt, rel_type), [old_desc, new_desc])
+        rels_to_resummarize: list[tuple[tuple[str, str, str], list[str]]] = []
         max_rel_hrid = 0
         if not existing_r.empty and "human_readable_id" in existing_r.columns:
             max_rel_hrid = int(existing_r["human_readable_id"].max())
 
         valid_entity_names = set(existing_by_name.keys())
-        for pair, rel in new_rels.items():
+        for key, rel in new_rels.items():
             if rel.source not in valid_entity_names or rel.target not in valid_entity_names:
                 continue
-            key = tuple(sorted((rel.source, rel.target)))
+            # ``key`` is already (src, tgt, rel_type) from the parser.
             if key in existing_rels_by_pair:
                 existing = existing_rels_by_pair[key]
                 old_desc = existing.get("description", "")
                 new_desc = rel.descriptions[0] if rel.descriptions else ""
                 if old_desc != new_desc:
-                    rels_to_resummarize.append((f"{key[0]} ↔ {key[1]}", [old_desc, new_desc]))
-                    updated_rel_names.append(f"{key[0]}|{key[1]}")
+                    rels_to_resummarize.append((key, [old_desc, new_desc]))
+                    updated_rel_names.append(f"{key[0]}|{key[1]}|{key[2]}")
                 old_w = existing.get("weight", 1.0)
                 new_w = sum(rel.weights) / max(len(rel.weights), 1)
                 existing["weight"] = (old_w + new_w) / 2.0
@@ -671,13 +762,29 @@ class EntityRelationshipExtractor:
                 old_docs = set(existing.get("document_ids") or [])
                 existing["text_unit_ids"] = sorted(old_tus | rel.text_unit_ids)
                 existing["document_ids"] = sorted(old_docs | rel.document_ids)
+                # Provenance roll-up (same semantics as for entities above).
+                if rel.observed_ats:
+                    new_obs = max(rel.observed_ats)
+                    old_obs = existing.get("observed_at")
+                    existing["observed_at"] = max(old_obs, new_obs) if old_obs else new_obs
+                if rel.confidences:
+                    new_conf = min(rel.confidences)
+                    old_conf = existing.get("confidence", 1.0)
+                    existing["confidence"] = (
+                        min(old_conf, new_conf) if old_conf is not None else new_conf
+                    )
+                if rel.sources and not existing.get("source_attribution"):
+                    existing["source_attribution"] = rel.sources[0]
+                # Ensure relationship_type stays consistent (key already includes it).
+                if "relationship_type" not in existing:
+                    existing["relationship_type"] = key[2]
             else:
                 max_rel_hrid += 1
                 existing_rels_by_pair[key] = {
                     "id": generate_guid(),
                     "source": key[0],
                     "target": key[1],
-                    "type": rel.type,
+                    "relationship_type": key[2],
                     "description": rel.descriptions[0] if rel.descriptions else "",
                     "weight": sum(rel.weights) / max(len(rel.weights), 1),
                     "text_unit_ids": sorted(rel.text_unit_ids),
@@ -686,17 +793,23 @@ class EntityRelationshipExtractor:
                     "source_degree": 0,
                     "target_degree": 0,
                     "rank": 0,
+                    "observed_at": max(rel.observed_ats) if rel.observed_ats else None,
+                    "confidence": min(rel.confidences) if rel.confidences else 1.0,
+                    "source_attribution": rel.sources[0] if rel.sources else None,
                 }
-                new_rel_names.append(f"{key[0]}|{key[1]}")
+                new_rel_names.append(f"{key[0]}|{key[1]}|{key[2]}")
 
         if rels_to_resummarize:
             assert self.summarizer is not None
-            results = await self.summarizer.summarize_many(rels_to_resummarize)
-            for (label, _), summary in zip(rels_to_resummarize, results):
-                parts = label.split(" ↔ ")
-                key = tuple(sorted(parts))
-                if key in existing_rels_by_pair:
-                    existing_rels_by_pair[key]["description"] = summary
+            # Carry a human-readable label for the summariser; the key tuple
+            # itself is what we update.
+            labels_payload = [
+                (f"{k[0]} ↔ {k[1]} ({k[2]})", descs) for k, descs in rels_to_resummarize
+            ]
+            results = await self.summarizer.summarize_many(labels_payload)
+            for (k, _), summary in zip(rels_to_resummarize, results):
+                if k in existing_rels_by_pair:
+                    existing_rels_by_pair[k]["description"] = summary
 
         entities_df = pd.DataFrame(list(existing_by_name.values()))
         rels_df = pd.DataFrame(list(existing_rels_by_pair.values()))

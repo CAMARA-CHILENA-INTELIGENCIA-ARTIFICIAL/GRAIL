@@ -22,7 +22,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import pandas as pd
 
@@ -37,6 +37,9 @@ from grail.reporting import NullReporter, Reporter
 from grail.schemas import SearchResult
 from grail.storage import StorageBackend
 from grail.utils.tokens import tiktoken_len
+
+if TYPE_CHECKING:
+    from grail.query.recall_filter import RecallFilter
 
 log = logging.getLogger(__name__)
 
@@ -67,10 +70,57 @@ class GlobalSearch:
         artifact_instructions: str = "",
         extra_knowledge: str = "",
         context_only: bool = False,
+        filter: Optional["RecallFilter"] = None,
     ) -> SearchResult:
         started = time.perf_counter()
         self.reporter.info("Loading indexed artifacts…")
         artifacts = self.artifacts or load_artifacts_for_search(self.storage, self.output_folder)
+        # Global search reasons over community reports, which don't carry
+        # observed_at / category directly. A v1 approximation: when a filter
+        # is supplied, restrict community_reports to those whose member
+        # entities pass ``applies_to_entities``. Anything more sophisticated
+        # (per-finding filtering, time-windowed reports) is a future Phase.
+        if filter is not None and not filter.is_empty():
+            ents = artifacts.entities
+            if not ents.empty:
+                ent_mask = filter.applies_to_entities(ents)
+                surviving_names = set(ents.loc[ent_mask, "name"].astype(str))
+                if not artifacts.community_reports.empty:
+                    comm_df = artifacts.communities
+                    if not comm_df.empty:
+                        comm_df = comm_df.copy()
+                        keep_comm_ids = set(
+                            comm_df.loc[
+                                comm_df["entity_ids"].apply(
+                                    lambda x: bool(surviving_names.intersection(
+                                        x if isinstance(x, list) else
+                                        x.tolist() if hasattr(x, "tolist") else []
+                                    ))
+                                ),
+                                "community",
+                            ].astype(str)
+                        )
+                        artifacts = SearchArtifacts(
+                            entities=ents.loc[ent_mask].copy(),
+                            relationships=artifacts.relationships,
+                            text_units=artifacts.text_units,
+                            nodes=artifacts.nodes,
+                            communities=artifacts.communities[
+                                artifacts.communities["community"]
+                                .astype(str)
+                                .isin(keep_comm_ids)
+                            ].copy(),
+                            community_reports=artifacts.community_reports[
+                                artifacts.community_reports["community"]
+                                .astype(str)
+                                .isin(keep_comm_ids)
+                            ].copy(),
+                            documents=artifacts.documents,
+                            mapping=artifacts.mapping,
+                        )
+            self.reporter.info(
+                f"Recall filter applied → {len(artifacts.community_reports)} community reports."
+            )
         if artifacts.community_reports.empty:
             return SearchResult(
                 response="No community reports were found. Run `grail index` first.",

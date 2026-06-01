@@ -128,14 +128,15 @@ async def find_duplicates(
 
 def apply_merges(
     entities: dict[str, Any],
-    rels: dict[tuple[str, str], Any],
+    rels: dict[tuple[str, str, str], Any],
     merge_groups: list[MergeGroup],
-) -> tuple[dict[str, Any], dict[tuple[str, str], Any]]:
+) -> tuple[dict[str, Any], dict[tuple[str, str, str], Any]]:
     """Apply merge groups to entity and relationship dicts.
 
     ``entities`` is keyed by name; each value must have ``text_unit_ids``,
     ``document_ids``, and ``descriptions`` attributes (or be a dict with those
-    keys). ``rels`` is keyed by ``(source, target)`` tuples.
+    keys). ``rels`` is keyed by ``(source, target, relationship_type)``
+    tuples — typed edges between the same pair stay distinct after a merge.
 
     Returns the updated ``(entities, rels)`` dicts.
     """
@@ -168,18 +169,26 @@ def apply_merges(
                 ):
                     canon_ent.descriptions = alias_ent.descriptions[:1]
 
-    new_rels: dict[tuple[str, str], Any] = {}
-    for (src, tgt), rel in rels.items():
+    new_rels: dict[tuple[str, str, str], Any] = {}
+    for old_key, rel in rels.items():
+        # Support legacy 2-tuple callers (pair only) and the new 3-tuple form
+        # (pair + relationship_type) without breaking callers mid-migration.
+        if len(old_key) == 3:
+            src, tgt, rel_type = old_key
+        else:
+            src, tgt = old_key
+            rel_type = getattr(rel, "relationship_type", None) or "RELATED"
         new_src = alias_to_canonical.get(src, src)
         new_tgt = alias_to_canonical.get(tgt, tgt)
 
         if new_src == new_tgt:
             continue
 
-        new_key = tuple(sorted((new_src, new_tgt)))
+        pair = tuple(sorted((new_src, new_tgt)))
+        new_key = (pair[0], pair[1], rel_type)
 
-        rel.source = new_key[0]
-        rel.target = new_key[1]
+        rel.source = pair[0]
+        rel.target = pair[1]
 
         if new_key in new_rels:
             existing = new_rels[new_key]

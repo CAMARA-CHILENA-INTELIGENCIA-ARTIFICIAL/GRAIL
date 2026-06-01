@@ -1,0 +1,6 @@
+# The skill's only hard requirement is GRAIL itself. ``[faiss]`` pulls in the
+# default vector-store backend used by every search mode.
+#
+# Pinned to the major version this skill was developed against. Bump the
+# floor when GRAIL ships a breaking SDK change.
+grail[faiss] >= 0.1

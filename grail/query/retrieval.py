@@ -37,27 +37,57 @@ class SearchArtifacts:
     mapping: dict[str, Any]
 
 
-def _read_or_empty(storage: StorageBackend, key: str) -> pd.DataFrame:
+def _read_or_empty(
+    storage: StorageBackend, key: str, *, table: Optional[str] = None
+) -> pd.DataFrame:
     if not storage.exists(key):
         return pd.DataFrame()
     with storage.open_for_read(key) as path:
-        return pd.read_parquet(path)
+        df = pd.read_parquet(path)
+    if table is not None:
+        from grail.indexing.schema_migration import migrate_dataframe
+
+        df = migrate_dataframe(df, table)
+    return df
 
 
 def load_artifacts_for_search(
     storage: StorageBackend, output_folder: str = "output"
 ) -> SearchArtifacts:
-    """Load every parquet GRAIL wrote during indexing."""
+    """Load every parquet GRAIL wrote during indexing.
+
+    Lazy schema migration keeps pre-Phase-A projects readable: columns added
+    in Phase A (community_ids, observed_at, confidence, source, ...) are
+    filled with defaults in memory.
+    """
     return SearchArtifacts(
-        entities=_read_or_empty(storage, f"{output_folder}/final_entities.parquet"),
-        relationships=_read_or_empty(storage, f"{output_folder}/final_relationships.parquet"),
-        text_units=_read_or_empty(storage, f"{output_folder}/final_text_units.parquet"),
-        nodes=_read_or_empty(storage, f"{output_folder}/final_nodes.parquet"),
-        communities=_read_or_empty(storage, f"{output_folder}/final_communities.parquet"),
-        community_reports=_read_or_empty(
-            storage, f"{output_folder}/final_community_reports.parquet"
+        entities=_read_or_empty(
+            storage, f"{output_folder}/final_entities.parquet", table="final_entities"
         ),
-        documents=_read_or_empty(storage, f"{output_folder}/final_docs.parquet"),
+        relationships=_read_or_empty(
+            storage,
+            f"{output_folder}/final_relationships.parquet",
+            table="final_relationships",
+        ),
+        text_units=_read_or_empty(
+            storage,
+            f"{output_folder}/final_text_units.parquet",
+            table="final_text_units",
+        ),
+        nodes=_read_or_empty(storage, f"{output_folder}/final_nodes.parquet"),
+        communities=_read_or_empty(
+            storage,
+            f"{output_folder}/final_communities.parquet",
+            table="final_communities",
+        ),
+        community_reports=_read_or_empty(
+            storage,
+            f"{output_folder}/final_community_reports.parquet",
+            table="final_community_reports",
+        ),
+        documents=_read_or_empty(
+            storage, f"{output_folder}/final_docs.parquet", table="final_docs"
+        ),
         mapping=(
             json.loads(storage.read_text("mapping.json"))
             if storage.exists("mapping.json")
@@ -229,7 +259,9 @@ def build_relationship_context(
     selected_idx = []
     used = tiktoken_len(header) + tiktoken_len(footer)
     for idx, row in ordered.iterrows():
-        rel_type = row.get("type", "RELATED") or "RELATED"
+        # Prefer the canonical column name; fall back to ``type`` for parquets
+        # written before the rename in Phase A.
+        rel_type = row.get("relationship_type") or row.get("type") or "RELATED"
         line = (
             f"{row.get('human_readable_id', idx)},{row['source']},{row['target']},"
             f"{(row.get('description') or '').replace(chr(10),' ')[:300]},{rel_type},{row.get('weight', 1.0):.2f}"

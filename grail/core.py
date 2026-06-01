@@ -24,7 +24,10 @@ import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from grail.query.recall_filter import RecallFilter
 
 import networkx as nx
 import pandas as pd
@@ -389,6 +392,7 @@ class GRAIL:
         include_entity_names: Optional[list[str]] = None,
         exclude_entity_names: Optional[list[str]] = None,
         use_reranker: Optional[bool] = None,
+        filter: Optional["RecallFilter"] = None,
     ) -> SearchResult:
         """Run a single search.
 
@@ -408,6 +412,22 @@ class GRAIL:
         artifacts = load_artifacts_for_search(self.storage, self._output_folder())
         resp_max = self.config.search.response_max_tokens
         r_cfg = self.config.reranker
+
+        if mode == "recall":
+            from grail.query.recall_search import RecallSearch
+
+            if filter is None:
+                from grail.query.recall_filter import RecallFilter
+
+                filter = RecallFilter()
+            recaller = RecallSearch(
+                storage=self.storage,
+                artifacts=artifacts,
+                output_folder=self._output_folder(),
+                reporter=self.reporter,
+            )
+            return await recaller.asearch(filter, query=query)
+
         if mode == "local":
             s = LocalSearch(
                 storage=self.storage,
@@ -440,6 +460,7 @@ class GRAIL:
                 include_entity_names=include_entity_names,
                 exclude_entity_names=exclude_entity_names,
                 use_reranker=use_reranker,
+                filter=filter,
             )
         elif mode == "global":
             s = GlobalSearch(
@@ -461,6 +482,7 @@ class GRAIL:
                 query,
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
+                filter=filter,
             )
         elif mode == "cascade":
             from grail.query.cascade_search import CascadeSearch
@@ -490,6 +512,7 @@ class GRAIL:
                 artifact_instructions=artifact_instructions,
                 include_entity_names=include_entity_names,
                 exclude_entity_names=exclude_entity_names,
+                filter=filter,
             )
         elif mode == "document":
             if not document:
@@ -518,8 +541,12 @@ class GRAIL:
                 conversation_history=conversation_history,
                 artifact_instructions=artifact_instructions,
                 use_reranker=use_reranker,
+                filter=filter,
             )
-        raise ValueError(f"Unknown search mode: {mode!r}. Expected 'local', 'global', 'document', or 'cascade'.")
+        raise ValueError(
+            f"Unknown search mode: {mode!r}. "
+            "Expected 'local', 'global', 'document', 'cascade', or 'recall'."
+        )
 
     async def agent_search(
         self,

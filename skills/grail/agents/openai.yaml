@@ -1,0 +1,20 @@
+# OpenAI Codex sidecar. Additive — ignored by Claude Code and Hermes.
+# Drives the Codex skill catalog UI + invocation policy.
+
+interface:
+  display_name: "GRAIL"
+  short_description: "Graph-RAG knowledge base + agentic memory"
+  brand_color: "#0EA5A5"
+  default_prompt: "What can I do with my GRAIL projects?"
+
+policy:
+  # Allow Codex to trigger the skill without an explicit user request when
+  # the description's trigger phrases match. GRAIL's description is "pushy"
+  # and explicit; implicit invocation is safe.
+  allow_implicit_invocation: true
+
+dependencies:
+  # The skill installs grail via pip on first use (see scripts/setup.sh).
+  # No MCP servers or external services required.
+  python:
+    requirements_file: "../requirements.txt"
