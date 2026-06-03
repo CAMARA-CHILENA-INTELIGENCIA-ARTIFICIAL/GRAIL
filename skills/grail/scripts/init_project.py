@@ -1,8 +1,16 @@
 """Create a new GRAIL project (KB or memory mode).
 
+Default location is ``~/.grail/projects/<name>/`` — predictable so the
+agent can always find projects with ``ls ~/.grail/projects``. Pass an
+absolute or relative path to override.
+
 Usage:
-    python scripts/init_project.py --project ./my-kb [--name my-kb]
-    python scripts/init_project.py --project ./my-mem --memory [--no-git]
+    # Bare name → ~/.grail/projects/work-memory/
+    python scripts/init_project.py --project work-memory --memory
+
+    # Explicit path → wherever you point it
+    python scripts/init_project.py --project ./my-kb
+    python scripts/init_project.py --project /Users/me/research/kb --memory
 
 Writes:
   * ``<project>/grail.yaml`` — KB or memory template
@@ -22,9 +30,44 @@ from pathlib import Path
 from _common import Reply, project_envelope, run
 
 
+_HOME_PROJECTS = Path.home() / ".grail" / "projects"
+
+
+def _resolve_project_dir(ref: str) -> Path:
+    """Apply the home-dir default for bare names.
+
+    Rules:
+      * Bare name (no ``/`` or ``\\``, no ``.`` or ``~`` prefix) →
+        ``~/.grail/projects/<name>/``.
+      * Anything that looks like a path (contains a separator, starts with
+        ``.`` or ``~``, or is absolute) → expanded + resolved as-is.
+
+    This is the *only* place where the home-dir default applies. ``grail
+    init`` from the CLI keeps its path-based semantics (KB users in a repo
+    often want ``./input/`` next to their code).
+    """
+    s = ref.strip()
+    if not s:
+        raise ValueError("--project cannot be empty.")
+    looks_like_path = (
+        "/" in s or "\\" in s or s.startswith(".") or s.startswith("~")
+    )
+    if looks_like_path:
+        return Path(s).expanduser().resolve()
+    return (_HOME_PROJECTS / s).expanduser().resolve()
+
+
 def main() -> Reply:
     ap = argparse.ArgumentParser(description="Create a new GRAIL project.")
-    ap.add_argument("--project", required=True, help="Directory to scaffold.")
+    ap.add_argument(
+        "--project",
+        required=True,
+        help=(
+            "Directory to scaffold. Bare names (no slash) default to "
+            "~/.grail/projects/<name>/. Pass an absolute or relative path to "
+            "override."
+        ),
+    )
     ap.add_argument("--name", default=None, help="Display name (defaults to folder name).")
     ap.add_argument(
         "--memory", action="store_true",
@@ -45,7 +88,7 @@ def main() -> Reply:
     )
     args = ap.parse_args()
 
-    project_dir = Path(args.project).expanduser().resolve()
+    project_dir = _resolve_project_dir(args.project)
     project_dir.mkdir(parents=True, exist_ok=True)
     project_name = args.name or project_dir.name
     mode = "memory" if args.memory else "knowledge_base"
@@ -75,6 +118,15 @@ def main() -> Reply:
             data={"stdout": result.stdout, "stderr": result.stderr},
         )
 
+    # Annotate where the project landed so the agent can echo it back to the
+    # user — especially useful when the bare-name default kicked in. Compare
+    # the resolved forms (Path.home() doesn't follow symlinks on macOS where
+    # /tmp → /private/tmp, but .resolve() does) so the flag matches reality.
+    try:
+        resolved_home = _HOME_PROJECTS.resolve()
+        landed_in_home = project_dir.is_relative_to(resolved_home)
+    except (OSError, ValueError):
+        landed_in_home = False
     return Reply(
         ok=True,
         mode=mode,
@@ -87,6 +139,8 @@ def main() -> Reply:
                     project_dir / ("memories" if args.memory else "input")
                 ),
             },
+            "location": str(project_dir),
+            "used_home_default": landed_in_home,
             "cli_output": result.stdout,
         },
         next_steps=(

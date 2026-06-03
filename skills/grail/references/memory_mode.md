@@ -5,6 +5,29 @@ extraction over a corpus folder, the agent writes individual observations
 as markdown files with YAML frontmatter, and supplies the entities +
 relationships directly via tool calls. Zero LLM at write time.
 
+## Where projects live
+
+By default, memory projects (and KB projects) live at
+`~/.grail/projects/<name>/`. Pass the project as a bare name to
+`init_project.py` to use this convention:
+
+```bash
+python scripts/init_project.py --project work-memory --memory
+# → ~/.grail/projects/work-memory/
+```
+
+Custom paths still work — pass an absolute or relative path explicitly:
+
+```bash
+python scripts/init_project.py --project ./my-mem --memory --name my-mem
+python scripts/init_project.py --project /Users/me/dotfiles/grail --memory
+```
+
+Discovery scripts (`list_grail_projects.py`, `session_start.py`) scan
+`~/.grail/projects/` first and merge in registry entries for custom-
+path projects, so both kinds show up identically in listings. Refer to
+either kind by name, by ULID prefix, or by absolute path.
+
 ## Lifecycle
 
 ```

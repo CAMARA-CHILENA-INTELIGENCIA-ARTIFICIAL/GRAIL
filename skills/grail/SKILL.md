@@ -63,9 +63,9 @@ clear suggestion per save-worthy moment, accept "no" gracefully.
    > "I notice you have GRAIL installed but no projects yet. Want me to
    > set up a memory project so I can remember things across our
    > sessions? It takes one command."
-   Then if they agree:
+   Then if they agree (bare name → lands at `~/.grail/projects/<name>/`):
    ```bash
-   python scripts/init_project.py --project ./my-memory --memory --name my-memory
+   python scripts/init_project.py --project my-memory --memory
    ```
    After creating, re-run `session_start.py` so the cached state
    reflects the new project.
@@ -158,16 +158,27 @@ anyway (CI containers, throwaway VMs), set
 
 ## Creating a new project
 
-```bash
-# Memory mode (recommended default — agent-driven, no LLM at write time):
-python scripts/init_project.py --project ./my-memory --memory --name my-memory
+**Convention: bare names land at `~/.grail/projects/<name>/`.** Pass a
+path (absolute or relative) only when the user wants the project
+elsewhere — e.g. inside a specific repo or on an external drive.
 
-# Knowledge base (when the user has a corpus to batch-index):
-python scripts/init_project.py --project ./my-kb --name my-kb
+```bash
+# Memory mode (recommended default — bare name → ~/.grail/projects/my-memory/):
+python scripts/init_project.py --project my-memory --memory
+
+# Knowledge base (bare name → ~/.grail/projects/my-kb/):
+python scripts/init_project.py --project my-kb
+
+# Custom path when the user asks (any of these still work):
+python scripts/init_project.py --project ./local-kb --name local-kb
+python scripts/init_project.py --project /Users/me/research/kb --memory --name research
 ```
 
-Both write `grail.yaml`, `meta.json`, and register the project in
-`~/.grail/registry.json` so `list_grail_projects.py` finds it later.
+All three write `grail.yaml`, `meta.json`, and register the project in
+`~/.grail/registry.json`. Discovery (`list_grail_projects.py` /
+`session_start.py`) scans `~/.grail/projects/` first then merges in
+registry entries pointing elsewhere — so custom-path projects show up
+exactly the same way.
 
 ## Search modes
 

@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from _common import Reply, run
+from _common import Reply, discover_projects, run
 
 
 def _grail_state() -> dict[str, Any]:
@@ -185,28 +185,19 @@ def main() -> Reply:
 
     projects: list[dict[str, Any]] = []
     if setup["ok"]:
-        # graphgrail is importable — list projects + per-project stats.
+        # ``discover_projects`` scans ``~/.grail/projects/`` first, then the
+        # registry — filesystem wins. We layer per-project quick stats on
+        # top of each entry.
         try:
-            from grail.memory.identity import list_projects
-
-            for entry in list_projects():
+            for entry in discover_projects():
                 proj_path = Path(str(entry.get("path", ""))).expanduser()
                 stats: dict[str, Any] = {}
-                if proj_path.exists():
+                if entry.get("exists") and proj_path.exists():
                     try:
                         stats = _project_quick_stats(proj_path)
                     except Exception as exc:  # pragma: no cover - defensive
                         stats = {"error": f"{type(exc).__name__}: {exc}"}
-                projects.append(
-                    {
-                        "id": entry.get("id"),
-                        "name": entry.get("name"),
-                        "mode": entry.get("mode"),
-                        "path": entry.get("path"),
-                        "exists": proj_path.exists(),
-                        **stats,
-                    }
-                )
+                projects.append({**entry, **stats})
         except Exception as exc:  # pragma: no cover - defensive
             return Reply(
                 ok=False,

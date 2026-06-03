@@ -92,14 +92,94 @@ def _looks_like_path(ref: str) -> bool:
     return any(token in ref for token in ("/", "\\", ".", "~"))
 
 
+_HOME_PROJECTS = Path.home() / ".grail" / "projects"
+
+
+def discover_projects(*, include_stale: bool = False) -> list[dict[str, Any]]:
+    """Return all GRAIL projects this user has, with consistent shape.
+
+    Discovery order:
+      1. ``~/.grail/projects/*/meta.json`` (the home-dir convention since
+         CP1; filesystem wins over registry).
+      2. ``~/.grail/registry.json`` entries for custom-path projects not
+         already returned by step 1.
+      3. Registry entries pointing at gone paths are skipped unless
+         ``include_stale`` is true.
+
+    Each entry: ``{id, name, mode, path, source, exists, meta_exists}``.
+    ``source`` is one of ``"home" | "custom" | "stale"``.
+    """
+    import json as _json
+
+    out: list[dict[str, Any]] = []
+    home_ids: set[str] = set()
+
+    if _HOME_PROJECTS.exists():
+        for child in sorted(_HOME_PROJECTS.iterdir()):
+            if not child.is_dir():
+                continue
+            meta_path = child / "meta.json"
+            if not meta_path.exists():
+                continue
+            try:
+                meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+            except (_json.JSONDecodeError, OSError):
+                continue
+            entry_id = str(meta.get("id", ""))
+            home_ids.add(entry_id)
+            out.append(
+                {
+                    "id": entry_id,
+                    "name": str(meta.get("name", child.name)),
+                    "mode": str(meta.get("mode", "knowledge_base")),
+                    "path": str(child),
+                    "source": "home",
+                    "exists": True,
+                    "meta_exists": True,
+                }
+            )
+
+    try:
+        from grail.memory.identity import list_projects
+
+        for entry in list_projects():
+            entry_id = str(entry.get("id", ""))
+            if entry_id and entry_id in home_ids:
+                continue  # filesystem already returned it
+            path = Path(str(entry.get("path", ""))).expanduser()
+            exists = path.exists()
+            if not exists and not include_stale:
+                continue
+            out.append(
+                {
+                    "id": entry_id,
+                    "name": str(entry.get("name", "")),
+                    "mode": str(entry.get("mode", "knowledge_base")),
+                    "path": str(path),
+                    "source": "custom" if exists else "stale",
+                    "exists": exists,
+                    "meta_exists": (path / "meta.json").exists() if exists else False,
+                }
+            )
+    except ImportError:
+        # ``grail`` not installed yet (first-run, before setup.sh). The
+        # home-dir scan is still valid.
+        pass
+
+    return out
+
+
 def resolve_project_ref(ref: str) -> Path:
     """Turn a user-supplied project ref into an absolute path.
 
     Resolution order:
       1. ``ref`` looks like a path → expand + resolve; verify it exists.
-      2. Otherwise, search the workspace registry by ``name`` (exact, case-
-         insensitive), then by ``id`` (prefix, ≥8 chars to avoid collisions).
-      3. None match → ``FileNotFoundError`` with the list of known projects.
+      2. Bare name → check ``~/.grail/projects/<ref>/meta.json`` first
+         (the convention since CP1). Filesystem wins.
+      3. Otherwise, search the workspace registry by ``name`` (exact,
+         case-insensitive), then by ``id`` (prefix, ≥8 chars to avoid
+         collisions). Registry entries pointing at gone paths are skipped.
+      4. None match → ``FileNotFoundError`` with the list of known projects.
     """
     if not ref:
         raise ValueError("--project is required.")
@@ -111,13 +191,23 @@ def resolve_project_ref(ref: str) -> Path:
             )
         return p
 
+    # Step 2: home-dir convention. ``~/.grail/projects/<name>/`` is where
+    # bare-name projects land by default — check it before the registry so
+    # disk truth wins over potentially-stale cached state.
+    home_candidate = (_HOME_PROJECTS / ref).expanduser().resolve()
+    if (home_candidate / "meta.json").exists():
+        return home_candidate
+
     from grail.memory.identity import list_projects
 
     known = list_projects()
+    # Drop registry entries whose paths no longer exist before lookup.
+    known = [e for e in known if Path(str(e.get("path", ""))).expanduser().exists()]
     if not known:
         raise FileNotFoundError(
-            "no projects registered. Either create one with init_project.py "
-            "or pass --project as a filesystem path."
+            "no projects found. Either create one with init_project.py "
+            "(bare names land in ~/.grail/projects/) or pass --project "
+            "as a filesystem path."
         )
 
     # Name lookup (exact, case-insensitive).
@@ -217,6 +307,7 @@ def load_grail(project_path: Path):
 
 __all__ = [
     "Reply",
+    "discover_projects",
     "load_grail",
     "open_memory_project",
     "project_argparser",
