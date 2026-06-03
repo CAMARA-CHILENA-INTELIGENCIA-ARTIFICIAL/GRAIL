@@ -24,7 +24,7 @@ type Copy = {
   ctaPrimary: string;
   ctaSecondary: string;
 
-  // Modes
+  // Modes — two cards. Memory card has dual CTA (SDK quickstart + skill install).
   modesTitle: string;
   modesLede: string;
   kbBadge: string;
@@ -33,12 +33,9 @@ type Copy = {
   kbCta: string;
   memoryBadge: string;
   memoryTitle: string;
-  memoryBody: string;
-  memoryCta: string;
-  skillBadge: string;
-  skillTitle: string;
-  skillBody: React.ReactNode;
-  skillCta: string;
+  memoryBody: React.ReactNode;
+  memoryCtaPrimary: string;
+  memoryCtaSecondary: string;
 
   // Section blocks
   learn: Section;
@@ -66,33 +63,29 @@ type Copy = {
 
 const COPY: Record<string, Copy> = {
   es: {
-    tagline: "Un motor de grafo, dos rutas de escritura.",
-    sub: "Base de conocimiento consultable sobre tus documentos, y memoria agéntica para Claude Code, Codex y OpenCode.",
+    tagline: "Un motor de grafo, dos maneras de alimentarlo.",
+    sub: "Una base de conocimiento que puedes consultar sobre tus documentos, y memoria persistente para tus agentes en Claude Code, Codex y OpenCode.",
     meta: "Open source · Python 3.12 · MIT",
     ctaPrimary: "Empieza en 5 minutos →",
     ctaSecondary: "Aprende qué es GRAIL",
 
     modesTitle: "Una librería. Dos formas de usarla.",
     modesLede:
-      "El mismo motor potencia dos casos de uso distintos sobre los mismos artefactos. Elige por dónde empezar.",
+      "Un solo motor para dos casos de uso sobre los mismos artefactos. Elige por dónde empezar.",
     kbBadge: "Base de conocimiento",
     kbTitle: "Pregúntale a tus documentos",
     kbBody:
-      "Apunta GRAIL a una carpeta de PDFs, markdown o código. Indexa una vez, consulta con seis modos de búsqueda — incluyendo un agente que elige la herramienta correcta por cada pregunta.",
-    kbCta: "Quickstart KB →",
+      "Apunta GRAIL a una carpeta con PDFs, markdown o código. Indexas una vez y consultas con seis modos de búsqueda — incluido un agente que elige la herramienta adecuada para cada pregunta.",
+    kbCta: "Quickstart base de conocimiento →",
     memoryBadge: "Memoria agéntica",
     memoryTitle: "Dale memoria a tu agente",
-    memoryBody:
-      "Conecta GRAIL a Claude Code, Codex u OpenCode. El agente escribe observaciones, entidades y relaciones directamente — sin un paso de extracción por LLM intermedio.",
-    memoryCta: "Quickstart memoria →",
-    skillBadge: "Skill para agentes",
-    skillTitle: "Instala el skill listo para usar",
-    skillBody: (
+    memoryBody: (
       <>
-        Una carpeta portable que funciona en Claude Code, Codex y otros frameworks con formato <code>SKILL.md</code>. Tu agente obtiene memoria persistente en una línea de instalación.
+        Memoria persistente para tus agentes en Claude Code, Codex u OpenCode. El agente declara entidades y relaciones por sí mismo — no hace falta un paso intermedio de extracción por LLM. Disponible como <strong>SDK de Python</strong> o como <strong>skill listo</strong> para tu framework.
       </>
     ),
-    skillCta: "Instalar el skill →",
+    memoryCtaPrimary: "Quickstart memoria →",
+    memoryCtaSecondary: "Instalar el skill →",
 
     learn: {
       eyebrow: "Aprende",
@@ -162,28 +155,28 @@ const COPY: Record<string, Copy> = {
 
     resources: {
       eyebrow: "Más recursos",
-      title: "Cuando estés más adentro",
-      lede: "Guías por tarea, referencia técnica completa, y proyectos end-to-end copy-paste.",
+      title: "Cuando ya estés metido en GRAIL",
+      lede: "Guías paso a paso, referencia técnica completa y proyectos completos listos para copiar y pegar.",
       columns: [
         {
           href: "/guides",
           title: "Guías",
-          body: "Cómo optimizar costos, trazar consultas para debug, visualizar el grafo. Recetas concretas para tareas comunes.",
+          body: "Cómo bajar el costo de indexación, trazar consultas para hacer debug, visualizar el grafo. Recetas concretas para tareas comunes.",
         },
         {
           href: "/reference/cli",
           title: "Referencia CLI",
-          body: "Todos los subcomandos de grail con sus flags y ejemplos. La página que abres cuando no recuerdas un parámetro.",
+          body: "Todos los subcomandos de grail con sus opciones y ejemplos. La página que abres cuando no te acuerdas de un parámetro.",
         },
         {
           href: "/reference/python-sdk",
           title: "SDK de Python",
-          body: "Las clases GRAIL y MemoryProject. La API que la CLI envuelve. Para embeber GRAIL en tu propia app.",
+          body: "Las clases GRAIL y MemoryProject. La API que la CLI envuelve por debajo. Para usar GRAIL como librería dentro de tu propia aplicación.",
         },
         {
           href: "/cookbook",
           title: "Recetario",
-          body: "Proyectos completos copy-paste. Bot Q&A sobre PDFs, memoria multi-tenant, y más en desarrollo.",
+          body: "Proyectos completos listos para copiar y pegar. Bot de preguntas y respuestas sobre PDFs, memoria multi-tenant, y más en desarrollo.",
         },
       ],
     },
@@ -191,22 +184,22 @@ const COPY: Record<string, Copy> = {
     bannerEyebrow: "Open source",
     bannerTitle: "Desarrollado en Chile, para el mundo",
     bannerLede:
-      "GRAIL se desarrolla bajo la comisión open-source de la Cámara Chilena de Inteligencia Artificial. MIT, sin telemetría, sin captura de proveedor.",
+      "GRAIL se desarrolla bajo la comisión open-source de la Cámara Chilena de Inteligencia Artificial. Licencia MIT, sin telemetría y sin atarte a un solo proveedor.",
     bannerCtaGithub: "Ver en GitHub →",
     bannerCtaDocs: "Documentación técnica completa →",
 
     ackEyebrow: "Agradecimientos",
-    ackTitle: "Sobre los hombros de quien estamos",
+    ackTitle: "Inspiración y comisión",
     sponsorLabel: "Patrocinado por",
     sponsorLink: "Visita Nirvai →",
     ackGraphragLabel: "Inspiración técnica",
     ackGraphragBody: (
       <>
-        La extracción en una sola pasada por LLM de entidades y relaciones desde chunks de texto en el modo base de conocimiento de GRAIL toma inspiración de{" "}
+        La extracción de entidades y relaciones en una sola pasada de LLM, que GRAIL usa en modo base de conocimiento, toma inspiración de{" "}
         <a href="https://github.com/microsoft/graphrag" target="_blank" rel="noopener noreferrer">
           Microsoft GraphRAG
         </a>
-        . Todo lo demás — actualizaciones incrementales, recuperación en cascada, el bucle de búsqueda agéntica, el modo de memoria agéntica y su consolidación basada en propuestas, el modo recall, las relaciones tipadas, las consultas de recuperación en entidades, el seguimiento honesto de costos, la procedencia a nivel de archivo y la arquitectura de doble ruta de escritura — es diseño propio de GRAIL.
+        . Todo lo demás — actualizaciones incrementales, recuperación en cascada, el ciclo de búsqueda agéntica, el modo memoria con su consolidación basada en propuestas, el modo recall, las relaciones tipadas, las consultas anticipadas en cada entidad, el seguimiento honesto de costos, la procedencia a nivel de archivo y la arquitectura de doble vía de entrada — es diseño propio de GRAIL.
       </>
     ),
     ackCommissionLabel: "Comisión",
@@ -217,7 +210,7 @@ const COPY: Record<string, Copy> = {
           Cámara Chilena de Inteligencia Artificial
         </a>
         . Autor y creador:{" "}
-        <a href="mailto:ben@nirvana-ai.com">Benjamín González Guerrero</a>, fundador de{" "}
+        <a href="https://www.linkedin.com/in/bgg-ai/" target="_blank" rel="noopener noreferrer">Benjamín González Guerrero</a>, fundador de{" "}
         <a href="https://nirvana-ai.com" target="_blank" rel="noopener noreferrer">
           Nirvai
         </a>
@@ -242,17 +235,13 @@ const COPY: Record<string, Copy> = {
     kbCta: "KB quickstart →",
     memoryBadge: "Agentic memory",
     memoryTitle: "Give your agent memory",
-    memoryBody:
-      "Wire GRAIL into Claude Code, Codex, or OpenCode. The agent writes observations, entities, and relationships directly — no intermediate LLM extraction step.",
-    memoryCta: "Memory quickstart →",
-    skillBadge: "Agent skill",
-    skillTitle: "Install the ready-made skill",
-    skillBody: (
+    memoryBody: (
       <>
-        A portable folder that works in Claude Code, Codex, and other frameworks with the <code>SKILL.md</code> convention. Your agent gets persistent memory in one install command.
+        Persistent memory for your agents in Claude Code, Codex, or OpenCode. The agent declares entities and relationships directly — no intermediate LLM extraction step. Available as a <strong>Python SDK</strong> or as a <strong>ready-made skill</strong> for your framework.
       </>
     ),
-    skillCta: "Install the skill →",
+    memoryCtaPrimary: "Memory quickstart →",
+    memoryCtaSecondary: "Install the skill →",
 
     learn: {
       eyebrow: "Learn",
@@ -377,7 +366,7 @@ const COPY: Record<string, Copy> = {
           Cámara Chilena de Inteligencia Artificial
         </a>
         . Author and creator:{" "}
-        <a href="mailto:ben@nirvana-ai.com">Benjamín González Guerrero</a>, founder of{" "}
+        <a href="https://www.linkedin.com/in/bgg-ai/" target="_blank" rel="noopener noreferrer">Benjamín González Guerrero</a>, founder of{" "}
         <a href="https://nirvana-ai.com" target="_blank" rel="noopener noreferrer">
           Nirvai
         </a>
@@ -441,7 +430,7 @@ export default function Home(): React.ReactElement {
             <h2 className="grail-modes__title">{t.modesTitle}</h2>
             <p className="grail-modes__lede">{t.modesLede}</p>
 
-            <div className="grail-modes__grid">
+            <div className="grail-modes__grid grail-modes__grid--two">
               <Link className="grail-mode-card grail-mode-card--kb" to="/start/kb-quickstart">
                 <span className="grail-mode-card__badge">{t.kbBadge}</span>
                 <h3 className="grail-mode-card__title">{t.kbTitle}</h3>
@@ -449,22 +438,25 @@ export default function Home(): React.ReactElement {
                 <span className="grail-mode-card__cta">{t.kbCta}</span>
               </Link>
 
-              <Link
-                className="grail-mode-card grail-mode-card--memory"
-                to="/start/memory-quickstart"
-              >
+              <div className="grail-mode-card grail-mode-card--memory grail-mode-card--dual">
                 <span className="grail-mode-card__badge">{t.memoryBadge}</span>
                 <h3 className="grail-mode-card__title">{t.memoryTitle}</h3>
                 <p className="grail-mode-card__body">{t.memoryBody}</p>
-                <span className="grail-mode-card__cta">{t.memoryCta}</span>
-              </Link>
-
-              <Link className="grail-mode-card grail-mode-card--skill" to="/start/skill-quickstart">
-                <span className="grail-mode-card__badge">{t.skillBadge}</span>
-                <h3 className="grail-mode-card__title">{t.skillTitle}</h3>
-                <p className="grail-mode-card__body">{t.skillBody}</p>
-                <span className="grail-mode-card__cta">{t.skillCta}</span>
-              </Link>
+                <div className="grail-mode-card__ctas">
+                  <Link
+                    className="grail-mode-card__cta-btn grail-mode-card__cta-btn--primary"
+                    to="/start/memory-quickstart"
+                  >
+                    {t.memoryCtaPrimary}
+                  </Link>
+                  <Link
+                    className="grail-mode-card__cta-btn grail-mode-card__cta-btn--secondary"
+                    to="/start/skill-quickstart"
+                  >
+                    {t.memoryCtaSecondary}
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>

@@ -114,7 +114,7 @@ const config: Config = {
         {
           title: "Autor",
           items: [
-            { label: "Benjamín González Guerrero", href: "mailto:ben@nirvana-ai.com" },
+            { label: "Benjamín González Guerrero", href: "https://www.linkedin.com/in/bgg-ai/" },
           ],
         },
       ],

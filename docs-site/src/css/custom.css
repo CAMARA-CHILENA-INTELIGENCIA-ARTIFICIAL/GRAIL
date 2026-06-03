@@ -71,6 +71,16 @@
   --ifm-table-border-color: var(--grail-line);
   --ifm-color-emphasis-300: var(--grail-line-strong);
   --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.08);
+
+  /* @easyops-cn/docusaurus-search-local — overrides for dark theme.
+     The plugin's default highlight uses --ifm-color-primary, which we set to
+     pure white, producing a white-on-white invisible row. Override here. */
+  --search-local-modal-background: var(--grail-paper);
+  --search-local-hit-background: var(--grail-paper-card);
+  --search-local-hit-color: var(--grail-ink);
+  --search-local-hit-active-color: var(--grail-ink);
+  --search-local-highlight-color: rgba(255, 255, 255, 0.08);
+  --search-local-hit-shadow: none;
 }
 
 /* ============================ Navbar ============================ */
@@ -209,6 +219,55 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   gap: 1rem;
+}
+.grail-modes__grid--two {
+  /* Tighten 2-card layout so each card doesn't stretch too wide */
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+/* When the card holds two CTA buttons, body should grow flexibly so both cards align */
+.grail-mode-card--dual { cursor: default; }
+.grail-mode-card--dual:hover { transform: translateY(-3px); }
+
+.grail-mode-card__ctas {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+.grail-mode-card__cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: 1px solid var(--grail-line-strong);
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.grail-mode-card__cta-btn--primary {
+  background: var(--grail-ink);
+  color: var(--grail-paper);
+  border-color: var(--grail-ink);
+}
+.grail-mode-card__cta-btn--primary:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+  color: var(--grail-paper);
+}
+.grail-mode-card__cta-btn--secondary {
+  background: transparent;
+  color: var(--grail-ink);
+}
+.grail-mode-card__cta-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--grail-muted);
+  transform: translateY(-1px);
+  color: var(--grail-ink);
 }
 .grail-mode-card {
   position: relative;
