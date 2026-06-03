@@ -37,8 +37,12 @@ jobs:
         uses: astral-sh/setup-uv@v3
       - name: Set up Python
         run: uv python install 3.12
+      # ``--extra dev`` is required: pytest + pytest-asyncio + pytest-mock
+      # live in the ``dev`` optional-dependencies group. ``--extra faiss``
+      # covers the FAISS-backed vector-store tests. ``--frozen`` makes the
+      # CI run reproducible against ``uv.lock``.
       - name: Install project + deps
-        run: uv sync --extra faiss
+        run: uv sync --frozen --extra dev --extra faiss
       - name: Run unit tests
         run: uv run pytest tests/unit/ -q
 
