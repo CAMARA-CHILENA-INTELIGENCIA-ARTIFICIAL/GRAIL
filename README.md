@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/grail_logo_dark.png" alt="GRAIL — GraphRAG with Advanced Integrations and Learning" width="640">
+  <img src="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/raw/master/assets/grail_logo_dark.png" alt="GRAIL — GraphRAG with Advanced Integrations and Learning" width="640">
 </p>
 
 <p align="center">
@@ -18,11 +18,11 @@
   <a href="#python-sdk">SDK</a> ·
   <a href="#storage--vector-backends">Backends</a> ·
   <a href="#benchmarks">Benchmarks</a> ·
-  <a href="docs/getting-started.md">Docs</a>
+  <a href="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/getting-started.md">Docs</a>
 </p>
 
 <p align="center">
-  <em>🇬🇧 English · <a href="README.es.md">🇪🇸 Español</a></em>
+  <em>🇬🇧 English · <a href="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/README.es.md">🇪🇸 Español</a></em>
 </p>
 
 ---
@@ -140,7 +140,7 @@ The contract is binding: **everything that works in knowledge-base mode works in
 ### Knowledge-base indexing pipeline
 
 <p align="center">
-  <img src="assets/animations/kb_mode.svg" alt="GRAIL — Knowledge Base Mode animation: documents → chunks → LLM extraction → graph + communities → search" width="900">
+  <img src="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/raw/master/assets/animations/kb_mode.svg" alt="GRAIL — Knowledge Base Mode animation: documents → chunks → LLM extraction → graph + communities → search" width="900">
 </p>
 
 ```mermaid
@@ -166,7 +166,7 @@ flowchart LR
 ### Memory-mode write path
 
 <p align="center">
-  <img src="assets/animations/memory_mode.svg" alt="GRAIL — Agentic Memory Mode animation: agent → tool call → markdown observation → direct graph merge (no LLM) → recall &amp; consolidate" width="900">
+  <img src="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/raw/master/assets/animations/memory_mode.svg" alt="GRAIL — Agentic Memory Mode animation: agent → tool call → markdown observation → direct graph merge (no LLM) → recall &amp; consolidate" width="900">
 </p>
 
 ```mermaid
@@ -408,13 +408,13 @@ Every `MemoryProject` method returns a `Reply(ok, data, warnings, next_steps, er
 
 The memory SDK is designed to be wrapped by agent skills (`SKILL.md` folder format) that run inside **Claude Code**, **OpenAI Codex**, **OpenCode**, or any other framework that supports the standard skill convention. Discovery paths differ per framework; the skill body itself is portable.
 
-See [`docs/python_api.md`](docs/python_api.md), the runnable [`examples/quickstart/quickstart.py`](examples/quickstart/quickstart.py), and the canonical embedding reference at [`grail/apps/chat/server.py`](grail/apps/chat/server.py).
+See [`docs/python_api.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/python_api.md), the runnable [`examples/quickstart/quickstart.py`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/examples/quickstart/quickstart.py), and the canonical embedding reference at [`grail/apps/chat/server.py`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/grail/apps/chat/server.py).
 
 ---
 
 ## Agent skill
 
-GRAIL ships as a **portable agent skill** under [`skills/grail/`](skills/grail/) that lets a coding agent drive a knowledge base or maintain its own memory directly through tool calls — no Python harness on the agent side.
+GRAIL ships as a **portable agent skill** under [`skills/grail/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/skills/grail) that lets a coding agent drive a knowledge base or maintain its own memory directly through tool calls — no Python harness on the agent side.
 
 The skill follows the standard `SKILL.md` folder convention shared across **Claude Code**, **OpenAI Codex**, and other frameworks that adopt the same skill format, so the same folder works everywhere with framework-specific install paths.
 
@@ -467,7 +467,7 @@ ln -s "$(realpath skills/grail)" .claude/skills/grail
 | OpenAI Codex | `~/.agents/skills/grail/` | `<repo>/.agents/skills/grail/` |
 | Other frameworks supporting `SKILL.md` | framework-specific skills directory | same |
 
-The skill auto-installs GRAIL via `scripts/setup.sh` on first call. It is idempotent — safe to invoke every session. See [`skills/grail/INSTALL.md`](skills/grail/INSTALL.md) for full details, including how to verify the install (`scripts/env_check.py`).
+The skill auto-installs GRAIL via `scripts/setup.sh` on first call. It is idempotent — safe to invoke every session. See [`skills/grail/INSTALL.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/skills/grail/INSTALL.md) for full details, including how to verify the install (`scripts/env_check.py`).
 
 ### How an agent uses it
 
@@ -498,7 +498,7 @@ python scripts/memory/list_proposals.py  --project my-mem
 python scripts/memory/apply_proposal.py  --project my-mem --accept <proposal_id>
 ```
 
-The skill body (the `SKILL.md` description, references, and scripts) is fully portable across frameworks; only the discovery path differs per framework. See [`skills/grail/SKILL.md`](skills/grail/SKILL.md) for the agent-facing trigger language and routing logic.
+The skill body (the `SKILL.md` description, references, and scripts) is fully portable across frameworks; only the discovery path differs per framework. See [`skills/grail/SKILL.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/skills/grail/SKILL.md) for the agent-facing trigger language and routing logic.
 
 ---
 
@@ -625,7 +625,7 @@ Introspection commands for artefacts, resolved config, and the prompt registry.
 
 **Query-shape tip for `local` / `cascade`:** structure as `[WHO does it] + [WHAT is the process] + [SPECIFIC TERMS from entity descriptions]`. This matches entity embeddings ~3× better than keyword-only queries.
 
-Full details: [`docs/search_modes.md`](docs/search_modes.md).
+Full details: [`docs/search_modes.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/search_modes.md).
 
 ---
 
@@ -641,9 +641,9 @@ Both layers are pluggable. Pick the defaults to ship today and swap when the dep
 | **LanceDB** | | cosine / L2 | On-disk columnar; lazy-loaded; good for >1M vectors and multi-process readers | `vectorstore.backend: lancedb` |
 | **ChromaDB** | | cosine / L2 | Long-running services; built-in metadata filtering; existing Chroma deployments | `vectorstore.backend: chromadb` |
 
-Override per-run from the CLI without editing config: `grail index --vectorstore faiss|lancedb|chromadb` and the same flag on `grail query`. Custom backends plug in by subclassing `BaseVectorStore` in [`grail/vectorstores/base.py`](grail/vectorstores/base.py).
+Override per-run from the CLI without editing config: `grail index --vectorstore faiss|lancedb|chromadb` and the same flag on `grail query`. Custom backends plug in by subclassing `BaseVectorStore` in [`grail/vectorstores/base.py`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/grail/vectorstores/base.py).
 
-Details: [`docs/vectorstores.md`](docs/vectorstores.md).
+Details: [`docs/vectorstores.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/vectorstores.md).
 
 ### Storage backends
 
@@ -652,9 +652,9 @@ Details: [`docs/vectorstores.md`](docs/vectorstores.md).
 | **Local filesystem** | Default · single machine · tests · embedded CLI | `storage.backend: local`, `storage.root: ...` |
 | **S3 (and S3-compatible)** | Production · multi-machine · MinIO · Cloudflare R2 · any S3 API | `storage.backend: s3` + `s3_bucket`, `s3_prefix`, `s3_region`, `s3_endpoint_url` |
 
-S3 reads/writes the same parquet + GraphML artefacts — the search code is backend-agnostic. Install with the `s3` extra: `uv pip install -e ".[s3]"`. Custom backends implement the seven required methods on `StorageBackend` in [`grail/storage/base.py`](grail/storage/base.py).
+S3 reads/writes the same parquet + GraphML artefacts — the search code is backend-agnostic. Install with the `s3` extra: `uv pip install -e ".[s3]"`. Custom backends implement the seven required methods on `StorageBackend` in [`grail/storage/base.py`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/grail/storage/base.py).
 
-Details: [`docs/storage.md`](docs/storage.md).
+Details: [`docs/storage.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/storage.md).
 
 ### LLM endpoints
 
@@ -668,7 +668,7 @@ endpoints:
     requires_key: false
 ```
 
-Details: [`docs/llm.md`](docs/llm.md).
+Details: [`docs/llm.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/llm.md).
 
 ---
 
@@ -706,14 +706,14 @@ uv run python benchmarks/run_benchmark.py
 
 > 📸 *Place `assets/benchmark_chart.png` here — bar chart of GRAIL vs RAG by category.*
 
-Full report and per-question detail: [`benchmarks/results/`](benchmarks/results/).
+Full report and per-question detail: [`benchmarks/results/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/benchmarks/results).
 
 ### External (roadmap)
 
 - **[GraphRAG-Bench](https://arxiv.org/abs/2506.05690)** — 4,072 questions, Medical + Novel domains, 4 difficulty levels.
 - **[LongMemEval](https://arxiv.org/abs/2410.10813)** — 500 questions on chat-session memory; tracked under memory mode.
 
-See [`docs/benchmarks.md`](docs/benchmarks.md).
+See [`docs/benchmarks.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/benchmarks.md).
 
 ---
 
@@ -721,24 +721,24 @@ See [`docs/benchmarks.md`](docs/benchmarks.md).
 
 | Topic | File |
 |---|---|
-| Getting started | [`docs/getting-started.md`](docs/getting-started.md) |
-| Python API | [`docs/python_api.md`](docs/python_api.md) |
-| Config glossary | [`docs/glossary.md`](docs/glossary.md) |
-| Search modes | [`docs/search_modes.md`](docs/search_modes.md) |
-| Indexing pipeline | [`docs/indexing.md`](docs/indexing.md) |
-| Incremental updates | [`docs/incremental_pipeline.md`](docs/incremental_pipeline.md) |
-| Query layer | [`docs/query.md`](docs/query.md) |
-| Prompt customisation | [`docs/prompt_customization.md`](docs/prompt_customization.md) |
-| Prompt internals | [`docs/prompts.md`](docs/prompts.md) |
-| LLM & cost tracking | [`docs/llm.md`](docs/llm.md) |
-| Reranker | [`docs/reranker.md`](docs/reranker.md) |
-| Vector stores | [`docs/vectorstores.md`](docs/vectorstores.md) |
-| Storage backends | [`docs/storage.md`](docs/storage.md) |
-| Preprocessing (PDF/DOCX) | [`docs/preprocessing.md`](docs/preprocessing.md) |
-| Visualisation | [`docs/viz.md`](docs/viz.md) |
-| Chat UIs | [`docs/cli_chat.md`](docs/cli_chat.md) |
-| Benchmarks | [`docs/benchmarks.md`](docs/benchmarks.md) |
-| Comparison vs alternatives | [`docs/comparison.md`](docs/comparison.md) |
+| Getting started | [`docs/getting-started.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/getting-started.md) |
+| Python API | [`docs/python_api.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/python_api.md) |
+| Config glossary | [`docs/glossary.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/glossary.md) |
+| Search modes | [`docs/search_modes.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/search_modes.md) |
+| Indexing pipeline | [`docs/indexing.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/indexing.md) |
+| Incremental updates | [`docs/incremental_pipeline.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/incremental_pipeline.md) |
+| Query layer | [`docs/query.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/query.md) |
+| Prompt customisation | [`docs/prompt_customization.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/prompt_customization.md) |
+| Prompt internals | [`docs/prompts.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/prompts.md) |
+| LLM & cost tracking | [`docs/llm.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/llm.md) |
+| Reranker | [`docs/reranker.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/reranker.md) |
+| Vector stores | [`docs/vectorstores.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/vectorstores.md) |
+| Storage backends | [`docs/storage.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/storage.md) |
+| Preprocessing (PDF/DOCX) | [`docs/preprocessing.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/preprocessing.md) |
+| Visualisation | [`docs/viz.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/viz.md) |
+| Chat UIs | [`docs/cli_chat.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/cli_chat.md) |
+| Benchmarks | [`docs/benchmarks.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/benchmarks.md) |
+| Comparison vs alternatives | [`docs/comparison.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/comparison.md) |
 
 A Docusaurus site is in progress; this README and the files above are the current source of truth.
 
@@ -764,4 +764,4 @@ GRAIL is shipped under the Nirvai (Nirvana) umbrella.
 
 ## License
 
-[MIT](LICENSE) © 2025 Cámara Chilena de Inteligencia Artificial.
+[MIT](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/LICENSE) © 2025 Cámara Chilena de Inteligencia Artificial.
