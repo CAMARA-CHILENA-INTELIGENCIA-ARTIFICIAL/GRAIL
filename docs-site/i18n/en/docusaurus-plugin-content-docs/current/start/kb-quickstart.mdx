@@ -1,0 +1,131 @@
+---
+title: Quickstart — Knowledge base
+description: From zero to your first query against your own corpus in five minutes.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="kb" />
+
+# Quickstart — Knowledge base
+
+You'll index a corpus and ask it questions. Five minutes if you already have GRAIL installed.
+
+## 1. Create the project
+
+```bash
+uv run grail init ./my-kb --name my-kb --template low_cost_setup
+```
+
+This gives you a structure:
+
+```
+my-kb/
+├── grail.yaml          ← project config
+├── .env.example
+├── input/              ← your documents go here
+└── output/             ← parquet, GraphML, reports
+```
+
+The `low_cost_setup` template comes pre-configured to use **DeepInfra** with cheap models:
+
+- Chat: `google/gemma-4-26B-A4B-it` (~$0.07 input / $0.34 output per 1M tokens)
+- Embeddings: `Qwen/Qwen3-Embedding-0.6B` (~$0.005 per 1M tokens)
+
+To use a different provider, edit `my-kb/grail.yaml` and change `llm.endpoint` + `llm.model`.
+
+## 2. Fill `input/` with your documents
+
+GRAIL accepts:
+
+- `.txt`, `.md`, `.json`, `.yaml`, `.csv`
+- `.pdf` (markdown extraction via pypdfium2)
+- `.docx` (markdown extraction via python-docx)
+- Source code (`.py`, `.ts`, `.js`, etc.)
+
+Copy your files:
+
+```bash
+cp ~/Documents/papers/*.pdf my-kb/input/
+```
+
+## 3. Index
+
+```bash
+uv run grail index ./my-kb
+```
+
+You'll see four steps:
+
+1. **Chunking** — documents are cut into ~1500-token units.
+2. **Extraction** — the LLM reads each chunk and extracts entities + relationships + 2-3 anticipated queries per entity.
+3. **Communities** — Leiden algorithm clusters related entities into hierarchical thematic communities.
+4. **Reports** — the LLM writes a narrative summary of each community.
+
+At the end you see a summary with counts and total cost:
+
+```
+✓ Indexed 3 documents, 124 text units, 412 entities, 1037 relationships,
+  38 communities, 38 reports.
+  Run: 2026-06-02T14-23-08_e3f9a1
+  Cost: $0.36 (complete)
+```
+
+The **"complete"** in parens means all prices of the models you used are in the price book — the cost is exact, not estimated. If you see `partial` or `undefined`, add `extra_pricing` in your `grail.yaml`.
+
+## 4. Ask
+
+```bash
+# Cascade — the most versatile for factual questions
+uv run grail query ./my-kb "What are the main themes of the corpus?" --mode global
+
+uv run grail query ./my-kb "Who is <an entity from your corpus>?" --mode local
+
+uv run grail query ./my-kb "Compare X and Y" --mode agent
+```
+
+If you're not sure which mode to use, start with `--mode cascade`. It's the one that best answers common factual questions and combines the graph with text rescue.
+
+Read [the six search modes](/learn/search-modes) to understand when to pick each.
+
+## 5. Chat
+
+GRAIL ships with two chats ready:
+
+```bash
+# Terminal chat with persistent sessions (Textual TUI)
+uv run grail chat ./my-kb
+
+# Web chat (FastAPI + React, http://127.0.0.1:8765)
+uv run grail ui ./my-kb
+```
+
+The chat uses `agent` mode by default — the LLM picks which search mode to call per question.
+
+## 6. Update incrementally
+
+When you add, modify, or delete documents, **you don't need to re-index everything**:
+
+```bash
+uv run grail append ./my-kb new.pdf other.md
+uv run grail edit   ./my-kb --name existing.md --src /tmp/updated.md
+uv run grail delete ./my-kb obsolete.txt
+```
+
+GRAIL re-extracts only the affected chunks and updates communities when the change exceeds a configurable threshold. See [Incremental updates](/learn/two-modes) for the details.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `No API key for endpoint deepinfra` | `.env` not loaded or variable mis-spelled | `cp .env.example .env` and fill `DEEPINFRA_API_KEY` |
+| Indexing hangs without output | Concurrency too high for your provider account | Lower `llm.concurrent_requests` in `grail.yaml` |
+| Empty responses | Your question doesn't match any entity | Reshape it with the [WHO + WHAT + terms formula](/learn/search-modes#question-shape-matters), or use `--mode global` |
+| `Pricing status: partial` | Your model isn't in the price book | Add `extra_pricing` under `llm:` with your provider's rates |
+
+## Next step
+
+- [Explore the six search modes](/learn/search-modes) to pick the best tool per question.
+- [Query tracing](/guides) to see exactly which prompts and contexts the LLM saw.
+- [The Python SDK](/reference/cli) if you'll embed GRAIL in your own app.

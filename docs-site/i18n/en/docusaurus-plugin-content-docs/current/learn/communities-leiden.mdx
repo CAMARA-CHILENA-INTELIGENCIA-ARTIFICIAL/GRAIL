@@ -1,0 +1,129 @@
+---
+title: Communities and Leiden
+description: How GRAIL clusters entities into thematic communities and why it's what makes global mode work.
+sidebar_position: 6
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Communities and Leiden
+
+**Communities** are the intermediate layer between "loose dots on a graph" and "smart answers to thematic questions". If the graph is the skeleton, communities are the **organs**: functional groupings that give the information structure.
+
+<Analogy>
+
+Picture a library with **10,000 books**. Without organisation, every time someone asks "what's there on Stoic philosophy?" you have to scan every spine.
+
+Now picture someone labelled the books into **sections**: philosophy, history, science, art. And inside philosophy, **subsections**: ancient Greek, medieval, modern, contemporary. And inside ancient Greek: **micro-sections**: pre-Socratics, Socratic, post-Aristotelian.
+
+**GRAIL's communities are those hierarchical sections**, but discovered automatically from the structure of relationships, not assigned by hand.
+
+</Analogy>
+
+## The problem they solve
+
+A graph of 5,000 entities is hard to reason about. A question like "what's this all about?" isn't answered by looking at 5,000 individual dots — it's answered by looking at **densely connected clusters** that represent coherent themes.
+
+That's where the Leiden algorithm comes in.
+
+## What Leiden does
+
+[Leiden](https://www.nature.com/articles/s41598-019-41695-z) is a community-detection algorithm on graphs. It takes a graph as input (nodes are entities, edges are weighted relationships) and returns a **hierarchical partition** of nodes into dense groups.
+
+Densely connected means: many edges inside the group, few edges going out. That usually coincides with coherent semantic themes.
+
+### Three important properties
+
+1. **Hierarchical**: Leiden produces **multiple levels** of clusters. A coarse level (few large groups) and fine levels (many small groups). In GRAIL you pick which level to use with `community_level`.
+
+2. **Reproducible**: with the same seed (`community.seed` in `grail.yaml`), the partition is deterministic. Useful for tests and benchmarks.
+
+3. **Smart multi-level**: unlike Louvain (its predecessor), Leiden guarantees each subcommunity is **connected** and resolves the "resolution limit" problem. That is, it doesn't artificially merge small groups that should stay separate.
+
+## Three levels, one decision
+
+After running Leiden, GRAIL lets you pick which granularity to use:
+
+| `community_level` | Behaviour | When it fits |
+|---|---|---|
+| `"coarsest"` (default) | Few large communities | Broad thematic global reports |
+| `"finest"` | Many small communities | Detailed analysis, dashboards |
+| `"all"` | Every hierarchy | When you want both views |
+| An integer (e.g. `2`) | Specific level | Advanced cases |
+
+Configurable in `grail.yaml`:
+
+```yaml
+community:
+  community_level: "coarsest"
+  min_report_size: 3            # ignore communities of < 3 entities
+```
+
+## Community reports
+
+Once you have the communities, GRAIL asks the LLM to write a **narrative report** for each:
+
+```json
+{
+  "title": "GES System and health guarantees",
+  "summary": "This community groups entities related to the GES system...",
+  "findings": [
+    {
+      "summary": "FONASA covers 100% of the cost...",
+      "explanation": "Under Law 19.966, FONASA has an obligation to..."
+    }
+  ],
+  "rank": 8.5
+}
+```
+
+This report is what `global` consults. Without it, "what are the central themes?" would be unanswerable without reading the whole corpus.
+
+## Folders as communities (memory mode)
+
+In memory mode, GRAIL **doesn't need to run Leiden** to identify communities — the **folder structure under `memories/`** declares them:
+
+```
+memories/
+├── work/
+│   ├── clients/acme/        ← one community
+│   └── clients/zorp/        ← another community
+├── personal/
+│   └── learning/python/     ← one community
+└── decisions/
+    └── 2026-q2/             ← one community
+```
+
+Each entity can belong to **multiple communities at once** (multi-membership). Acme can appear in `work/clients/acme/` but also in `decisions/2026-q2/`.
+
+### When to run `consolidate`
+
+Folders-as-communities works well up to a point. But as the graph grows, it's worth combining the declared with the discovered:
+
+```bash
+grail consolidate ./my-memory
+```
+
+This runs structural analysis over the graph and proposes:
+
+- **`discover_community`**: "These entities are densely connected but don't share a folder — they're an emergent community".
+- **`split_folder`**: "This folder has two distinct clusters — it'd be worth splitting".
+
+You decide accept or reject. Nothing mutates without your consent.
+
+## Technical details
+
+| Config | Default | What for |
+|---|---|---|
+| `community.max_cluster_size` | `10` | Upper bound on cluster size per level |
+| `community.use_lcc` | `true` | Use only the largest connected component |
+| `community.min_community_size` | `1` | Smaller communities get dropped |
+| `community.embedding_merge_eps` | `0.95` | DBSCAN threshold to merge near-duplicate entities before Leiden |
+
+See the repo's `docs/glossary.md` for the full list.
+
+## Next step
+
+- [The memory model](/learn/memory-model) — how folders become first-class communities.
+- [Search modes](/learn/search-modes) — how `global` uses community reports.
+- [KB quickstart](/start/kb-quickstart) — watch communities form on your own corpus.

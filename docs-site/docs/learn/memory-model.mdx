@@ -1,0 +1,177 @@
+---
+title: Modelo de memoria agéntica
+description: Cómo piensa GRAIL la memoria de un agente — observaciones, carpetas como comunidades, recall, y el rol de consolidate.
+sidebar_position: 7
+---
+
+import Analogy from "@site/src/components/Analogy";
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="memory" />
+
+# Modelo de memoria agéntica
+
+El modo memoria de GRAIL no es "un RAG sobre las conversaciones del agente". Es un **modelo cognitivo deliberado** de cómo un agente debería recordar: con observaciones tipadas, procedencia clara, decaimiento temporal, y una rutina de consolidación que tú controlas.
+
+<Analogy>
+
+Piensa en cómo recuerda un **investigador serio**, no como recuerda un buscador:
+
+- Toma **notas explícitas** sobre lo que aprende ("hoy descubrí que X causa Y").
+- Las organiza por **proyecto y tema** en carpetas físicas o digitales.
+- Las **fecha y firma** — sabe cuándo se dieron, qué tan seguro estaba.
+- De vez en cuando, **revisa y consolida**: "estas tres notas parecen referirse a la misma persona", "este tema merece su propia sección".
+
+GRAIL emula exactamente ese modelo. El agente es el investigador; GRAIL es su cuaderno + archivero + asistente de consolidación.
+
+</Analogy>
+
+## Las cuatro decisiones de diseño
+
+### 1. El agente escribe directamente — no hay LLM intermedio
+
+En modo KB, un LLM lee tus documentos y **adivina** qué entidades extraer. Puede equivocarse, perderse cosas, o duplicar.
+
+En modo memoria, el agente **declara explícitamente** las entidades y relaciones cuando llama `add_observation()`. No hay paso de extracción que pueda equivocarse — el agente ya sabe lo que quiso decir.
+
+```python
+await mp.add_observation(
+    title="...",
+    content="...",
+    entities=[
+        {"name": "Acme", "type": "ORGANIZATION"},
+        {"name": "Postgres", "type": "TECHNOLOGY"},
+    ],
+    relationships=[
+        {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE"},
+    ],
+)
+```
+
+Esto es **dramáticamente más barato y más preciso** que el flujo KB. Cada observación cuesta cero llamadas a LLM. Y como el agente declara, la calidad es del nivel del agente, no del extractor.
+
+### 2. Carpetas como comunidades
+
+La estructura de `memories/<categoría>/` **es** la estructura de comunidades. No hay que correr Leiden cada vez que escribes:
+
+```
+memories/
+├── work/clients/acme/        ← comunidad "acme"
+├── work/clients/zorp/        ← comunidad "zorp"
+├── personal/health/          ← comunidad "salud"
+└── learning/python/asyncio/  ← comunidad "asyncio"
+```
+
+Esto se llama **folders-as-communities**. Lo bueno: cada observación nueva entra a su comunidad automáticamente, sin re-clustering. Lo bueno extra: una entidad puede vivir en varias carpetas (multi-pertenencia).
+
+### 3. Procedencia y tiempo, siempre
+
+Cada observación lleva metadata estructurada en su YAML frontmatter:
+
+```yaml
+---
+id: 01HXY...                      # ULID único
+title: "Acme eligió Postgres..."
+observed_at: 2026-06-02T14:23:00Z
+category: work/clients/acme
+tags: [decision, architecture]
+confidence: 0.95
+source: "architecture review meeting"
+entities: [...]                    # las que aplican a esta observación
+relationships: [...]
+---
+
+(cuerpo markdown con el contenido)
+```
+
+Esa metadata es lo que hace funcionar `recall`. Sin LLM, sin embedding, solo filtros sobre columnas estructuradas.
+
+### 4. Consolidación con consentimiento del agente
+
+A medida que la memoria crece, aparecen patrones que merecen reacomodamiento: alias por mergear, carpetas por dividir, comunidades emergentes por descubrir.
+
+GRAIL **no muta tu grafo sin pedirte permiso**. La función `consolidate()` corre el análisis y emite **propuestas** — el agente las revisa y acepta o rechaza.
+
+```bash
+grail consolidate ./mi-memoria
+# Genera output/proposals/<timestamp>.json
+
+grail proposals list ./mi-memoria
+# Lista las propuestas pendientes
+
+grail proposals apply ./mi-memoria --accept <id>
+# Aplica una propuesta específica
+```
+
+Este loop "propose → review → apply" es el modelo opuesto al de los frameworks que **mutan automáticamente** la memoria con cada llamada. Te da control auditable de tu propio grafo.
+
+## Recall: cero LLM, máximo control
+
+`recall` es el modo de búsqueda exclusivo de memoria. Filtra observaciones por columnas estructuradas:
+
+```python
+result = await mp.recall(
+    mode="recall",
+    since="7d",                          # últimos 7 días
+    category="work/clients/acme/**",     # glob de carpeta
+    tags=["decision"],                   # debe tener este tag
+    entity_names=["Postgres"],           # debe mencionar esta entidad
+    min_confidence=0.8,                  # confidence mínimo
+)
+```
+
+**Características importantes:**
+
+- **No llama LLM**. Es un filtro `pandas` sobre el parquet.
+- **No embebe** la consulta. No necesitas embeddings configurados.
+- **Es instantáneo** para memorias de hasta decenas de miles de observaciones.
+- **Es exacto**: no hay similitud aproximada, solo igualdad/comparación sobre las columnas.
+
+Lo puedes combinar como **modificador** sobre los otros modos:
+
+```python
+# Cascade pero acotado a observaciones recientes de Acme
+result = await mp.recall(
+    "¿Por qué Acme descartó DynamoDB?",
+    mode="cascade",
+    since="30d",
+    category="work/clients/acme/**",
+)
+```
+
+## El ciclo natural de una memoria agéntica
+
+```
+                ┌─→ add_observation   ←──┐
+                │   (agente escribe)     │
+                │                        │
+        muchas veces                     │
+                │                        │
+                └─→ recall / cascade  ───┤
+                    (agente lee)         │
+                                         │
+                                         │
+                cada N observaciones     │
+                                         │
+                consolidate              │
+                (propuestas)             │
+                                         │
+                proposals apply  ────────┘
+                (agente acepta lo útil)
+```
+
+Las primeras dos cajas (escribir y leer) son baratas y frecuentes. La consolidación es rara (semanal, mensual) y deliberada.
+
+## Cuándo NO usar memoria mode
+
+- Si tu agente solo necesita **contexto efímero** (la sesión actual y se acabó), un buffer en memoria es más simple.
+- Si quieres **memoria automática sin control** (todo lo que el agente dice se indexa), GRAIL no es el más simple — Letta o mem0 son más opinados.
+- Si tus "observaciones" son en realidad **documentos** que ya existen (PDFs, papers), usa modo KB.
+
+GRAIL brilla cuando quieres una memoria **deliberada, auditable, estructurada** que el agente puede consultar con precisión quirúrgica.
+
+## Siguiente paso
+
+- [Quickstart de memoria agéntica](/start/memory-quickstart) — implementa el ciclo completo en 5 minutos.
+- [Skill quickstart](/start/skill-quickstart) — conecta esto a Claude Code, Codex u OpenCode.
+- [Modos de búsqueda](/learn/search-modes) — cómo combinar `recall` con `cascade` para queries híbridas.

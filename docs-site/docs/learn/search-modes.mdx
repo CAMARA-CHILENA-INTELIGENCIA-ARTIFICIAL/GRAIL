@@ -1,0 +1,124 @@
+---
+title: Los seis modos de búsqueda
+description: Una herramienta por pregunta — cómo decide GRAIL qué modo de búsqueda usar y cuándo elegirlo tú mismo.
+sidebar_position: 4
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Los seis modos de búsqueda
+
+GRAIL tiene **seis formas distintas** de responder una pregunta. Cinco de ellas usan un LLM, una no. Aprender cuál usar para qué tipo de pregunta es la habilidad central para usar GRAIL bien.
+
+<Analogy>
+
+Imagina que entras a la biblioteca y le preguntas algo al bibliotecario. Antes de responderte, él tiene seis estrategias mentales:
+
+1. "Tengo en la cabeza tres autores que escribieron sobre eso" → **local**.
+2. "Voy a revisar el índice y también ojear las páginas que mencionan tu palabra" → **cascade**.
+3. "Déjame consultar mis resúmenes temáticos por sección" → **global**.
+4. "Esto vive completo en este libro, voy a hojearlo" → **document**.
+5. "Voy a combinar varias estrategias y volver con la mejor mezcla" → **agent**.
+6. "Filtra solo notas que escribí esta semana sobre este cliente" → **recall**.
+
+GRAIL te deja elegir la estrategia, o pedirle al agente que decida por sí mismo.
+
+</Analogy>
+
+## Tabla rápida
+
+| Modo | Mejor para | Costo de LLM | Comando |
+|---|---|---|---|
+| `local` | Conceptos nombrados ("¿quién es X?", "¿qué hace Y?") | 1 llamada | `grail query <proj> "..." --mode local` |
+| `cascade` | Hechos específicos ("¿qué dosis dice el protocolo?") | 1 llamada | `--mode cascade` |
+| `global` | Preguntas temáticas amplias ("¿de qué trata todo esto?") | varias (map-reduce) | `--mode global` |
+| `document` | Una sola fuente ("resume law-21250.pdf") | 1 llamada | `--mode document -d archivo.pdf` |
+| `agent` | Preguntas compuestas ("compara X y Y") | 1–N llamadas | `--mode agent` |
+| `recall` | Memoria por filtros estructurales | **0 llamadas** | `--mode recall --since 7d --tag X` |
+
+## Cuándo usar cuál
+
+### `local` — entidades como ancla
+
+Embed la pregunta, busca las entidades más parecidas en el grafo, trae los textos, relaciones y reportes asociados, responde.
+
+```bash
+grail query mi-proyecto "¿Quién es la Ley Ricarte Soto?" --mode local
+```
+
+Funciona bien cuando tu pregunta **nombra cosas** que probablemente sean entidades en el grafo. Si la pregunta es vaga o no tiene sustantivos claros, considera `cascade`.
+
+### `cascade` — entidades + rescate de texto
+
+El gran problema de GraphRAG vanilla: a veces el hecho que buscas vive en un chunk de texto cuya entidad principal no se extrajo. `cascade` resuelve esto sumando un rescate por BM25/coseno sobre los chunks de texto, y combinando ambos rankings.
+
+```bash
+grail query mi-proyecto "¿Cuántos meses dura la cobertura de quimioterapia?" --mode cascade
+```
+
+**Esta suele ser la mejor opción para preguntas factuales específicas.** Si vienes de RAG tradicional, `cascade` es el modo que te va a sorprender por arriba.
+
+### `global` — visión de pájaro
+
+Map-reduce sobre los reportes de comunidades. Cada reporte aporta una perspectiva temática; el reduce las sintetiza.
+
+```bash
+grail query mi-proyecto "¿Cuáles son los temas centrales del corpus?" --mode global
+```
+
+Costoso para corpus grandes (una llamada por reporte arriba de N tokens), pero único para preguntas de síntesis.
+
+### `document` — un solo archivo
+
+Acota toda la búsqueda a un documento. Útil para "resume X" o "qué dice Y sobre Z" cuando ya sabes a qué archivo apuntar.
+
+```bash
+grail query mi-proyecto "Resume esto" --mode document -d law-21250.pdf
+```
+
+### `agent` — déjale decidir al LLM
+
+El agente recibe la pregunta y tiene `local`, `cascade`, `global`, `document` como herramientas. Decide cuál(es) llamar, repite si hace falta hasta 5 iteraciones, y sintetiza una respuesta final.
+
+```bash
+grail query mi-proyecto "Compara la cobertura entre AUGE y Ley Ricarte Soto" --mode agent
+```
+
+**Mejor opción para preguntas compuestas o ambiguas.** Más caro pero más robusto.
+
+### `recall` — sin LLM
+
+Filtro puro sobre las columnas estructurales: `observed_at`, `category`, `tag`, `entity`, `confidence`. No hay embedding, no hay LLM, no hay costo. Solo memoria.
+
+```bash
+# Últimas decisiones de la semana
+grail query mi-memoria --mode recall --since 7d --tag decision
+
+# Todo lo de un cliente, sin importar la fecha
+grail query mi-memoria --mode recall --category "work/clients/acme/**"
+```
+
+Los mismos flags de filtro también se pueden **combinar con otros modos** como modificador del candidato:
+
+```bash
+# Cascade pero solo dentro de las observaciones del último mes con tag decision
+grail query mi-memoria "¿Qué decidimos sobre la migración?" \
+  --mode cascade --since 30d --tag decision
+```
+
+## La forma de la pregunta importa
+
+Para `local` y `cascade`, una pregunta bien construida matchea ~3× mejor que una pregunta mal construida. La fórmula que funciona en nuestros benchmarks:
+
+> **[QUIÉN lo hace] + [QUÉ es el proceso] + [TÉRMINOS ESPECÍFICOS del dominio]**
+
+Compara:
+
+- ❌ "Cuánto cuesta el tratamiento" — vaga, sin entidades nombradas.
+- ✅ "Cuánto cubre FONASA del tratamiento de quimioterapia oncológica" — nombra la entidad (FONASA), el proceso (cubrir tratamiento), y términos específicos (quimioterapia oncológica).
+
+## Próximo paso
+
+- [Cascade en profundidad](/learn/cascade) — por qué cambia las reglas vs RAG vanilla.
+- [Modelo de memoria](/learn/memory-model) — cómo aprovechar `recall` y los filtros estructurales.
+- [Instala GRAIL](/start/install) y prueba los modos contra tu propio corpus.

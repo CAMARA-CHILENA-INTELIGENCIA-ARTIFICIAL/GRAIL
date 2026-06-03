@@ -1,0 +1,93 @@
+---
+title: What is GRAIL?
+description: GRAIL's core idea, in plain language — with analogies to build intuition before the technical details.
+sidebar_position: 1
+---
+
+import Analogy from "@site/src/components/Analogy";
+import Animation from "@site/src/components/Animation";
+
+# What is GRAIL?
+
+GRAIL is a **knowledge-graph engine** that turns messy text — PDFs, markdown, notes, agent observations — into something you can ask questions of in natural language.
+
+Unlike a search engine or a vanilla RAG, GRAIL doesn't stop at "chunks of text that look like your question". It builds a **graph** of who does what with whom, clusters those facts into **thematic communities**, and then picks between six search modes depending on the kind of question you ask.
+
+<Analogy>
+
+Picture a **library** with a **librarian** who has read every book.
+
+- A **classic search engine** finds pages that mention your word.
+- **RAG** brings back the pages closest to your question and asks an LLM to summarise them.
+- **GRAIL** builds a map of characters, concepts, and how they relate across books. When you ask, the librarian first consults the map, then decides whether to also read specific passages, contrast thematic summaries, or do all of it at once.
+
+The map is what makes cross-document questions — "how does X from this report relate to Y in that one?" — answerable on purpose, not by accident.
+
+</Analogy>
+
+## Two ways to use the same engine
+
+GRAIL has **two write paths** that produce the same artefacts. That is the framework's most distinctive trait.
+
+### Knowledge-base mode
+
+You have documents. You point GRAIL at the folder, run one command, and end up with a queryable graph. The LLM does the work of reading and extracting entities + relationships.
+
+<Animation src="/animations/kb_mode.svg" alt="Knowledge-base mode pipeline: documents → chunks → LLM extraction → graph + communities → search" />
+
+### Agentic memory mode
+
+Your agent (Claude Code, Codex, OpenCode) has things to remember across sessions. GRAIL gives it a persistent notebook: the agent writes markdown observations and declares entities and relationships directly — no intermediate LLM extraction step, because the agent already knows what it meant.
+
+<Animation src="/animations/memory_mode.svg" alt="Agentic memory mode pipeline: agent → tool call → markdown → direct merge to graph → recall and consolidate" />
+
+<Analogy label="Think of the two modes as…">
+
+**Knowledge base** = an **indexed encyclopedia**. Someone wrote the books; GRAIL digests them and makes them queryable.
+
+**Agentic memory** = a **researcher's notebook**. The agent writes it in its own words, as it happens. Like Notion for your agent — but with a graph underneath instead of loose pages.
+
+Both live in the same building (the GRAIL engine) and are queried with the same six search tools. Only who writes changes.
+
+</Analogy>
+
+## Why the graph matters
+
+A graph is just **dots connected by lines**: entities are the dots, relationships are the lines. But that structure changes what questions you can answer well.
+
+With plain text, "what drugs do this oncologist's protocols use?" forces the system to read every protocol the oncologist authored, extract drugs, and de-duplicate. With a graph, the same question is **a short walk**: from the oncologist's node to her protocols, from each protocol to its drugs. The answer is structural, not probabilistic.
+
+GRAIL layers three things on top of that basic graph:
+
+| Layer | What it does | Analogy |
+|---|---|---|
+| **Communities** | Groups related entities into clusters (Leiden algorithm) | The **themed sections** in the library |
+| **Community reports** | The LLM writes a narrative summary of each community | The **pamphlet for each section** the librarian hands you |
+| **Retrieval queries** | Each entity stores 2–3 anticipated questions in its embedding | The **post-it** the author stuck on each book: "read me if you care about X" |
+
+Those three ingredients are the difference between a graph that just looks pretty and one that actually answers better than vanilla RAG.
+
+## When (not) to use GRAIL
+
+GRAIL shines when:
+
+- Your questions **cross documents** or **cross sessions** (memory).
+- You need **verifiable citations** to real source files.
+- Your corpus has **concepts repeated across sources** (people, laws, drugs, products, etc.).
+- You want an agent to **remember decisions and context** across conversations.
+
+It is not the right tool when:
+
+- Your corpus is **one short document** — vanilla RAG is enough.
+- You only need **lexical search** without synthesis — a plain BM25 is cheaper.
+- You can't afford the **indexing phase** — GRAIL makes one LLM call per document chunk.
+
+## Next step
+
+If you take away one idea from this page, let it be this: **GRAIL combines a graph of facts with six search modes that pick the best tool for your question — and does it across your documents and your agent's memory alike.**
+
+Ready to see it in action?
+
+- [Install GRAIL](/start/install) and run the quickstart in 5 minutes.
+- [Explore the six search modes](/learn/search-modes) if you'd rather first understand how it picks a tool.
+- [See how it compares to RAG](/learn/cascade) if you're coming from traditional RAG and want to know what changes.

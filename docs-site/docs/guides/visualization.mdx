@@ -1,0 +1,115 @@
+---
+title: Visualizar el grafo
+description: Cómo generar un HTML interactivo del grafo de entidades y relaciones — útil para entender y debuggear.
+sidebar_position: 12
+---
+
+# Visualizar el grafo
+
+A veces vale más ver el grafo que leer estadísticas sobre él. `grail viz` genera un HTML interactivo con todas las entidades y relaciones, coloreado por comunidad.
+
+## Generar la visualización
+
+```bash
+grail viz ./mi-kb --open-browser
+```
+
+Esto:
+
+1. Lee `final_entities.parquet`, `final_relationships.parquet`, y `final_nodes.parquet`.
+2. Corre un layout force-directed (vis.js).
+3. Escribe `mi-kb/graph.html`.
+4. Abre el HTML en tu browser.
+
+## Qué ves
+
+- **Nodos** = entidades. Tamaño proporcional al `degree` (más conexiones = más grande).
+- **Colores** = comunidades. Entidades de la misma comunidad comparten color.
+- **Aristas** = relaciones. Grosor proporcional al `weight`.
+- **Hover sobre un nodo** = popup con descripción, type, document_ids.
+
+## Personalizar el layout
+
+```bash
+grail viz ./mi-kb \
+  --output mi-graph.html \
+  --layout-seed 42 \
+  --layout-iterations 1000
+```
+
+| Flag | Default | Efecto |
+|---|---|---|
+| `--output FILE.html` | `<project>/graph.html` | Path del HTML de salida |
+| `--layout-seed N` | random | Semilla para reproducibilidad |
+| `--layout-iterations N` | 500 | Iteraciones del force-directed |
+
+Más iteraciones = mejor convergencia pero más lento.
+
+## Casos de uso
+
+### 1. Entender la estructura de tu corpus
+
+Una mirada al grafo te dice cosas que las estadísticas esconden:
+
+- **¿Hay clústeres claros?** Si todo es una bola amorfa, tu corpus es muy uniforme o la extracción no separó bien temas.
+- **¿Hay "puentes"?** Entidades que conectan dos comunidades grandes son típicamente conceptos transversales.
+- **¿Hay islas?** Nodos sin conexiones suelen ser extracciones falsas que conviene limpiar.
+
+### 2. Debug de retrieval
+
+Cuando `local` o `cascade` no encuentran la entidad correcta, abre la viz, busca la entidad esperada, y mira:
+
+- ¿Existe? Si no, la extracción la perdió → revisa tu corpus, ajusta `entity_types`.
+- ¿Está aislada? Si no tiene aristas, no aparecerá en queries que dependan del grafo → considera agregar más contexto al corpus.
+
+### 3. Presentar el proyecto
+
+El HTML es un single-file portable. Funciona offline. Útil para presentar el estado del corpus a stakeholders.
+
+## Exportar a Neo4j
+
+Si necesitas algo más serio que vis.js (queries Cypher, dashboards, análisis):
+
+```bash
+grail export-neo4j ./mi-kb \
+  --uri bolt://localhost:7687 \
+  --username neo4j \
+  --password tu-password \
+  --clear
+```
+
+Ver `grail export-neo4j --help` para opciones de batching y APOC.
+
+## Visualización en código (avanzado)
+
+Si quieres una visualización custom, los datos están en parquet:
+
+```python
+import pandas as pd
+import networkx as nx
+
+entities = pd.read_parquet("./mi-kb/output/runs/<run>/final_entities.parquet")
+relations = pd.read_parquet("./mi-kb/output/runs/<run>/final_relationships.parquet")
+
+G = nx.from_pandas_edgelist(
+    relations,
+    source="source",
+    target="target",
+    edge_attr=["weight", "description", "type"],
+)
+for _, e in entities.iterrows():
+    if e["name"] in G:
+        G.nodes[e["name"]].update({
+            "type": e["type"],
+            "description": e["description"],
+            "community": e.get("community", "?"),
+        })
+
+# Ahora usa cualquier librería: pyvis, ipycytoscape, graphviz, etc.
+```
+
+## Siguiente paso
+
+- [Trazar consultas](/guides/query-tracing) — para entender qué entidades se recuperan en cada consulta.
+- [Comunidades y Leiden](/learn/communities-leiden) — qué significan los colores.
+- [Quickstart KB](/start/kb-quickstart) — para generar un grafo y verlo.

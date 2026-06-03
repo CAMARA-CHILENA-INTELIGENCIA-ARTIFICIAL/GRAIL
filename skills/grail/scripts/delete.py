@@ -27,7 +27,9 @@ def main() -> Reply:
     mode = project_mode(project)
 
     grail = load_grail(project)
-    result = asyncio.run(grail.delete(filenames=args.files))
+    # GRAIL.delete's parameter is ``file_names`` (snake_case with the
+    # underscore). Earlier versions passed ``filenames=`` which TypeErrored.
+    result = asyncio.run(grail.delete(file_names=args.files))
     if not result.get("ok"):
         return Reply(
             ok=False,

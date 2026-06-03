@@ -1,0 +1,168 @@
+---
+title: Quickstart — Agentic memory
+description: Wire GRAIL into your agent and give it persistent memory in five minutes.
+sidebar_position: 3
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+import Analogy from "@site/src/components/Analogy";
+
+<ModeBadge mode="memory" />
+
+# Quickstart — Agentic memory
+
+You'll create a memory project, write your first observation, and query it with `recall`. Five minutes.
+
+<Analogy>
+
+If the knowledge base is an **encyclopedia**, agentic memory is your agent's **personal notebook**. Each observation is a markdown page the agent writes in its own words. GRAIL indexes them on the fly, keeps a coherent graph, and gives them back when you ask.
+
+</Analogy>
+
+## 1. Create the memory project
+
+```bash
+uv run grail init ./my-memory --memory
+```
+
+The difference vs KB: instead of an `input/` folder, GRAIL creates `memories/`. Final structure:
+
+```
+my-memory/
+├── grail.yaml
+├── meta.json           ← project identity (ULID, mode, dates)
+├── memories/           ← observations go here, organised by folders
+└── output/             ← parquet, FAISS, etc.
+```
+
+The `--memory` flag flips memory mode in `grail.yaml`:
+
+```yaml
+mode: memory
+```
+
+## 2. Write your first observation
+
+From Python (the SDK is the natural path for agents):
+
+```python
+import asyncio
+from grail import MemoryProject
+
+async def main():
+    mp = MemoryProject("./my-memory")
+
+    reply = await mp.add_observation(
+        title="Acme picked Postgres over DynamoDB",
+        content=(
+            "In Tuesday's architecture review, Acme committed to Postgres "
+            "for the order-history service because of transactional needs "
+            "across the inventory and payments tables."
+        ),
+        category="work/clients/acme",
+        tags=["decision", "architecture"],
+        entities=[
+            {"name": "Acme",     "type": "ORGANIZATION", "description": "Client"},
+            {"name": "Postgres", "type": "TECHNOLOGY",   "description": "Chosen DB"},
+            {"name": "DynamoDB", "type": "TECHNOLOGY",   "description": "Rejected alternative"},
+        ],
+        relationships=[
+            {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE",
+             "description": "for transactional order-history"},
+            {"source": "Acme", "target": "DynamoDB", "relationship_type": "REJECTED",
+             "description": "lacks cross-table transactions"},
+        ],
+        confidence=0.95,
+    )
+    print(reply.ok, reply.data["observation_id"])
+
+asyncio.run(main())
+```
+
+What happens under the hood:
+
+1. GRAIL writes `memories/work/clients/acme/acme-picked-postgres-over-dynamodb.md` with YAML frontmatter (title, tags, observed_at, confidence, …).
+2. Entities and relationships are merged directly into parquet — **no extraction LLM call**.
+3. The folder `work/clients/acme` becomes a community (folders-as-communities).
+4. If you configured embeddings, entity descriptions are embedded into the vector store.
+
+## 3. Recall
+
+`recall` is the memory-only search mode — **zero LLM, zero embedding**, just a structural filter over the columns:
+
+```bash
+# Everything for Acme in the last 7 days tagged "decision"
+uv run grail query ./my-memory --mode recall \
+  --since 7d \
+  --category "work/clients/acme/**" \
+  --tag decision
+```
+
+Or from Python:
+
+```python
+recall = await mp.recall(
+    mode="recall",
+    category="work/clients/acme/**",
+    tags=["decision"],
+    since="7d",
+)
+for obs in recall.data["observations"]:
+    print(obs["observed_at"], obs["title"])
+```
+
+Filters also work **as a modifier** on any other mode:
+
+```bash
+# Cascade scoped to recent Acme observations
+uv run grail query ./my-memory "Why did Acme rule out DynamoDB?" \
+  --mode cascade \
+  --since 30d \
+  --category "work/clients/acme/**"
+```
+
+## 4. Consolidate
+
+When memory starts growing (say above 30 entities), run the proposal generator. **It doesn't mutate anything** — just writes suggestions you review:
+
+```bash
+uv run grail consolidate ./my-memory
+```
+
+Generates four kinds of proposals:
+
+| Kind | What it proposes |
+|---|---|
+| `merge_aliases` | "These two entities look like the same person/thing" |
+| `discover_community` | "These entities form a new dense community" |
+| `move_entity` | "This entity belongs more to another folder" |
+| `split_folder` | "This folder has two distinct clusters" |
+
+You review them and apply:
+
+```bash
+uv run grail proposals list  ./my-memory
+uv run grail proposals apply ./my-memory --accept <proposal_id>
+```
+
+## 5. Wire it to your agent
+
+The SDK is enough for agent code. If your agent is **Claude Code**, **Codex**, or **OpenCode**, the [skill](/start/skill-quickstart) wires it automatically via tool calls — the agent writes observations declaring what it learns, without writing Python.
+
+## Compared to knowledge base
+
+| | <ModeBadge mode="kb" /> | <ModeBadge mode="memory" /> |
+|---|---|---|
+| Who writes | An LLM reads documents | Your agent declares entities |
+| Write cost | $$ per chunk | $0 (no LLM) |
+| Folder structure | Flat `input/` | Hierarchical `memories/<category>/` |
+| Communities | Leiden | Folders + proposals |
+| `recall` mode | — | ✓ |
+
+See [The two modes](/learn/two-modes) for the full picture.
+
+## Next step
+
+- [Skill quickstart](/start/skill-quickstart) if your agent is Claude Code, Codex, or OpenCode.
+- [Memory model](/learn/memory-model) to understand how `recall` works and when to `consolidate`.
+- [Search modes](/learn/search-modes) to combine `recall` with `cascade` and `agent`.

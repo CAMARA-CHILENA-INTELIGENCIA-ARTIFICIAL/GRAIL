@@ -1,0 +1,74 @@
+---
+title: Grafos de conocimiento en 5 minutos
+description: La intuición de qué es un grafo de conocimiento — sin álgebra, con la analogía de la biblioteca.
+sidebar_position: 3
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Grafos de conocimiento en 5 minutos
+
+Un **grafo de conocimiento** es solo dos cosas: **puntos** y **líneas**.
+
+- Los puntos se llaman **entidades**: personas, organizaciones, fármacos, leyes, conceptos. Cualquier "sustantivo importante" de tu corpus.
+- Las líneas se llaman **relaciones**: cómo conectan esas entidades. "Acme eligió Postgres", "la ley regula el tratamiento X", "Alice trabaja con Bob".
+
+Eso es todo. Lo que hace GRAIL es construir ese grafo automáticamente desde tus textos.
+
+<Analogy>
+
+Imagina que en lugar de una **lista alfabética** de todos los libros de una biblioteca, tienes un **mapa mural** donde cada autor es un punto y las líneas conectan autores que se citan entre sí, libros que comparten tema, personajes que aparecen en varias obras.
+
+Para preguntas como "¿qué libros hablan de Don Quijote?" la lista alfabética es muy poco útil. El mapa te lo responde **caminando por los nodos** en lugar de leyendo páginas.
+
+</Analogy>
+
+## ¿Por qué importa para preguntas y respuestas?
+
+RAG tradicional dice: "voy a buscar las páginas más parecidas a tu pregunta y se las paso al LLM". Eso funciona para preguntas cuya respuesta cabe en un chunk de texto.
+
+Pero falla cuando:
+
+- La respuesta **cruza documentos** ("¿cómo se relaciona X de este informe con Y de aquel?").
+- La pregunta es **estructural** ("¿qué fármacos cubre el protocolo del oncólogo Pérez?" — tienes que cruzar oncólogo → protocolos → fármacos).
+- Necesitas una **síntesis temática** ("¿de qué trata todo esto?").
+
+Un grafo hace esas preguntas **estructurales**, no probabilísticas. Si Acme está conectado a Postgres con una arista "CHOSE", la respuesta a "¿qué BD eligió Acme?" es una caminata de un paso, no una búsqueda por similitud.
+
+## Qué agrega GRAIL encima del grafo básico
+
+Un grafo "pelado" (entidades + relaciones) ya es útil. GRAIL le pone tres capas más:
+
+### 1. Comunidades
+
+GRAIL corre el algoritmo **Leiden** para agrupar entidades densamente conectadas en **comunidades**. Es como dividir la biblioteca en secciones por tema, pero automáticamente y a varios niveles de granularidad.
+
+### 2. Reportes de comunidad
+
+Para cada comunidad, un LLM escribe un **resumen narrativo** de qué trata. Es el "panfleto de la sección" que el bibliotecario te entrega cuando preguntas algo amplio.
+
+Esto es lo que hace funcionar el modo `global`: la respuesta a "¿cuáles son los temas centrales?" no es leer todo el corpus — es leer los reportes.
+
+### 3. Consultas de recuperación en las entidades
+
+Cada entidad guarda **2-3 preguntas anticipadas** en su texto de embedding. Es el "post-it que el autor pegó en cada libro" diciendo "léeme si te interesa X".
+
+Esto mejora muchísimo el matching cross-lingual e intencional. Una pregunta vaga matchea bien si la entidad correcta tiene un post-it que se parece.
+
+## Por qué GRAIL te resulta más caro al inicio (y más barato al uso)
+
+Construir el grafo cuesta una llamada a LLM por **chunk** del corpus. Para un corpus de 200 PDFs, son cientos o miles de llamadas durante la indexación.
+
+Pero después, en uso, **cada pregunta cuesta una sola llamada** (o algunas pocas con `agent`). RAG vanilla también cuesta una llamada por pregunta — pero responde peor a preguntas estructurales.
+
+La cuenta se inclina a favor de GRAIL cuando:
+
+- Vas a hacer **muchas preguntas** sobre el mismo corpus.
+- Las preguntas son **estructurales** o de **síntesis**.
+- Te importa la **calidad** más que el costo por pregunta individual.
+
+## Siguiente paso
+
+- [Modos de búsqueda](/learn/search-modes) — cómo el grafo se traduce en seis estrategias de respuesta.
+- [Cascade](/learn/cascade) — el modo que combina grafo con texto para preguntas factuales.
+- [Comunidades y Leiden](/learn/communities-leiden) — más detalle sobre cómo se forman las comunidades.

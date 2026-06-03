@@ -1,9 +1,4 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
 import {
-  User,
-  Sparkles,
-  Clock,
   FileText,
   FileSpreadsheet,
   FileCode,
@@ -11,6 +6,10 @@ import {
   File,
   Download,
   MessageSquare,
+  Timer,
+  Cpu,
+  GitCommitHorizontal,
+  Quote,
 } from "lucide-react";
 import type { Message, SourceReference } from "../lib/store";
 import { useChatStore } from "../lib/store";
@@ -32,29 +31,50 @@ function formatDuration(seconds: number): string {
   return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
-function fileIcon(title: string) {
+function classifyFile(title: string): { type: string; Icon: typeof FileText } {
   const ext = title.split(".").pop()?.toLowerCase() ?? "";
-  const s = 11;
   switch (ext) {
     case "pdf":
-      return <FileText size={s} style={{ color: "#f87171" }} />;
-    case "xlsx": case "xls": case "csv": case "tsv":
-      return <FileSpreadsheet size={s} style={{ color: "#4ade80" }} />;
-    case "json": case "yaml": case "yml": case "toml": case "xml": case "py": case "js": case "ts": case "html":
-      return <FileCode size={s} style={{ color: "#60a5fa" }} />;
-    case "png": case "jpg": case "jpeg": case "gif": case "svg": case "webp":
-      return <FileImage size={s} style={{ color: "#c084fc" }} />;
-    case "docx": case "doc":
-      return <FileText size={s} style={{ color: "#60a5fa" }} />;
-    case "md": case "markdown": case "rst": case "txt": case "log":
-      return <FileText size={s} style={{ color: "var(--text-tertiary)" }} />;
+      return { type: "pdf", Icon: FileText };
+    case "xlsx":
+    case "xls":
+    case "csv":
+    case "tsv":
+      return { type: "sheet", Icon: FileSpreadsheet };
+    case "json":
+    case "yaml":
+    case "yml":
+    case "toml":
+    case "xml":
+    case "py":
+    case "js":
+    case "ts":
+    case "html":
+      return { type: "code", Icon: FileCode };
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "svg":
+    case "webp":
+      return { type: "img", Icon: FileImage };
+    case "docx":
+    case "doc":
+      return { type: "doc", Icon: FileText };
+    case "md":
+    case "markdown":
+    case "rst":
+    case "txt":
+    case "log":
+      return { type: "text", Icon: FileText };
     default:
-      return <File size={s} style={{ color: "var(--text-tertiary)" }} />;
+      return { type: "text", Icon: File };
   }
 }
 
-function SourceBadge({ src }: { src: SourceReference }) {
+function Source({ src }: { src: SourceReference }) {
   const { currentMode, setDraftInput } = useChatStore();
+  const { type, Icon } = classifyFile(src.title);
   const isAgent = currentMode === "agent";
 
   function handleDownload(e: React.MouseEvent) {
@@ -73,129 +93,106 @@ function SourceBadge({ src }: { src: SourceReference }) {
   }
 
   return (
-    <span
-      className="group/src inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-all duration-150"
-      style={{
-        background: "var(--surface-2)",
-        border: "1px solid var(--border-subtle)",
-        color: "var(--text-secondary)",
-      }}
-      title={src.path || src.title}
-    >
-      {fileIcon(src.title)}
-      <span className="max-w-[130px] truncate">{src.title}</span>
-      <button
-        type="button"
-        onClick={handleDownload}
-        className="ml-0.5 hidden rounded p-0.5 transition-colors duration-150 group-hover/src:inline-flex"
-        style={{ color: "var(--text-tertiary)" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.background = "var(--surface-3)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-tertiary)"; e.currentTarget.style.background = "transparent"; }}
-        title="Download source file"
-      >
-        <Download size={11} />
-      </button>
-      {isAgent && (
-        <button
-          type="button"
-          onClick={handleAskAgent}
-          className="hidden rounded p-0.5 transition-colors duration-150 group-hover/src:inline-flex"
-          style={{ color: "var(--text-tertiary)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "var(--surface-3)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-tertiary)"; e.currentTarget.style.background = "transparent"; }}
-          title="Ask agent about this document"
-        >
-          <MessageSquare size={11} />
+    <div className="source" title={src.path || src.title}>
+      <div className={`ftype t-${type}`}>
+        <Icon size={14} />
+      </div>
+      <div className="info">
+        <div className="fname">{src.title}</div>
+        <div className="fmeta">
+          <span>{src.path && src.path !== src.title ? truncate(src.path, 28) : "source"}</span>
+        </div>
+      </div>
+      <div className="actions">
+        <button onClick={handleDownload} title="Download">
+          <Download size={13} />
         </button>
-      )}
-    </span>
+        {isAgent && (
+          <button onClick={handleAskAgent} title="Ask agent about this document">
+            <MessageSquare size={13} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
+function truncate(s: string, n: number): string {
+  return s.length > n ? "…" + s.slice(-(n - 1)) : s;
+}
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
-  const [showTime, setShowTime] = useState(false);
   const isUser = message.role === "user";
 
-  return (
-    <div
-      className={`group flex gap-3 px-4 py-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
-      onMouseEnter={() => setShowTime(true)}
-      onMouseLeave={() => setShowTime(false)}
-    >
-      {/* Avatar */}
-      <div
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
-        style={{
-          background: isUser ? "var(--accent)" : "var(--surface-2)",
-          border: isUser ? "none" : "1px solid var(--border)",
-        }}
-      >
-        {isUser ? (
-          <User size={14} className="text-white" />
-        ) : (
-          <Sparkles size={14} style={{ color: "var(--accent)" }} />
-        )}
-      </div>
-
-      {/* Content */}
-      <div className={`min-w-0 max-w-[80%] ${isUser ? "items-end" : "items-start"}`}>
-        <div
-          className="rounded-2xl px-4 py-3"
-          style={{
-            background: isUser ? "var(--accent)" : "var(--surface-1)",
-            border: isUser ? "none" : "1px solid var(--border-subtle)",
-            borderTopRightRadius: isUser ? 6 : undefined,
-            borderTopLeftRadius: isUser ? undefined : 6,
-            color: isUser ? "white" : "var(--text-primary)",
-          }}
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-          ) : (
-            <MarkdownRenderer content={message.content} />
+  if (isUser) {
+    return (
+      <div className="msg user">
+        <div className="body">
+          <div className="bubble-user">{message.content}</div>
+          {message.created_at && (
+            <div className="meta">
+              <span className="t-hover">{formatTime(message.created_at)}</span>
+            </div>
           )}
         </div>
+      </div>
+    );
+  }
 
-        {/* Metadata */}
-        <div
-          className={`mt-1.5 flex items-center gap-3 px-1 text-[11px] ${
-            isUser ? "justify-end" : "justify-start"
-          }`}
-          style={{ color: "var(--text-tertiary)" }}
-        >
-          {showTime && message.created_at && (
-            <span className="flex items-center gap-1">
-              <Clock size={10} />
-              {formatTime(message.created_at)}
-            </span>
+  const meta = message.metadata;
+  const sources = meta?.sources ?? [];
+
+  return (
+    <div className="msg assistant">
+      <div className="avatar">
+        <img src="/assets/grail_isotype.png" alt="" />
+      </div>
+      <div className="body" style={{ flex: 1, minWidth: 0 }}>
+        <div className="bubble-assistant">
+          <MarkdownRenderer content={message.content} />
+
+          {sources.length > 0 && (
+            <div className="kfooter">
+              <div className="sources">
+                <div className="sources-label">
+                  <Quote size={13} />
+                  Sources
+                </div>
+                <div className="source-list">
+                  {sources.map((src) => (
+                    <Source key={src.id} src={src} />
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
-          {!isUser && message.metadata && (
-            <>
-              {message.metadata.completion_time != null && (
-                <span>{formatDuration(message.metadata.completion_time)}</span>
-              )}
-              {message.metadata.llm_calls != null && (
-                <span>
-                  {message.metadata.llm_calls} call{message.metadata.llm_calls !== 1 ? "s" : ""}
+
+          {meta && (meta.completion_time != null || meta.llm_calls != null) && (
+            <div className="meta" style={{ marginTop: 16 }}>
+              {meta.completion_time != null && (
+                <span className="pill">
+                  <Timer size={12} />
+                  {formatDuration(meta.completion_time)}
                 </span>
               )}
-            </>
+              {meta.llm_calls != null && (
+                <span className="pill">
+                  <Cpu size={12} />
+                  {meta.llm_calls} LLM call{meta.llm_calls !== 1 ? "s" : ""}
+                </span>
+              )}
+              {sources.length > 0 && (
+                <span className="pill">
+                  <GitCommitHorizontal size={12} />
+                  {sources.length} source{sources.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {message.created_at && (
+                <span className="t-hover">{formatTime(message.created_at)}</span>
+              )}
+            </div>
           )}
         </div>
-
-        {/* Source references */}
-        {!isUser && message.metadata?.sources && message.metadata.sources.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="mt-2 flex flex-wrap gap-1.5 px-1"
-          >
-            {message.metadata.sources.map((src) => (
-              <SourceBadge key={src.id} src={src} />
-            ))}
-          </motion.div>
-        )}
       </div>
     </div>
   );
@@ -203,35 +200,23 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
 export function StreamingBubble({ content }: { content: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="group flex gap-3 px-4 py-3">
-        <div
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
-          style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
-        >
-          <Sparkles size={14} style={{ color: "var(--accent)" }} />
-        </div>
-        <div className="min-w-0 max-w-[80%]">
-          <div
-            className="rounded-2xl rounded-tl-md px-4 py-3"
-            style={{ background: "var(--surface-1)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }}
-          >
-            {content ? (
-              <MarkdownRenderer content={content} />
-            ) : (
-              <div className="flex gap-1.5 py-2">
-                <span className="loading-dot h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                <span className="loading-dot h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                <span className="loading-dot h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-              </div>
-            )}
-          </div>
+    <div className="msg assistant">
+      <div className="avatar">
+        <img src="/assets/grail_isotype.png" alt="" />
+      </div>
+      <div className="body" style={{ flex: 1, minWidth: 0 }}>
+        <div className="bubble-assistant" style={{ padding: content ? "4px 20px 16px" : 0 }}>
+          {content ? (
+            <MarkdownRenderer content={content} />
+          ) : (
+            <div className="streaming">
+              <span className="dot" />
+              <span className="dot" />
+              <span className="dot" />
+            </div>
+          )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

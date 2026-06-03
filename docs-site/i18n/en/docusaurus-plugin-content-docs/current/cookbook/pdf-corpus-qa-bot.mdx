@@ -1,0 +1,175 @@
+---
+title: Q&A bot over PDF corpus
+description: Complete recipe to turn a folder of PDFs into a Q&A bot with a web UI.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="kb" />
+
+# Q&A bot over PDF corpus
+
+## What we'll build
+
+A simple webapp where anyone can ask questions about a collection of PDFs (papers, manuals, legal docs, whatever). The bot searches with `cascade` by default and shows the cited sources.
+
+**End state**: `http://localhost:8765` with a working chat, verifiable citations to the original PDFs.
+
+## Stack
+
+| Piece | Choice |
+|---|---|
+| Mode | Knowledge base |
+| LLM | DeepInfra + Gemma-4-26B (low cost, high quality) |
+| Embeddings | DeepInfra + Qwen3-Embedding-8B |
+| Vector store | FAISS (default) |
+| Storage | Local |
+| UI | `grail ui` (FastAPI + React) |
+
+Estimated cost for 50 PDFs of ~30 pages: **$2–5 indexing, $0.005/query**.
+
+## 1. Install GRAIL
+
+```bash
+git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
+cd GRAIL
+uv venv --python 3.12
+uv pip install -e ".[dev,ui]"
+```
+
+The `ui` extra adds FastAPI + web chat dependencies.
+
+## 2. Create the project
+
+```bash
+uv run grail init ./my-bot --name my-bot --template low_cost_setup
+```
+
+## 3. Set the DeepInfra key
+
+```bash
+cd my-bot
+cp .env.example .env
+# Edit .env and add your DEEPINFRA_API_KEY=...
+```
+
+(If you prefer OpenAI, edit `grail.yaml` to `llm.endpoint: openai` + `llm.model: gpt-4o-mini` and use `OPENAI_API_KEY`.)
+
+## 4. Copy the PDFs
+
+```bash
+cp ~/Documents/my-papers/*.pdf ./my-bot/input/
+```
+
+## 5. Index
+
+```bash
+cd ..
+uv run grail index ./my-bot
+```
+
+Output looks like:
+
+```
+✓ Indexed 47 documents, 1234 text units, 2841 entities, 6127 relationships,
+  142 communities, 142 reports.
+  Cost: $3.45 (complete)
+```
+
+If it returns `partial` or `undefined`, add `extra_pricing` to `grail.yaml` (see [Cost optimisation](/guides/cost-optimization)).
+
+## 6. Test in CLI first
+
+```bash
+# Cascade — the recommended default mode
+uv run grail query ./my-bot "What are the papers about?" --mode global
+
+uv run grail query ./my-bot "What does Smith's paper say about method X?" --mode cascade
+```
+
+If answers come out reasonable, continue. If not, [trace the query](/guides/query-tracing) to understand what failed.
+
+## 7. Launch the UI
+
+```bash
+uv run grail ui ./my-bot --host 0.0.0.0 --port 8765
+```
+
+Open `http://localhost:8765`. The first user creates an account (basic auth). After that they can chat.
+
+The UI defaults to `agent` mode, which decides between `local`, `cascade`, `global`, `document` for each question. If you'd like to force a specific mode, edit `grail.yaml`:
+
+```yaml
+search:
+  agent_search_endpoint: deepinfra
+  agent_search_model: Qwen/Qwen3.6-35B-A3B  # more capable for reasoning
+```
+
+## 8. Verifiable citations
+
+Each UI response shows the cited sources: PDF files, chunk numbers, relevant snippets. The user can click and verify.
+
+Under the hood, this comes from `file-level provenance`: each text unit holds a pointer to its source file. It's what makes answers not "hallucinations" but anchorable answers.
+
+## 9. Keep it updated
+
+When you add new PDFs:
+
+```bash
+# Copy the new ones
+cp ~/Documents/my-new-papers/*.pdf ./my-bot/input/
+
+# Incremental append — only processes the new ones
+uv run grail append ./my-bot \
+  ./my-bot/input/paper-2026.pdf \
+  ./my-bot/input/paper-2026-2.pdf
+```
+
+To replace:
+
+```bash
+uv run grail edit ./my-bot --name old.pdf --src /tmp/new.pdf
+```
+
+To delete:
+
+```bash
+uv run grail delete ./my-bot obsolete.pdf
+```
+
+GRAIL re-extracts only affected chunks and updates communities with a smart scheduler — it doesn't re-index everything.
+
+## Extend
+
+### For more quality
+
+- Enable the **reranker**: `reranker.enabled: true` in `grail.yaml`. Costs one extra call per query but improves precision.
+- Use a **more capable model** for `search.local_search_model` and `search.agent_search_model` (e.g. `claude-3-5-sonnet`).
+- Tune `indexing.entity_types` to your domain (e.g. for medical papers: `["AUTHOR", "DISEASE", "DRUG", "STUDY", "FINDING"]`).
+
+### For more speed
+
+- Switch to **LanceDB** or **ChromaDB** if your corpus has >1M vectors: `--vectorstore lancedb`.
+- Raise `llm.concurrent_requests` (mind the rate limits).
+
+### For deployment
+
+- Move storage to **S3**: `pip install -e ".[s3]"`, configure `storage.backend: s3`.
+- Dockerise `grail ui` to run on any host.
+- For production with serious auth, expose only `grail.search` from your own backend instead of using `grail ui` directly.
+
+## When something goes wrong
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "I didn't find anything about X" | Extraction didn't create entity X | Verify with `grail viz`; if missing, edit `entity_types` |
+| Vague or generic answers | Question isn't specific enough | Apply the [WHO + WHAT + terms formula](/learn/search-modes#question-shape-matters) |
+| UI doesn't load | Missing `ui` extra | `uv pip install -e ".[ui]"` |
+| 401 on chat | Invalid DeepInfra API key | Check `.env` and restart |
+
+## Next step
+
+- [Trace queries](/guides/query-tracing) to debug bad answers.
+- [Search modes](/learn/search-modes) to understand when `cascade` isn't enough.
+- [Cost optimisation](/guides/cost-optimization) if the monthly bill bothers you.

@@ -1,9 +1,51 @@
 # Troubleshooting
 
-## "grail is not installed" / setup.sh fails
+## "externally-managed-environment" / setup.sh refuses to install
+
+`setup.sh` emits a JSON envelope like:
+
+```json
+{
+  "ok": false,
+  "error": "Python at /opt/homebrew/bin/python3 is externally-managed (PEP 668) and no virtual environment is active. Refusing to install graphgrail here. ...",
+  "next_steps": [
+    "uv venv .venv && source .venv/bin/activate && bash scripts/setup.sh",
+    "or: python3 -m venv .venv && source .venv/bin/activate && bash scripts/setup.sh",
+    "or: GRAIL_ALLOW_SYSTEM_INSTALL=1 bash scripts/setup.sh  (forces --break-system-packages; risky)"
+  ]
+}
+```
+
+This is by design. Modern Python distributions (Homebrew on macOS,
+Debian/Ubuntu, recent Fedora) mark their system interpreter as PEP 668
+*externally-managed* — `pip install` against the system Python would
+either fail or silently corrupt OS-owned packages. The skill refuses
+rather than improvise.
+
+**Fix — create a venv and re-run:**
+
+```bash
+# uv (recommended):
+uv venv .venv && source .venv/bin/activate && bash scripts/setup.sh
+
+# Or stdlib:
+python3 -m venv .venv && source .venv/bin/activate && bash scripts/setup.sh
+```
+
+**Force a system install** (CI containers, throwaway VMs only — not on
+a Mac you care about):
+
+```bash
+GRAIL_ALLOW_SYSTEM_INSTALL=1 bash scripts/setup.sh
+```
+
+That passes `--break-system-packages` to pip. You will eventually
+regret it on any non-disposable machine.
+
+## "grail is not installed" / setup.sh fails for some other reason
 
 The skill needs `pip install graphgrail` (PyPI distribution name; the
-Python import stays `import grail`). Causes:
+Python import stays `import grail`). Other causes besides PEP 668:
 
 - **No network**: the Anthropic API code-execution runtime has no
   network access — pip can't reach PyPI. This skill is not supported in
@@ -11,8 +53,10 @@ Python import stays `import grail`). Causes:
 - **Wrong Python interpreter**: `setup.sh` honours `$PYTHON` if set,
   otherwise tries `python`, then `python3`. Make sure your runtime's
   Python ≥ 3.10.
-- **Permission denied on pip install**: run with `--user` or activate a
-  virtualenv before invoking the skill.
+- **Wrong package on PyPI**: do NOT fall back to `pip install grail`
+  (without the `graph` prefix) — that's an unrelated test framework on
+  PyPI and `import grail` would even succeed but expose totally
+  different classes.
 
 ## "no project matches '<ref>'"
 

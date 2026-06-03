@@ -1,17 +1,23 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { ArrowUp, CircleHelp } from "lucide-react";
+import { ArrowUp, HelpCircle, FileText } from "lucide-react";
 import { useChatStore } from "../lib/store";
-import { ModeChips, DocumentScope } from "./ModeSelector";
+import { ModeChips, DocumentScopePill, DocumentPicker } from "./ModeSelector";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
-  disabled?: boolean;
 }
 
-export default function ChatInput({ onSend, disabled }: ChatInputProps) {
+export default function ChatInput({ onSend }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const [docPickerOpen, setDocPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { isStreaming, setShowInfo, draftInput, setDraftInput } = useChatStore();
+  const {
+    isStreaming,
+    setShowInfo,
+    draftInput,
+    setDraftInput,
+    documents,
+  } = useChatStore();
 
   useEffect(() => {
     if (draftInput) {
@@ -21,7 +27,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   }, [draftInput, setDraftInput]);
 
-  const canSend = value.trim().length > 0 && !disabled && !isStreaming;
+  const canSend = value.trim().length > 0 && !isStreaming;
 
   function handleSend() {
     if (!canSend) return;
@@ -43,7 +49,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     const ta = textareaRef.current;
     if (ta) {
       ta.style.height = "auto";
-      ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+      ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
     }
   }, [value]);
 
@@ -53,77 +59,60 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   return (
     <form
-      className="overflow-visible rounded-xl transition-all duration-200"
-      style={{
-        background: "var(--surface-1)",
-        border: "1px solid var(--border)",
-      }}
-      onFocus={(e) => {
-        const form = e.currentTarget;
-        form.style.borderColor = "var(--accent-border)";
-        form.style.boxShadow = "0 0 0 1px var(--accent-border), 0 0 24px -6px rgba(20,184,166,0.08)";
-      }}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          const form = e.currentTarget;
-          form.style.borderColor = "var(--border)";
-          form.style.boxShadow = "none";
-        }
-      }}
+      className="composer"
       onSubmit={(e) => {
         e.preventDefault();
         handleSend();
       }}
     >
-      {/* Textarea */}
-      <div className="px-3 pt-3 pb-2">
+      <div className="composer-top">
+        <ModeChips />
+        <div className="composer-tools">
+          {documents.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="tool-btn"
+                onClick={() => setDocPickerOpen((v) => !v)}
+                title="Scope to a document"
+              >
+                <FileText size={15} />
+              </button>
+              {docPickerOpen && (
+                <DocumentPicker onClose={() => setDocPickerOpen(false)} />
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => setShowInfo(true)}
+            title="How search works"
+          >
+            <HelpCircle size={15} />
+          </button>
+        </div>
+      </div>
+
+      <DocumentScopePill />
+
+      <div className="composer-input">
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask anything..."
+          placeholder="Ask your knowledge graph…"
           disabled={isStreaming}
           rows={1}
-          className="max-h-[200px] min-h-[44px] w-full resize-none border-none bg-transparent text-sm outline-none"
-          style={{ color: "var(--text-primary)" }}
         />
-      </div>
-
-      {/* Bottom toolbar */}
-      <div
-        className="flex items-center gap-1.5 px-2 py-1.5"
-        style={{ borderTop: "1px solid var(--border-subtle)" }}
-      >
-        <ModeChips />
-        <DocumentScope />
-
-        <button
-          type="button"
-          onClick={() => setShowInfo(true)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-150"
-          style={{ color: "var(--text-tertiary)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
-          title="How search works"
-        >
-          <CircleHelp size={14} />
-        </button>
-
-        <div className="flex-1" />
-
         <button
           type="submit"
+          className={`send ${canSend ? "" : "disabled"}`}
           disabled={!canSend}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200"
-          style={{
-            background: canSend ? "var(--accent)" : "var(--surface-3)",
-            color: canSend ? "white" : "var(--text-tertiary)",
-            ...(canSend ? { boxShadow: "0 1px 3px rgba(0,0,0,0.2), 0 0 12px -3px rgba(20,184,166,0.3)" } : {}),
-          }}
           aria-label="Send message"
         >
-          <ArrowUp size={15} />
+          <ArrowUp size={16} />
         </button>
       </div>
     </form>

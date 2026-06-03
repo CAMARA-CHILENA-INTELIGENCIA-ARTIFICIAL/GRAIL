@@ -165,6 +165,40 @@ class MemoryProject:
         with self.storage.open_for_write(f"{_OUTPUT_FOLDER}/{name}") as path:
             df.to_parquet(path, index=False)
 
+    def _sync_partial_text_units(self) -> None:
+        """Mirror ``final_text_units`` into ``partial_text_units``.
+
+        Why this exists: the KB pipeline writes ``partial_text_units.parquet``
+        during chunking (stage 1) and enriches it into ``final_text_units``
+        during extraction (stage 2). Memory mode skips stage 2 — it writes
+        straight to ``final_text_units`` — but ``FileLoader.load_artifacts``
+        (used by ``GRAIL.delete`` / ``GRAIL.edit``) reads the *partial*
+        file. Without this mirror, those CLI ops blow up with ``KeyError:
+        'id'`` on memory projects because the partial file is missing and
+        an empty DataFrame returns.
+
+        We strip annotation columns (``entity_ids`` / ``relationship_ids``)
+        so the partial file matches the KB convention exactly — it carries
+        the raw chunks, nothing else.
+        """
+        final = self._read_parquet("final_text_units.parquet")
+        partial_key = f"{_OUTPUT_FOLDER}/partial_text_units.parquet"
+        if final.empty:
+            # Project was emptied (last observation deleted) — drop the
+            # mirror so the next ``load_artifacts`` returns an empty df
+            # without a stale partial.
+            if self.storage.exists(partial_key):
+                self.storage.delete(partial_key)
+            return
+        keep_cols = [
+            c for c in (
+                "id", "text", "n_tokens", "document_id", "document_ids",
+                "observed_at", "confidence", "source",
+            )
+            if c in final.columns
+        ]
+        self._write_parquet("partial_text_units.parquet", final[keep_cols])
+
     # ------------------------------------------------------------------ audit log
 
     def _append_history(self, op: str, payload: dict[str, Any]) -> None:
@@ -226,191 +260,207 @@ class MemoryProject:
             related_to=related_to,
         )
 
-        # 2. Use FileLoader to chunk just this one file. Storage-relative key:
-        rel_key = str(file_path.relative_to(self.path)).replace("\\", "/")
-        docs_df, text_units_df, mapping = self.loader.build_text_units(keys=[rel_key])
-        if docs_df.empty:
+        # Steps 2-8 + return Reply run inside try/except so any failure
+        # rolls back the markdown file we just wrote — otherwise a retry
+        # creates a ``<slug>-2.md`` collision. Parquet rows written before
+        # the failure are NOT rolled back; deeper atomicity is a follow-up.
+        try:
+            # 2. Use FileLoader to chunk just this one file. Storage-relative key:
+            rel_key = str(file_path.relative_to(self.path)).replace("\\", "/")
+            docs_df, text_units_df, mapping = self.loader.build_text_units(keys=[rel_key])
+            if docs_df.empty:
+                return Reply(
+                    ok=False,
+                    error="FileLoader produced no documents — file may be empty.",
+                )
+    
+            doc_id = str(docs_df.iloc[0]["id"])
+            tu_ids = list(text_units_df["id"].astype(str))
+    
+            # 3. Merge into existing artefacts.
+            existing_docs = self._read_parquet("final_docs.parquet")
+            existing_tus = self._read_parquet("final_text_units.parquet")
+            all_docs = pd.concat([existing_docs, docs_df], ignore_index=True) if not existing_docs.empty else docs_df
+            # text_units need the entity_ids / relationship_ids columns; populate
+            # them when the agent supplied entities/rels for this file.
+            text_units_df = text_units_df.copy()
+            text_units_df["entity_ids"] = [
+                [e["name"].upper().strip() for e in entities] for _ in range(len(text_units_df))
+            ]
+            text_units_df["relationship_ids"] = [
+                [f"{r['source'].upper()}|{r['target'].upper()}|{r.get('relationship_type', 'RELATED').upper()}"
+                 for r in relationships]
+                for _ in range(len(text_units_df))
+            ]
+            all_tus = (
+                pd.concat([existing_tus, text_units_df], ignore_index=True)
+                if not existing_tus.empty
+                else text_units_df
+            )
+            self._write_parquet("final_docs.parquet", all_docs)
+            self._write_parquet("final_text_units.parquet", all_tus)
+            # mapping.json
+            mapping_path = self.path / "mapping.json"
+            existing_mapping: dict[str, Any] = {}
+            if mapping_path.exists():
+                try:
+                    existing_mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError):
+                    existing_mapping = {}
+            existing_mapping.update(mapping)
+            mapping_path.write_text(json.dumps(existing_mapping, indent=2), encoding="utf-8")
+    
+            # 4. Build _MergeEntity / _MergeRelationship from agent input.
+            # Folder-as-community: when ``category`` is set the entities are
+            # auto-tagged with that community id so multi-membership "just works".
+            community_ids = [category] if category else []
+            merge_ents: list[_MergeEntity] = []
+            for spec in entities:
+                name = str(spec["name"]).upper().strip()
+                if not name:
+                    warnings.append("Skipped entity with empty name.")
+                    continue
+                etype = str(spec.get("type", "CONCEPT")).upper().strip() or "CONCEPT"
+                description = str(spec.get("description", "")).strip()
+                if not description:
+                    warnings.append(f"Entity {name!r} has empty description.")
+                merge_ents.append(
+                    _MergeEntity(
+                        name=name,
+                        type=etype,
+                        description=description,
+                        retrieval_queries=[str(q) for q in spec.get("retrieval_queries", []) or []],
+                        text_unit_ids=set(tu_ids),
+                        document_ids={doc_id},
+                        community_ids=list(spec.get("community_ids") or community_ids),
+                        observed_at=observed_at,
+                        confidence=float(spec.get("confidence", confidence)),
+                        source=spec.get("source", source),
+                    )
+                )
+    
+            merge_rels: list[_MergeRelationship] = []
+            for spec in relationships:
+                src = str(spec["source"]).upper().strip()
+                tgt = str(spec["target"]).upper().strip()
+                if not src or not tgt:
+                    warnings.append("Skipped relationship with empty endpoint(s).")
+                    continue
+                rel_type = str(spec.get("relationship_type", "RELATED")).upper().strip() or "RELATED"
+                description = str(spec.get("description", "")).strip()
+                weight = float(spec.get("weight", 1.0))
+                merge_rels.append(
+                    _MergeRelationship(
+                        source=src,
+                        target=tgt,
+                        relationship_type=rel_type,
+                        description=description,
+                        weight=weight,
+                        text_unit_ids=set(tu_ids),
+                        document_ids={doc_id},
+                        observed_at=observed_at,
+                        confidence=float(spec.get("confidence", confidence)),
+                        source_attribution=spec.get("source", source),
+                    )
+                )
+    
+            # 5. Merge with existing parquets.
+            existing_e = self._read_parquet("final_entities.parquet")
+            existing_r = self._read_parquet("final_relationships.parquet")
+            merged_e, new_e_names, updated_e_names = merge_entities(existing_e, merge_ents)
+            valid_names = set(merged_e["name"]) if not merged_e.empty else set()
+            merged_r, new_r_keys, updated_r_keys = merge_relationships(
+                existing_r, merge_rels, valid_names
+            )
+            merged_e, merged_r = recompute_degrees(merged_e, merged_r)
+    
+            # 6. Optional re-embed of new + updated entities.
+            affected_names = list(dict.fromkeys(new_e_names + updated_e_names))
+            if affected_names and self.embeddings is not None and not merged_e.empty:
+                embed_inputs = []
+                for n in affected_names:
+                    row = merged_e.loc[merged_e["name"] == n]
+                    if row.empty:
+                        embed_inputs.append("")
+                        continue
+                    r = row.iloc[0]
+                    rq = _aslist(r.get("retrieval_queries"))
+                    rq_text = " ".join(str(q) for q in rq)
+                    embed_inputs.append(f"{n}: {r.get('description', '')} {rq_text}".strip())
+                embeddings = await self._maybe_embed(embed_inputs)
+                # ``.at`` lets us assign a list as a single cell value without
+                # pandas trying to broadcast it across rows.
+                for n, emb in zip(affected_names, embeddings):
+                    if emb is None:
+                        continue
+                    idxs = merged_e.index[merged_e["name"] == n]
+                    for idx in idxs:
+                        merged_e.at[idx, "description_embedding"] = emb
+            elif affected_names and self.embeddings is None:
+                warnings.append(
+                    "No embeddings client configured — entities written without "
+                    "description_embedding. Semantic search will be degraded until you "
+                    "configure ``embeddings`` and call MemoryProject.reembed()."
+                )
+    
+            # 7. Compute the folder-threshold nudge BEFORE persisting so a
+            #    defensive crash here can't leave half-written parquets +
+            #    .md on disk (which used to trigger duplicate "-2.md" files
+            #    when the agent retried). ``_aslist`` normalises pandas
+            #    round-tripped numpy arrays — ``cids or []`` would raise
+            #    the ambiguous-truth error when cids is a multi-element
+            #    array.
+            if category and not merged_e.empty:
+                cat_entities = merged_e["community_ids"].apply(
+                    lambda cids: category in _aslist(cids)
+                ).sum()
+                if cat_entities >= 5:
+                    next_steps.append(
+                        f"folder '{category}' now has {int(cat_entities)} entities — "
+                        f"consider writing memories/{category}/meta.md"
+                    )
+
+            # 8. Persist.
+            self._write_parquet("final_entities.parquet", merged_e)
+            self._write_parquet("final_relationships.parquet", merged_r)
+            self._sync_partial_text_units()
+    
+            self._append_history(
+                "add_observation",
+                {
+                    "observation_id": doc_id,
+                    "slug": slug,
+                    "file_path": str(file_path),
+                    "category": category,
+                    "new_entities": new_e_names,
+                    "updated_entities": updated_e_names,
+                    "new_relationships": [
+                        f"{k[0]}|{k[1]}|{k[2]}" for k in new_r_keys
+                    ],
+                },
+            )
+            touch_indexed(self.path)
+    
             return Reply(
-                ok=False,
-                error="FileLoader produced no documents — file may be empty.",
+                ok=True,
+                data={
+                    "observation_id": doc_id,
+                    "slug": slug,
+                    "file_path": str(file_path),
+                    "category": category,
+                    "new_entities": new_e_names,
+                    "updated_entities": updated_e_names,
+                    "new_relationships": [
+                        f"{k[0]}|{k[1]}|{k[2]}" for k in new_r_keys
+                    ],
+                },
+                warnings=warnings,
+                next_steps=next_steps,
             )
-
-        doc_id = str(docs_df.iloc[0]["id"])
-        tu_ids = list(text_units_df["id"].astype(str))
-
-        # 3. Merge into existing artefacts.
-        existing_docs = self._read_parquet("final_docs.parquet")
-        existing_tus = self._read_parquet("final_text_units.parquet")
-        all_docs = pd.concat([existing_docs, docs_df], ignore_index=True) if not existing_docs.empty else docs_df
-        # text_units need the entity_ids / relationship_ids columns; populate
-        # them when the agent supplied entities/rels for this file.
-        text_units_df = text_units_df.copy()
-        text_units_df["entity_ids"] = [
-            [e["name"].upper().strip() for e in entities] for _ in range(len(text_units_df))
-        ]
-        text_units_df["relationship_ids"] = [
-            [f"{r['source'].upper()}|{r['target'].upper()}|{r.get('relationship_type', 'RELATED').upper()}"
-             for r in relationships]
-            for _ in range(len(text_units_df))
-        ]
-        all_tus = (
-            pd.concat([existing_tus, text_units_df], ignore_index=True)
-            if not existing_tus.empty
-            else text_units_df
-        )
-        self._write_parquet("final_docs.parquet", all_docs)
-        self._write_parquet("final_text_units.parquet", all_tus)
-        # mapping.json
-        mapping_path = self.path / "mapping.json"
-        existing_mapping: dict[str, Any] = {}
-        if mapping_path.exists():
-            try:
-                existing_mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                existing_mapping = {}
-        existing_mapping.update(mapping)
-        mapping_path.write_text(json.dumps(existing_mapping, indent=2), encoding="utf-8")
-
-        # 4. Build _MergeEntity / _MergeRelationship from agent input.
-        # Folder-as-community: when ``category`` is set the entities are
-        # auto-tagged with that community id so multi-membership "just works".
-        community_ids = [category] if category else []
-        merge_ents: list[_MergeEntity] = []
-        for spec in entities:
-            name = str(spec["name"]).upper().strip()
-            if not name:
-                warnings.append("Skipped entity with empty name.")
-                continue
-            etype = str(spec.get("type", "CONCEPT")).upper().strip() or "CONCEPT"
-            description = str(spec.get("description", "")).strip()
-            if not description:
-                warnings.append(f"Entity {name!r} has empty description.")
-            merge_ents.append(
-                _MergeEntity(
-                    name=name,
-                    type=etype,
-                    description=description,
-                    retrieval_queries=[str(q) for q in spec.get("retrieval_queries", []) or []],
-                    text_unit_ids=set(tu_ids),
-                    document_ids={doc_id},
-                    community_ids=list(spec.get("community_ids") or community_ids),
-                    observed_at=observed_at,
-                    confidence=float(spec.get("confidence", confidence)),
-                    source=spec.get("source", source),
-                )
-            )
-
-        merge_rels: list[_MergeRelationship] = []
-        for spec in relationships:
-            src = str(spec["source"]).upper().strip()
-            tgt = str(spec["target"]).upper().strip()
-            if not src or not tgt:
-                warnings.append("Skipped relationship with empty endpoint(s).")
-                continue
-            rel_type = str(spec.get("relationship_type", "RELATED")).upper().strip() or "RELATED"
-            description = str(spec.get("description", "")).strip()
-            weight = float(spec.get("weight", 1.0))
-            merge_rels.append(
-                _MergeRelationship(
-                    source=src,
-                    target=tgt,
-                    relationship_type=rel_type,
-                    description=description,
-                    weight=weight,
-                    text_unit_ids=set(tu_ids),
-                    document_ids={doc_id},
-                    observed_at=observed_at,
-                    confidence=float(spec.get("confidence", confidence)),
-                    source_attribution=spec.get("source", source),
-                )
-            )
-
-        # 5. Merge with existing parquets.
-        existing_e = self._read_parquet("final_entities.parquet")
-        existing_r = self._read_parquet("final_relationships.parquet")
-        merged_e, new_e_names, updated_e_names = merge_entities(existing_e, merge_ents)
-        valid_names = set(merged_e["name"]) if not merged_e.empty else set()
-        merged_r, new_r_keys, updated_r_keys = merge_relationships(
-            existing_r, merge_rels, valid_names
-        )
-        merged_e, merged_r = recompute_degrees(merged_e, merged_r)
-
-        # 6. Optional re-embed of new + updated entities.
-        affected_names = list(dict.fromkeys(new_e_names + updated_e_names))
-        if affected_names and self.embeddings is not None and not merged_e.empty:
-            embed_inputs = []
-            for n in affected_names:
-                row = merged_e.loc[merged_e["name"] == n]
-                if row.empty:
-                    embed_inputs.append("")
-                    continue
-                r = row.iloc[0]
-                rq = _aslist(r.get("retrieval_queries"))
-                rq_text = " ".join(str(q) for q in rq)
-                embed_inputs.append(f"{n}: {r.get('description', '')} {rq_text}".strip())
-            embeddings = await self._maybe_embed(embed_inputs)
-            # ``.at`` lets us assign a list as a single cell value without
-            # pandas trying to broadcast it across rows.
-            for n, emb in zip(affected_names, embeddings):
-                if emb is None:
-                    continue
-                idxs = merged_e.index[merged_e["name"] == n]
-                for idx in idxs:
-                    merged_e.at[idx, "description_embedding"] = emb
-        elif affected_names and self.embeddings is None:
-            warnings.append(
-                "No embeddings client configured — entities written without "
-                "description_embedding. Semantic search will be degraded until you "
-                "configure ``embeddings`` and call MemoryProject.reembed()."
-            )
-
-        # 7. Persist + history + meta.
-        self._write_parquet("final_entities.parquet", merged_e)
-        self._write_parquet("final_relationships.parquet", merged_r)
-
-        # 8. Nudges: did this folder cross a threshold?
-        if category and not merged_e.empty:
-            cat_entities = merged_e["community_ids"].apply(
-                lambda cids: category in (cids or [])
-            ).sum()
-            if cat_entities >= 5:
-                next_steps.append(
-                    f"folder '{category}' now has {int(cat_entities)} entities — "
-                    f"consider writing memories/{category}/meta.md"
-                )
-
-        self._append_history(
-            "add_observation",
-            {
-                "observation_id": doc_id,
-                "slug": slug,
-                "file_path": str(file_path),
-                "category": category,
-                "new_entities": new_e_names,
-                "updated_entities": updated_e_names,
-                "new_relationships": [
-                    f"{k[0]}|{k[1]}|{k[2]}" for k in new_r_keys
-                ],
-            },
-        )
-        touch_indexed(self.path)
-
-        return Reply(
-            ok=True,
-            data={
-                "observation_id": doc_id,
-                "slug": slug,
-                "file_path": str(file_path),
-                "category": category,
-                "new_entities": new_e_names,
-                "updated_entities": updated_e_names,
-                "new_relationships": [
-                    f"{k[0]}|{k[1]}|{k[2]}" for k in new_r_keys
-                ],
-            },
-            warnings=warnings,
-            next_steps=next_steps,
-        )
+        except Exception:
+            # Roll back the markdown file so a retry won't collide.
+            file_path.unlink(missing_ok=True)
+            raise
 
     # ============================================================ tools (B5)
     # ------------------------------------------------------------------ add_entity
@@ -812,6 +862,9 @@ class MemoryProject:
             self._write_parquet("final_text_units.parquet", tus)
         docs = docs[docs["id"].astype(str) != doc_id].copy()
         self._write_parquet("final_docs.parquet", docs)
+        # Mirror to partial_text_units so GRAIL.delete / GRAIL.edit work
+        # on this memory project. See ``_sync_partial_text_units`` for why.
+        self._sync_partial_text_units()
 
         # Update mapping.json.
         mapping_path = self.path / "mapping.json"
@@ -1024,8 +1077,9 @@ class MemoryProject:
             return Reply(ok=True, data={"entities": []})
         mask = pd.Series(True, index=ents.index)
         if category:
+            # Same numpy-ndarray fix as add_observation.
             mask &= ents["community_ids"].apply(
-                lambda cids: category in (cids or [])
+                lambda cids: category in _aslist(cids)
             )
         if type:
             mask &= ents["type"].str.upper() == type.upper()

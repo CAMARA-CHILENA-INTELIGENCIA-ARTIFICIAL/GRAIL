@@ -1,0 +1,140 @@
+---
+title: Optimizar costos de indexación
+description: Cómo indexar grandes corpus sin que la factura te asuste.
+sidebar_position: 10
+---
+
+# Optimizar costos de indexación
+
+La fase de indexación es **la más cara** del ciclo de vida de un proyecto GRAIL. Hace una llamada a LLM por chunk del corpus. Para 200 PDFs de 30 páginas cada uno, eso pueden ser miles de llamadas.
+
+Esta guía te da las cinco palancas más efectivas para bajar el costo.
+
+## 1. Usa un modelo barato para extracción
+
+La extracción de entidades + relaciones **no necesita un modelo de frontera**. Modelos como `gpt-4o-mini`, `claude-3-5-haiku`, `google/gemma-4-26B-A4B-it` (DeepInfra) hacen el trabajo bien por una fracción del costo de `gpt-4o` o `claude-3-5-sonnet`.
+
+```yaml
+# grail.yaml
+llm:
+  endpoint: deepinfra
+  model: google/gemma-4-26B-A4B-it
+  extra_pricing:
+    "deepinfra|google/gemma-4-26B-A4B-it": [0.07, 0.34]
+```
+
+**Reserva los modelos caros** para los modos `agent` / `global` en consulta, donde el razonamiento importa más.
+
+```yaml
+search:
+  agent_search_endpoint: anthropic
+  agent_search_model: claude-3-5-sonnet-20241022
+```
+
+## 2. Habilita el cache de LLM
+
+Si vas a re-indexar (porque ajustaste un prompt, una config, o un modelo), las llamadas idénticas no deberían costar dos veces:
+
+```yaml
+llm:
+  cache_enabled: true
+  cache_dir: ./cache/llm  # opcional, default es <root>/cache/llm
+```
+
+El cache es **determinístico**: misma prompt + mismos parámetros = mismo hit. Útil sobre todo en desarrollo iterativo.
+
+## 3. Ajusta el tamaño de chunk
+
+Chunks más grandes = menos llamadas, pero también:
+
+- Más tokens por llamada (puede subir el costo total).
+- Menos granularidad en la extracción.
+
+```yaml
+indexing:
+  chunk_size: 1500           # default 2000
+  chunk_overlap: 100         # default 100
+```
+
+**Regla práctica**: si tu modelo soporta 8K input cómodamente, sube a `chunk_size: 1500–2000`. Si usas un modelo small con ventana de 4K, baja a `chunk_size: 800`.
+
+## 4. Reduce `max_gleanings`
+
+Por default GRAIL hace una "second pass" sobre cada chunk para encontrar entidades que se le pasaron en la primera. Esto cuesta el doble de llamadas para una mejora marginal en muchos corpus.
+
+```yaml
+indexing:
+  max_gleanings: 0   # default 1. Pon 0 para deshabilitar la second pass.
+```
+
+**Cuándo dejar `max_gleanings: 1`**: corpus técnico con muchas entidades densas (legal, médico).
+**Cuándo poner `max_gleanings: 0`**: corpus más narrativo, o cuando estás iterando rápido.
+
+## 5. Indexa un sample primero
+
+Antes de soltarle 1000 PDFs:
+
+```bash
+# Copia 10 archivos representativos
+mkdir mi-kb-sample/input
+cp mi-kb/input/{0,1,2,3,4,5,6,7,8,9}*.pdf mi-kb-sample/input/
+
+# Indexa el sample
+grail index ./mi-kb-sample
+
+# Mira el costo
+grail status ./mi-kb-sample
+```
+
+Multiplica por 100 y tienes tu estimación. Si la cifra es razonable, indexa el corpus completo. Si no, ajusta las palancas anteriores y vuelve a samplear.
+
+## 6. Concurrencia conservadora pero no excesiva
+
+Más concurrencia = más velocidad pero también más probabilidad de hitting rate limits y reintentos costosos.
+
+```yaml
+llm:
+  concurrent_requests: 8     # default 8
+  max_retries: 3
+```
+
+Si ves muchos retries en los logs, baja a 4. Si tu provider permite mucha más, sube a 16 o 24.
+
+## 7. Reranker solo cuando sirve
+
+El reranker mejora calidad pero **cuesta una llamada extra por consulta**. Para consultas donde la precisión no es crítica, déjalo off:
+
+```yaml
+reranker:
+  enabled: false
+```
+
+Override per-query con `--rerank` / `--no-rerank`.
+
+## 8. Modo memoria es esencialmente $0 de escritura
+
+Si tu use case es agentic memory más que KB-style, **escribir es gratis** — el agente declara las entidades, no hay extracción por LLM. Solo `consolidate` necesita reflexión (y tampoco usa LLM en GRAIL, es solo análisis estructural).
+
+Solo pagas cuando **consultas** (cascade, local, global, agent).
+
+## Tabla de ahorros típicos
+
+Sobre un corpus de 200 PDFs (~5K chunks):
+
+| Optimización | Costo aproximado | Ahorro vs default |
+|---|---|---|
+| Default (gpt-4o + reranker + gleanings=1) | $50–80 | — |
+| `gpt-4o-mini` reemplaza `gpt-4o` | $8–15 | 80% |
+| + `max_gleanings: 0` | $5–9 | 90% |
+| + cache habilitado (re-runs) | depende | hasta 100% |
+
+## Cuándo NO escatimar
+
+- **Embedding model**: si bajas mucho la calidad, todo el sistema de retrieval se degrada. Mantén un modelo decente (Qwen3-Embedding-8B, text-embedding-3-small o similar).
+- **Community reports**: estos son la base del modo `global`. Modelos muy chicos producen reportes malos.
+
+## Siguiente paso
+
+- [Seguimiento honesto de costos](/learn/cost-tracking) — cómo leer los reportes de costo.
+- [Modos de búsqueda](/learn/search-modes) — qué modo conviene por tipo de pregunta.
+- [Quickstart KB](/start/kb-quickstart) — para correr el sample.

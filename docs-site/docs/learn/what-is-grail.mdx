@@ -1,0 +1,93 @@
+---
+title: ¿Qué es GRAIL?
+description: La idea central de GRAIL, en palabras simples — con analogías para construir intuición antes de llegar a los detalles técnicos.
+sidebar_position: 1
+---
+
+import Analogy from "@site/src/components/Analogy";
+import Animation from "@site/src/components/Animation";
+
+# ¿Qué es GRAIL?
+
+GRAIL es un **motor de grafo de conocimiento** que convierte texto desorganizado — PDFs, markdown, notas, observaciones de un agente — en algo que puedes preguntarle en lenguaje natural.
+
+A diferencia de un buscador o un RAG tradicional, GRAIL no se queda en "trozos de texto que se parecen a tu pregunta". Construye un **grafo** que dice quién hace qué con quién, agrupa esos hechos en **comunidades** temáticas, y luego elige entre seis modos de búsqueda según el tipo de pregunta.
+
+<Analogy>
+
+Imagina una **biblioteca** con un **bibliotecario** que ha leído todos los libros.
+
+- El **buscador clásico** encuentra páginas que mencionan tu palabra.
+- **RAG** trae las páginas más parecidas a tu pregunta y le pide a un LLM que las resuma.
+- **GRAIL** construye un mapa de personajes, conceptos y cómo se relacionan entre libros. Cuando preguntas, el bibliotecario primero consulta el mapa, luego decide si conviene leer pasajes específicos, contrastar resúmenes temáticos, o todo a la vez.
+
+El mapa hace que las preguntas que cruzan documentos — "¿cómo se relaciona X de este informe con Y de aquel?" — se respondan bien, no por casualidad.
+
+</Analogy>
+
+## Dos formas de usar el mismo motor
+
+GRAIL tiene **dos rutas de escritura** que producen los mismos artefactos. Esto es lo más distintivo del framework.
+
+### Modo base de conocimiento
+
+Tú tienes documentos. Apuntas a GRAIL a la carpeta, ejecutas un comando, y obtienes un grafo consultable. El LLM hace el trabajo de leer y extraer entidades + relaciones.
+
+<Animation src="/animations/kb_mode.svg" alt="Pipeline de modo base de conocimiento: documentos → chunks → extracción por LLM → grafo + comunidades → búsqueda" />
+
+### Modo memoria agéntica
+
+Tu agente (Claude Code, Codex, OpenCode) tiene cosas que recordar entre sesiones. GRAIL le da un cuaderno persistente: el agente escribe observaciones markdown y declara las entidades y relaciones directamente — sin un paso de extracción por LLM intermedio, porque el agente ya sabe lo que quiso decir.
+
+<Animation src="/animations/memory_mode.svg" alt="Pipeline de modo memoria agéntica: agente → tool call → markdown → merge directo al grafo → recall y consolidate" />
+
+<Analogy label="Piensa en los dos modos como…">
+
+**Base de conocimiento** = una **enciclopedia indexada**. Alguien escribió los libros, GRAIL los digiere y los hace consultables.
+
+**Memoria agéntica** = el **cuaderno de un investigador**. Lo escribe el agente mismo, en su propio lenguaje, a medida que ocurre. Como Notion para tu agente — pero con un grafo abajo en lugar de páginas sueltas.
+
+Ambos viven en el mismo edificio (el motor de GRAIL) y se consultan con las mismas seis herramientas de búsqueda. Solo cambia quién escribe.
+
+</Analogy>
+
+## Por qué importa el grafo
+
+Un grafo es solo **puntos conectados por líneas**: las entidades son los puntos, las relaciones son las líneas. Pero esa estructura cambia qué preguntas puedes responder bien.
+
+Con texto plano, "¿qué fármacos usan los protocolos de este oncólogo?" obliga al sistema a leer todos los protocolos del oncólogo, extraer fármacos, y deduplicar. Con un grafo, esa misma pregunta es **una caminata corta**: del nodo del oncólogo a sus protocolos, de cada protocolo a los fármacos. La respuesta es estructural, no probabilística.
+
+GRAIL agrega tres capas encima de ese grafo básico:
+
+| Capa | Qué hace | Analogía |
+|---|---|---|
+| **Comunidades** | Agrupa entidades relacionadas en clústeres (algoritmo de Leiden) | Las **secciones por temática** en la biblioteca |
+| **Reportes de comunidad** | El LLM escribe un resumen narrativo de cada comunidad | El **panfleto de cada sección** que el bibliotecario te entrega |
+| **Consultas de recuperación** | Cada entidad guarda 2–3 preguntas anticipadas en su embedding | El **post-it** que el autor pegó en cada libro: "léeme si te interesa X" |
+
+Esos tres ingredientes son la diferencia entre un grafo que solo se ve bonito y uno que efectivamente responde mejor que RAG vanilla.
+
+## Cuándo (no) usar GRAIL
+
+GRAIL brilla cuando:
+
+- Tus preguntas **cruzan documentos** o **cruzan sesiones** (memoria).
+- Necesitas **citas verificables** a archivos fuente reales.
+- Tu corpus tiene **conceptos repetidos** entre fuentes (personas, leyes, fármacos, productos, etc.).
+- Quieres que un agente **recuerde decisiones y contexto** entre conversaciones.
+
+No es la herramienta correcta si:
+
+- Tu corpus es **un solo documento corto** — RAG vanilla te basta.
+- Solo necesitas **búsqueda léxica** sin síntesis — un BM25 simple es más barato.
+- No puedes costear la **fase de indexación** inicial — GRAIL hace un LLM call por chunk de documento.
+
+## Siguiente paso
+
+Si te quedas con una sola idea de esta página, que sea: **GRAIL combina un grafo de hechos con seis modos de búsqueda que eligen la mejor herramienta para tu pregunta — y lo hace tanto sobre tus documentos como sobre la memoria de tu agente.**
+
+¿Listo para verlo en acción?
+
+- [Instala GRAIL](/start/install) y corre el quickstart en 5 minutos.
+- [Explora los seis modos de búsqueda](/learn/search-modes) si quieres entender primero cómo decide qué herramienta usar.
+- [Mira la comparación con RAG](/learn/cascade) si vienes desde RAG tradicional y quieres saber qué cambia.

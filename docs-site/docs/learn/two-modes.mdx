@@ -1,0 +1,92 @@
+---
+title: Los dos modos
+description: La distinción más importante de GRAIL — base de conocimiento y memoria agéntica — explicada lado a lado.
+sidebar_position: 2
+---
+
+import Analogy from "@site/src/components/Analogy";
+import ModeBadge from "@site/src/components/ModeBadge";
+
+# Los dos modos
+
+GRAIL tiene **una sola arquitectura** y **dos formas de alimentarla**. Esa es la decisión de diseño que más te conviene entender antes de empezar.
+
+<Analogy>
+
+Imagina un edificio con **dos puertas** que dan al mismo salón.
+
+- Por la **puerta KB** entran cajas de documentos — alguien escribió libros, informes, PDFs, código — y el motor los digiere para que sean consultables.
+- Por la **puerta de memoria** entra un agente caminando — Claude Code, Codex, OpenCode — que va dejando notas escritas a mano sobre lo que va aprendiendo.
+
+Una vez adentro, el salón es el mismo, las herramientas de búsqueda son las mismas, y nadie distingue de qué puerta vino cada hecho.
+
+</Analogy>
+
+## Comparación directa
+
+|  | <ModeBadge mode="kb" /> | <ModeBadge mode="memory" /> |
+|---|---|---|
+| **Quién escribe** | Un LLM lee tus documentos y extrae entidades | Tu agente escribe directamente lo que sabe |
+| **Qué entra** | `input/` con PDFs, markdown, código | `memories/<categoría>/` con observaciones markdown |
+| **Costo de escritura** | Una llamada a LLM por chunk de documento | Cero llamadas a LLM — el agente ya sabe lo que quiso decir |
+| **Cuándo procesar** | Indexación batch (`grail index`) | Incremental, una observación a la vez |
+| **Origen de comunidades** | Algoritmo Leiden sobre el grafo | Carpetas declaradas + propuestas revisadas |
+| **Modo de búsqueda extra** | — | `recall`: filtro estructural sin LLM |
+| **Comando para crear** | `grail init mi-proyecto` | `grail init mi-proyecto --memory` |
+| **API en Python** | `GRAIL.from_config(...)` | `MemoryProject(...)` |
+
+## Misma capa de búsqueda en ambos lados
+
+Esta es la parte crítica: **los seis modos de búsqueda funcionan idénticamente en ambos**. Cuando preguntas en lenguaje natural, no importa por qué puerta entraron los hechos.
+
+- `local` — encuentra entidades parecidas a tu pregunta, ensambla su contexto, responde.
+- `cascade` — combina filtrado por entidades con rescate de texto por BM25/coseno.
+- `global` — map-reduce sobre reportes temáticos de comunidades.
+- `document` — acota la búsqueda a un solo archivo fuente.
+- `agent` — el LLM elige qué modo usar por cada pregunta, con varias iteraciones.
+- `recall` — filtro puro sobre fecha, categoría, tags. **Solo memoria.** **Cero LLM.**
+
+Ver [Modos de búsqueda](/learn/search-modes) para detalle de cada uno.
+
+## ¿Cuándo elegir cuál?
+
+### Elige base de conocimiento si…
+
+- Tienes un **corpus existente** que quieres hacer consultable: una biblioteca legal, manuales técnicos, papers, código heredado.
+- Las fuentes son **autoritativas** (no las escribió tu agente).
+- Vas a indexar **una vez** o **periódicamente** y consultar muchas veces.
+- Te importa la **procedencia exacta** a archivos fuente para citas verificables.
+
+### Elige memoria agéntica si…
+
+- Tu agente necesita **recordar entre sesiones** lo que decidió, observó o aprendió.
+- Las "fuentes" no existen como documentos — son **observaciones del agente** sobre la conversación, el código, las decisiones del usuario.
+- Quieres que **el agente mismo** controle qué entidades y relaciones crear (no un LLM intermedio adivinando).
+- Necesitas que las escrituras sean **incrementales y baratas** — sin ciclo de re-indexación.
+
+### O ambos a la vez
+
+Nada te impide mezclar los dos. Un proyecto puede tener **`input/` con PDFs de referencia** *y* **`memories/` con observaciones que el agente acumula en uso**. Las dos rutas alimentan el mismo grafo, y los seis modos consultan ambas fuentes a la vez.
+
+<Analogy label="Piensa en el modo mixto como…">
+
+Un **investigador con biblioteca propia**. La biblioteca son los PDFs (modo KB), el cuaderno son las observaciones del investigador (modo memoria). Cuando le preguntan algo, puede sacar libros, revisar su cuaderno, o combinar ambos.
+
+</Analogy>
+
+## Lo que comparten
+
+| Capa | Comportamiento |
+|---|---|
+| **Artefactos** | Mismos parquet (`final_entities`, `final_relationships`, `final_text_units`, …) |
+| **Grafo** | Mismo NetworkX bajo el capó |
+| **Vector store** | Mismo (FAISS / LanceDB / ChromaDB) |
+| **Embeddings** | Mismo modelo |
+| **Procedencia** | Cada unidad de texto guarda un puntero al archivo fuente |
+| **Modos de búsqueda** | Los 5 modos LLM funcionan idéntico; `recall` es el sexto, solo memoria |
+
+## Siguiente paso
+
+- Si tienes documentos para indexar → [Quickstart de base de conocimiento](/start/kb-quickstart).
+- Si tienes un agente que quieres dotar de memoria → [Quickstart de memoria agéntica](/start/memory-quickstart).
+- Si todavía no tienes claro qué modo te conviene → [El árbol de decisión](/learn/search-modes#cuándo-usar-cuál) lo desglosa por tipo de pregunta.

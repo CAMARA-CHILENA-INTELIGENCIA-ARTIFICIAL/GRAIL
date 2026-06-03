@@ -36,6 +36,52 @@ configurations):
 cp -R skills/grail ~/.claude/skills/grail
 ```
 
+## Recommended: install into a virtual environment
+
+The skill's first script call pip-installs `graphgrail` via
+`scripts/setup.sh`. Modern Python distributions (Homebrew on macOS,
+Debian/Ubuntu, recent Fedora) mark their system Python as PEP 668
+*externally-managed*, which means `pip install` against the system
+interpreter is refused by design. `setup.sh` detects this and refuses
+to break your system Python.
+
+The fix is to install into a virtual environment. Two equivalent
+options:
+
+### Option A — uv (recommended)
+
+```bash
+cd /path/to/your/project
+uv venv .venv
+source .venv/bin/activate
+# Then trigger the skill (e.g. via the agent, or directly):
+bash ~/.claude/skills/grail/scripts/setup.sh
+```
+
+`uv` is faster than stdlib `venv` and resolves dependencies more
+reliably. Install it once with `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
+### Option B — stdlib `venv`
+
+```bash
+cd /path/to/your/project
+python3 -m venv .venv
+source .venv/bin/activate
+bash ~/.claude/skills/grail/scripts/setup.sh
+```
+
+### Option C — force system install (not recommended)
+
+For CI containers or throwaway VMs where you really do want the
+system Python:
+
+```bash
+GRAIL_ALLOW_SYSTEM_INSTALL=1 bash ~/.claude/skills/grail/scripts/setup.sh
+```
+
+This passes `--break-system-packages` to pip. Don't use it on a Mac or
+laptop you care about — system Python belongs to the OS.
+
 ## Runtime requirements
 
 The skill installs `graphgrail` via `pip` on first use through

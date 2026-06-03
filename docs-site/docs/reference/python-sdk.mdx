@@ -1,0 +1,360 @@
+---
+title: SDK de Python
+description: Las clases GRAIL y MemoryProject — la API de Python que la CLI envuelve.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+# SDK de Python
+
+GRAIL es **una librería primero**. La CLI es un wrapper sobre las mismas dos clases públicas: `GRAIL` (modo KB) y `MemoryProject` (modo memoria).
+
+## Instalación
+
+```bash
+uv pip install -e .
+```
+
+## Imports más comunes
+
+```python
+from grail import (
+    GRAIL,                  # orquestador modo KB
+    MemoryProject,          # orquestador modo memoria
+    Config, load_config,    # configuración
+    LLMClient,              # cliente LLM directo (avanzado)
+    EmbeddingClient,        # cliente embeddings directo
+    PromptRegistry,         # registro de prompts
+    Entity, Relationship,   # schemas de rows del parquet
+    TextUnit, Community,
+    CommunityReport, Document,
+    SearchResult,           # lo que devuelve search()
+    Reply,                  # lo que devuelve MemoryProject methods
+)
+```
+
+## <ModeBadge mode="kb" /> Clase `GRAIL`
+
+Orquestador del modo base de conocimiento.
+
+### Construcción
+
+```python
+from grail import GRAIL, load_config
+
+config = load_config("./mi-kb")          # path, dict o objeto Config
+grail = GRAIL.from_config(config)
+```
+
+`from_config` arma todo: storage, registry de endpoints, cache de LLM, cost tracker, clientes LLM y embeddings, prompts, reranker opcional.
+
+Atributos públicos post-construcción:
+
+| Atributo | Tipo |
+|---|---|
+| `grail.config` | `Config` |
+| `grail.storage` | `StorageBackend` |
+| `grail.llm` | `LLMClient` |
+| `grail.embeddings` | `EmbeddingClient` |
+| `grail.prompts` | `PromptRegistry` |
+| `grail.cost_tracker` | `CostTracker` |
+| `grail.reranker` | `RerankerClient \| None` |
+| `grail.reporter` | `Reporter` |
+
+### Métodos
+
+Todos los métodos de I/O son `async`. Desde un script normal, envuelve con `asyncio.run(...)`. Desde código async (FastAPI, Textual, Jupyter), usa `await` directo.
+
+| Método | Firma | Para qué |
+|---|---|---|
+| `index()` | `async () -> dict` | Pipeline completo. |
+| `search()` | `async (query, *, mode="local", ...) -> SearchResult` | Una sola búsqueda en cualquiera de 5 modos. |
+| `agent_search()` | `async (query, ...) -> SearchResult` | Bucle agéntico de tool-calls. |
+| `append()` | `async (new_files: list[str]) -> dict` | Agregar archivos incrementalmente. |
+| `edit()` | `async (replacements: dict[str, str]) -> dict` | Reemplazar archivos. |
+| `delete()` | `async (file_names: list[str]) -> dict` | Eliminar archivos. |
+| `create_entity_types()` | `async (*, sample_chars=8000, ...) -> list[str]` | Descubrir tipos de entidad. |
+| `status()` | `sync () -> dict` | Qué artefactos existen. |
+
+### Ejemplo end-to-end
+
+```python
+import asyncio
+from grail import GRAIL, load_config
+
+async def main():
+    grail = GRAIL.from_config(load_config("./mi-kb"))
+
+    # 1. Indexar
+    await grail.index()
+
+    # 2. Buscar
+    result = await grail.search(
+        "¿Quién es FONASA?",
+        mode="cascade",
+        use_reranker=True,
+    )
+    print(result.response)
+    print(result.completion_time, "segundos")
+    print(result.llm_calls, "llamadas LLM")
+
+    # 3. Agente
+    result = await grail.agent_search(
+        "Compara cobertura entre AUGE y Ley Ricarte Soto",
+        max_iterations=5,
+    )
+    print(result.response)
+
+    # 4. Incremental
+    await grail.append(["new_paper.pdf"])
+
+    # 5. Costo
+    print(grail.cost_tracker.render_total_cost())
+
+asyncio.run(main())
+```
+
+### Argumentos comunes de `search()`
+
+| kwarg | Tipo | Descripción |
+|---|---|---|
+| `mode` | string | `"local"` \| `"cascade"` \| `"global"` \| `"document"` |
+| `conversation_history` | list | `[{"role": "user", "content": "..."}, ...]` |
+| `document` | string \| None | Solo para `mode="document"`. |
+| `include_entity_names` | list[str] | Restringir a estas entidades. |
+| `exclude_entity_names` | list[str] | Excluir estas entidades. |
+| `use_reranker` | bool \| None | `None` = usar config. |
+| `artifact_instructions` | string | Texto extra para el prompt de síntesis. |
+
+### `SearchResult`
+
+```python
+@dataclass
+class SearchResult:
+    response: str | dict | list
+    context_data: str | list[DataFrame] | dict[str, DataFrame]
+    context_text: str | list[str] | dict[str, str]
+    completion_time: float
+    llm_calls: int
+```
+
+`response` es la respuesta legible. `context_data` y `context_text` son lo que vio el LLM (útil para debug).
+
+---
+
+## <ModeBadge mode="memory" /> Clase `MemoryProject`
+
+Orquestador del modo memoria agéntica. **Same engine, different write path.**
+
+### Construcción
+
+```python
+from grail import MemoryProject
+
+mp = MemoryProject("./mi-memoria")
+# Opcionalmente: config=Config(...), embeddings=EmbeddingClient(...)
+```
+
+Si `meta.json` no existe en la carpeta, se crea automáticamente. Si existe, se abre.
+
+### Métodos principales
+
+| Método | Firma | Para qué |
+|---|---|---|
+| `add_observation()` | `async (*, title, content, ...) -> Reply` | Escribir una observación. |
+| `recall()` | `async (query=None, *, mode="recall", ...) -> Reply` | Búsqueda con filtros estructurales (cualquier modo). |
+| `list_observations()` | `sync (*, category=None, since=None, ...) -> Reply` | Listar observaciones por filtro. |
+| `delete_observation()` | `sync (slug, reason=None) -> Reply` | Borrar una observación. |
+| `consolidate()` | `sync () -> Reply` | Generar propuestas (sin mutar). |
+| `list_proposals()` | `sync (*, status=None) -> Reply` | Listar propuestas pendientes/aplicadas. |
+| `apply_proposal()` | `sync (proposal_id, *, accept=True) -> Reply` | Aceptar o rechazar una propuesta. |
+
+### `add_observation`: la primitiva central
+
+```python
+reply = await mp.add_observation(
+    title="...",                  # requerido
+    content="...",                # cuerpo markdown
+    category="work/clients/acme", # path para folders-as-communities
+    tags=["decision"],
+    entities=[                    # el agente declara entidades
+        {"name": "Acme", "type": "ORGANIZATION", "description": "..."},
+    ],
+    relationships=[
+        {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE",
+         "description": "..."},
+    ],
+    observed_at="2026-06-02T14:00:00Z",  # default: now
+    confidence=0.95,                      # 0.0–1.0
+    source="architecture review",
+    related_to=["abc123", "def456"],     # IDs de observaciones relacionadas
+)
+
+print(reply.ok)                          # True
+print(reply.data["observation_id"])      # ULID asignado
+print(reply.data["slug"])                # slug del archivo markdown
+print(reply.data["file_path"])           # path absoluto
+print(reply.data["new_entities"])        # nombres de las entidades nuevas
+print(reply.data["updated_entities"])    # entidades existentes que se actualizaron
+```
+
+### `recall`: filtros estructurales
+
+```python
+# Modo recall puro (sin LLM, sin embedding)
+reply = await mp.recall(
+    mode="recall",
+    since="7d",
+    category="work/clients/acme/**",
+    tags=["decision"],
+    entity_names=["Postgres"],
+    type="ORGANIZATION",
+    min_confidence=0.8,
+    limit=20,
+)
+
+for obs in reply.data["observations"]:
+    print(obs["observed_at"], obs["title"])
+```
+
+```python
+# Cascade con filtros (LLM + filtro estructural)
+reply = await mp.recall(
+    "¿Por qué descartamos DynamoDB?",
+    mode="cascade",
+    since="30d",
+    category="work/clients/acme/**",
+)
+print(reply.data["response"])
+```
+
+### El envoltorio `Reply`
+
+Cada método de `MemoryProject` devuelve un `Reply`:
+
+```python
+@dataclass
+class Reply:
+    ok: bool
+    data: Any = None
+    warnings: list[str] = field(default_factory=list)
+    next_steps: list[str] = field(default_factory=list)
+    error: str | None = None
+```
+
+Es el mismo contrato JSON que emiten los scripts del skill. SDK y skill leen las mismas claves.
+
+---
+
+## Configuración programática
+
+`Config` es Pydantic. Lo puedes construir sin YAML:
+
+```python
+from grail import Config
+from grail.config import (
+    LLMConfig, EmbeddingsConfig, IndexingConfig, StorageConfig,
+)
+
+config = Config(
+    project_name="mi-proyecto",
+    root_dir="/tmp/grail-mi-proyecto",
+    llm=LLMConfig(
+        endpoint="openai",
+        model="gpt-4o-mini",
+        extra_pricing={"openai|gpt-4o-mini": [0.15, 0.60]},
+    ),
+    embeddings=EmbeddingsConfig(
+        endpoint="openai",
+        model="text-embedding-3-small",
+    ),
+    indexing=IndexingConfig(
+        entity_types=["PERSON", "ORGANIZATION", "PRODUCT"],
+        chunk_size=1500,
+    ),
+    storage=StorageConfig(backend="local", root="/tmp/grail-mi-proyecto"),
+)
+
+grail = GRAIL.from_config(config)
+```
+
+O desde un dict:
+
+```python
+config = Config.model_validate({
+    "project_name": "mi-proyecto",
+    "llm": {"endpoint": "openai", "model": "gpt-4o-mini"},
+    "embeddings": {"endpoint": "openai", "model": "text-embedding-3-small"},
+})
+```
+
+---
+
+## Leer artefactos directamente
+
+Cuando quieres parquet crudos, no respuesta de búsqueda:
+
+```python
+from grail.query.retrieval import load_artifacts_for_search
+
+artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+
+artifacts.documents          # DataFrame
+artifacts.text_units
+artifacts.entities
+artifacts.relationships
+artifacts.communities
+artifacts.community_reports
+artifacts.nodes
+```
+
+---
+
+## Embeber en FastAPI
+
+```python
+from fastapi import FastAPI
+from grail import GRAIL, load_config
+
+app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    app.state.grail = GRAIL.from_config(load_config("./mi-kb"))
+
+@app.post("/ask")
+async def ask(question: str):
+    result = await app.state.grail.search(question, mode="cascade")
+    return {
+        "answer": result.response,
+        "llm_calls": result.llm_calls,
+        "completion_time": result.completion_time,
+    }
+```
+
+Una instancia `GRAIL` es **segura de compartir** entre requests — los clientes LLM/embeddings son async-safe y se rate-limitan internamente vía `concurrent_requests`.
+
+---
+
+## Customizar colaboradores
+
+Después de `from_config`, puedes reemplazar cualquier colaborador:
+
+```python
+from grail.storage import StorageBackend
+
+class MyGCSBackend(StorageBackend):
+    ...  # implementar los 7 métodos requeridos
+
+grail = GRAIL.from_config(config)
+grail.storage = MyGCSBackend(bucket="my-bucket")
+```
+
+Igual con reporter, vector store, reranker.
+
+## Siguiente paso
+
+- [Skill para agentes](/reference/cli) — los scripts CLI con la misma API en JSON.
+- [Referencia CLI](/reference/cli) — la línea de comandos completa.
+- [Modos de búsqueda](/learn/search-modes) — qué modo usar cuándo.

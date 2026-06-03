@@ -1,0 +1,168 @@
+---
+title: Quickstart — Memoria agéntica
+description: Conecta GRAIL a tu agente y dale memoria persistente en cinco minutos.
+sidebar_position: 3
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+import Analogy from "@site/src/components/Analogy";
+
+<ModeBadge mode="memory" />
+
+# Quickstart — Memoria agéntica
+
+Vas a crear un proyecto de memoria, escribir tu primera observación, y consultarla con `recall`. Cinco minutos.
+
+<Analogy>
+
+Si la base de conocimiento es una **enciclopedia**, la memoria agéntica es el **cuaderno personal** de tu agente. Cada observación es una página markdown que tu agente escribe en su propio lenguaje. GRAIL las indexa al vuelo, mantiene un grafo coherente, y te las devuelve cuando preguntas.
+
+</Analogy>
+
+## 1. Crear el proyecto de memoria
+
+```bash
+uv run grail init ./mi-memoria --memory
+```
+
+La diferencia con KB: en lugar de una carpeta `input/`, GRAIL crea `memories/`. La estructura final:
+
+```
+mi-memoria/
+├── grail.yaml
+├── meta.json           ← identidad del proyecto (ULID, modo, fechas)
+├── memories/           ← las observaciones van acá, organizadas por carpetas
+└── output/             ← parquet, FAISS, etc.
+```
+
+El flag `--memory` activa el modo memoria en `grail.yaml`:
+
+```yaml
+mode: memory
+```
+
+## 2. Escribir tu primera observación
+
+Desde Python (el SDK es la ruta natural para agentes):
+
+```python
+import asyncio
+from grail import MemoryProject
+
+async def main():
+    mp = MemoryProject("./mi-memoria")
+
+    reply = await mp.add_observation(
+        title="Acme eligió Postgres sobre DynamoDB",
+        content=(
+            "En la revisión de arquitectura del martes, Acme se comprometió "
+            "con Postgres para el servicio de historial de órdenes por las "
+            "necesidades transaccionales entre inventario y pagos."
+        ),
+        category="work/clients/acme",
+        tags=["decision", "architecture"],
+        entities=[
+            {"name": "Acme",     "type": "ORGANIZATION", "description": "Cliente"},
+            {"name": "Postgres", "type": "TECHNOLOGY",   "description": "BD elegida"},
+            {"name": "DynamoDB", "type": "TECHNOLOGY",   "description": "Alternativa rechazada"},
+        ],
+        relationships=[
+            {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE",
+             "description": "por historial de órdenes transaccional"},
+            {"source": "Acme", "target": "DynamoDB", "relationship_type": "REJECTED",
+             "description": "no soporta transacciones entre tablas"},
+        ],
+        confidence=0.95,
+    )
+    print(reply.ok, reply.data["observation_id"])
+
+asyncio.run(main())
+```
+
+¿Qué pasa por debajo?
+
+1. GRAIL escribe `memories/work/clients/acme/acme-eligio-postgres-sobre-dynamodb.md` con YAML frontmatter (título, tags, observed_at, confidence, …).
+2. Las entidades y relaciones se mergean directamente al parquet — **sin llamada a LLM de extracción**.
+3. La carpeta `work/clients/acme` se convierte en una comunidad (folders-as-communities).
+4. Si configuraste embeddings, las descripciones de entidad se embeben y se suben al vector store.
+
+## 3. Recordar
+
+`recall` es el modo de búsqueda exclusivo de memoria — **cero LLM, cero embedding**, solo filtro estructural sobre las columnas:
+
+```bash
+# Todo lo de Acme en los últimos 7 días con tag decision
+uv run grail query ./mi-memoria --mode recall \
+  --since 7d \
+  --category "work/clients/acme/**" \
+  --tag decision
+```
+
+O desde Python:
+
+```python
+recall = await mp.recall(
+    mode="recall",
+    category="work/clients/acme/**",
+    tags=["decision"],
+    since="7d",
+)
+for obs in recall.data["observations"]:
+    print(obs["observed_at"], obs["title"])
+```
+
+Los filtros también funcionan **como modificador** sobre cualquier otro modo:
+
+```bash
+# Cascade pero acotado a las observaciones recientes de Acme
+uv run grail query ./mi-memoria "¿Por qué Acme descartó DynamoDB?" \
+  --mode cascade \
+  --since 30d \
+  --category "work/clients/acme/**"
+```
+
+## 4. Consolidar
+
+Cuando la memoria empieza a crecer (digamos arriba de 30 entidades), corre el generador de propuestas. **No muta nada** — solo escribe sugerencias que tú revisas:
+
+```bash
+uv run grail consolidate ./mi-memoria
+```
+
+Genera propuestas de cuatro tipos:
+
+| Tipo | Qué propone |
+|---|---|
+| `merge_aliases` | "Estas dos entidades parecen ser la misma persona/cosa" |
+| `discover_community` | "Estas entidades forman una comunidad densa nueva" |
+| `move_entity` | "Esta entidad pertenece más a otra carpeta" |
+| `split_folder` | "Esta carpeta tiene dos clústeres distintos" |
+
+Después las revisas y aplicas:
+
+```bash
+uv run grail proposals list  ./mi-memoria
+uv run grail proposals apply ./mi-memoria --accept <proposal_id>
+```
+
+## 5. Conectar a tu agente
+
+El SDK ya te basta para llamar desde código de agente. Si tu agente es **Claude Code**, **Codex** u **OpenCode**, el [skill](/start/skill-quickstart) lo conecta automáticamente vía tool calls — el agente escribe observaciones declarando lo que aprende, sin escribir Python.
+
+## Comparado con la base de conocimiento
+
+| | <ModeBadge mode="kb" /> | <ModeBadge mode="memory" /> |
+|---|---|---|
+| Quién escribe | Un LLM lee documentos | Tu agente declara entidades |
+| Costo de escritura | $$ por chunk | $0 (sin LLM) |
+| Estructura de carpeta | `input/` plano | `memories/<categoría>/` jerárquica |
+| Comunidades | Leiden | Carpetas + propuestas |
+| Modo `recall` | — | ✓ |
+
+Ver [Los dos modos](/learn/two-modes) para el detalle.
+
+## Siguiente paso
+
+- [Skill quickstart](/start/skill-quickstart) si tu agente es Claude Code, Codex u OpenCode.
+- [Modelo de memoria](/learn/memory-model) para entender cómo funciona `recall` y cuándo conviene `consolidate`.
+- [Modos de búsqueda](/learn/search-modes) para combinar `recall` con `cascade` y `agent`.

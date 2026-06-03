@@ -1,0 +1,108 @@
+---
+title: Install GRAIL
+description: Get GRAIL running on your machine with uv or pip and set up your API keys.
+sidebar_position: 1
+---
+
+# Install GRAIL
+
+GRAIL runs on **Python 3.12** and installs as a normal Python package. Takes under a minute.
+
+## Requirements
+
+- Python 3.12 or higher.
+- [uv](https://github.com/astral-sh/uv) (recommended) or pip.
+- At least one API key for an LLM provider (OpenAI, DeepInfra, Anthropic, etc.) **except** if you'll only use memory mode without embeddings.
+
+## With uv (recommended)
+
+```bash
+git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
+cd GRAIL
+
+uv venv --python 3.12
+uv pip install -e ".[dev]"
+```
+
+Optional extras (composable — add what you need, comma-separated):
+
+| Extra | What for |
+|---|---|
+| `[s3]` | S3 storage backend |
+| `[ui]` | Web chat (FastAPI + React) |
+| `[dev]` | Tests, lint, mypy |
+
+Combined example: `uv pip install -e ".[s3,ui,dev]"`.
+
+## With pip
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## Configure API keys
+
+Copy the example file and fill in the keys for the providers you'll use:
+
+```bash
+cp .env.example .env
+# Edit .env with your preferred editor
+```
+
+Common variables:
+
+| Endpoint | Variable |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| DeepInfra | `DEEPINFRA_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Together | `TOGETHER_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+
+For local **vLLM**, **SGLang**, **Ollama**, or **LM Studio** you don't need a key — you point the endpoint at `localhost`.
+
+## Built-in endpoints
+
+GRAIL ships with 11 endpoints ready to use:
+
+`openai`, `anthropic`, `deepinfra`, `together`, `groq`, `openrouter`, `ollama`, `vllm`, `sglang`, `lmstudio`, `local`.
+
+You reference them by name in your `grail.yaml`:
+
+```yaml
+llm:
+  endpoint: openai
+  model: gpt-4o-mini
+
+embeddings:
+  endpoint: deepinfra
+  model: Qwen/Qwen3-Embedding-0.6B
+```
+
+To add your own, declare an `endpoints.yaml` with the base URL and API-key env var:
+
+```yaml
+endpoints:
+  my-vllm:
+    base_url: http://my-vllm.local:8000/v1
+    api_key_env: MY_VLLM_KEY
+    requires_key: false
+```
+
+## Verify the install
+
+```bash
+uv run grail --help
+```
+
+If you see the list of subcommands (`init`, `index`, `query`, `chat`, `ui`, …), you're good.
+
+## Next step
+
+Pick where to start based on what you want to do:
+
+- **You have documents** → [Knowledge base quickstart](/start/kb-quickstart). 5 minutes to your first query.
+- **You have an agent** → [Agentic memory quickstart](/start/memory-quickstart). 5 minutes to your first observation.
+- **You have Claude Code, Codex, or OpenCode** → [Skill quickstart](/start/skill-quickstart). One line to give your agent persistent memory.

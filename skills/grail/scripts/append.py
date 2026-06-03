@@ -58,7 +58,10 @@ def main() -> Reply:
         copied.append(dest.name)
 
     grail = load_grail(project)
-    result = asyncio.run(grail.append(files=copied))
+    # GRAIL.append's parameter is ``new_files`` (snake_case, plural). Earlier
+    # versions of this script passed ``files=`` which TypeErrored on the
+    # underlying SDK call.
+    result = asyncio.run(grail.append(new_files=copied))
     if not result.get("ok"):
         return Reply(
             ok=False,

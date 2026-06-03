@@ -1,0 +1,131 @@
+---
+title: Quickstart — Base de conocimiento
+description: De cero a tu primera consulta con GRAIL sobre tu propio corpus en 5 minutos.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="kb" />
+
+# Quickstart — Base de conocimiento
+
+Vas a indexar un corpus y hacerle preguntas. Cinco minutos si ya tienes GRAIL instalado.
+
+## 1. Crear el proyecto
+
+```bash
+uv run grail init ./mi-kb --name mi-kb --template low_cost_setup
+```
+
+Esto te deja una estructura:
+
+```
+mi-kb/
+├── grail.yaml          ← configuración del proyecto
+├── .env.example
+├── input/              ← tus documentos van acá
+└── output/             ← parquet, GraphML, reportes
+```
+
+La plantilla `low_cost_setup` viene pre-configurada para usar **DeepInfra** con modelos baratos:
+
+- Chat: `google/gemma-4-26B-A4B-it` (~$0.07 input / $0.34 output por 1M tokens)
+- Embeddings: `Qwen/Qwen3-Embedding-0.6B` (~$0.005 por 1M tokens)
+
+Para usar otro proveedor, edita `mi-kb/grail.yaml` y cambia `llm.endpoint` + `llm.model`.
+
+## 2. Llenar `input/` con tus documentos
+
+GRAIL acepta:
+
+- `.txt`, `.md`, `.json`, `.yaml`, `.csv`
+- `.pdf` (extracción a markdown vía pypdfium2)
+- `.docx` (extracción a markdown vía python-docx)
+- Código fuente (`.py`, `.ts`, `.js`, etc.)
+
+Copia tus archivos:
+
+```bash
+cp ~/Documents/papers/*.pdf mi-kb/input/
+```
+
+## 3. Indexar
+
+```bash
+uv run grail index ./mi-kb
+```
+
+Vas a ver cuatro pasos:
+
+1. **Chunking** — los documentos se cortan en unidades de ~1500 tokens.
+2. **Extracción** — el LLM lee cada chunk y saca entidades + relaciones + 2-3 consultas anticipadas por entidad.
+3. **Comunidades** — algoritmo Leiden agrupa entidades relacionadas en comunidades temáticas jerárquicas.
+4. **Reportes** — el LLM escribe un resumen narrativo de cada comunidad.
+
+Al final ves un resumen con conteos y costo total:
+
+```
+✓ Indexed 3 documents, 124 text units, 412 entities, 1037 relationships,
+  38 communities, 38 reports.
+  Run: 2026-06-02T14-23-08_e3f9a1
+  Cost: $0.36 (complete)
+```
+
+El **"complete"** entre paréntesis quiere decir que todos los precios de los modelos usados están en el price book — el costo es exacto, no estimado. Si ves `partial` o `undefined`, agrega `extra_pricing` en tu `grail.yaml`.
+
+## 4. Preguntar
+
+```bash
+# Modo cascade — el más versátil para preguntas factuales
+uv run grail query ./mi-kb "¿Cuáles son los temas principales del corpus?" --mode global
+
+uv run grail query ./mi-kb "¿Quién es <una entidad de tu corpus>?" --mode local
+
+uv run grail query ./mi-kb "Compara X y Y" --mode agent
+```
+
+Si no estás seguro qué modo usar, parte con `--mode cascade`. Es el que mejor responde preguntas factuales comunes y combina el grafo con un rescate de texto.
+
+Lee [los seis modos de búsqueda](/learn/search-modes) para entender cuándo elegir cada uno.
+
+## 5. Conversar
+
+GRAIL trae dos chats listos:
+
+```bash
+# Chat en terminal con sesiones persistentes (Textual TUI)
+uv run grail chat ./mi-kb
+
+# Chat web (FastAPI + React, http://127.0.0.1:8765)
+uv run grail ui ./mi-kb
+```
+
+El chat usa por defecto el modo `agent` — el LLM decide qué modo de búsqueda llamar por cada pregunta.
+
+## 6. Actualizar incrementalmente
+
+Cuando agregues, modifiques o elimines documentos, **no necesitas re-indexar todo**:
+
+```bash
+uv run grail append ./mi-kb nuevo.pdf otro.md
+uv run grail edit   ./mi-kb --name existente.md --src /tmp/actualizado.md
+uv run grail delete ./mi-kb obsoleto.txt
+```
+
+GRAIL re-extrae solo los chunks afectados y actualiza las comunidades cuando el cambio supera un umbral configurable. Ver [Actualizaciones incrementales](/learn/two-modes) para el detalle.
+
+## Solución de problemas
+
+| Síntoma | Causa probable | Solución |
+|---|---|---|
+| `No API key for endpoint deepinfra` | `.env` no cargado o variable mal escrita | `cp .env.example .env` y rellena `DEEPINFRA_API_KEY` |
+| Indexación cuelga sin output | Concurrencia muy alta para tu cuenta del proveedor | Baja `llm.concurrent_requests` en `grail.yaml` |
+| Respuestas vacías | Tu pregunta no matchea ninguna entidad | Reformula con la [fórmula QUIÉN + QUÉ + términos](/learn/search-modes#la-forma-de-la-pregunta-importa), o usa `--mode global` |
+| `Pricing status: partial` | Modelo que usas no está en el price book | Agrega `extra_pricing` en `llm:` con tarifas de tu proveedor |
+
+## Siguiente paso
+
+- [Explora los seis modos de búsqueda](/learn/search-modes) para elegir la mejor herramienta por pregunta.
+- [Trazas de consulta](/guides/query-tracing) para ver exactamente qué prompts y contextos vio el LLM.
+- [El SDK de Python](/reference/python-sdk) si vas a embeber GRAIL en tu propia app.

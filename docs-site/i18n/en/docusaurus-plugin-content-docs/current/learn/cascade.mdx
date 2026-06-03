@@ -1,0 +1,92 @@
+---
+title: Cascade — when the fact isn't in the graph
+description: Why cascade tends to win on factual questions, and how it combines graph with text rescue.
+sidebar_position: 5
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Cascade — when the fact isn't in the graph
+
+Vanilla GraphRAG has a known weakness: sometimes the fact you want lives in a **text chunk** whose main entity wasn't extracted during indexing. The graph doesn't know about the fact. The answer comes out badly.
+
+`cascade` solves this. It's probably the mode you'll use the most.
+
+<Analogy>
+
+Picture asking the librarian for the exact price of a drug in a medical protocol.
+
+- If she answers "let me check my concept map" (mode `local`), the price may never have been extracted as an entity — the answer is "not found".
+- If she answers "let me skim the pages that mention the drug" (vanilla RAG), she brings back the right chunks but loses the graph structure.
+
+`cascade` does **both at once**, combines the rankings, and gives you the best of both worlds.
+
+</Analogy>
+
+## How it works
+
+1. **Entity gate.** Embed your question, find the top-k most similar entities in the graph. These entities constrain the candidate pool.
+2. **Text rescue.** In parallel, run **BM25** and **cosine similarity** over all text chunks. Bring back the most relevant ones even if their entities aren't in the top-k.
+3. **Combined ranking.** Merge both rankings with a configurable weight. Chunks that appear in both rise sharply; chunks in only one are still considered.
+4. **Synthesis.** The LLM sees the combined context and answers.
+
+```
+                  Your question
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+   Top-k entities  BM25 over chunks  Cosine over chunks
+        │              │              │
+        └──────────────┼──────────────┘
+                       ▼
+              Combined ranking
+                       │
+                       ▼
+                Context to LLM
+                       │
+                       ▼
+                    Answer
+```
+
+## When to use `cascade`
+
+It's the **default** option we recommend for factual questions. Works especially well when:
+
+- The question has **specific terms** likely to appear in the literal text ("how many months does X last?", "what percentage covers Y?").
+- The corpus has **details lost** in entity extraction (numbers, dates, legal clauses).
+- You're not sure whether the answer lives in an entity or only in text.
+
+## When not to use `cascade`
+
+Three cases where another mode is better:
+
+| If your question is… | Use | Why |
+|---|---|---|
+| About **a single file** you've already named | `document` | More precise when we limit scope |
+| **Broad thematic** ("what's it all about") | `global` | Community reports are the answer |
+| **Compound** ("compare X and Y, consider Z") | `agent` | Needs multiple iterated queries |
+
+## Tuning the balance
+
+By default, `cascade` weights entities and text evenly. If your corpus is highly structured (lots of schema, few free notes) you can weight it more to the graph; if it's very narrative, more to the text.
+
+See the [config glossary](/reference/cli) for the `cascade_*` flags under `search:` in your `grail.yaml`.
+
+## Benchmark result
+
+In our internal benchmark (Chilean Oncology Laws), `cascade` and `agent` (which uses `cascade` as one of its tools) lead:
+
+| Question category | `cascade` only | `agent` |
+|---|---|---|
+| Single facts | 4.6 / 5 | 4.7 / 5 |
+| Multi-chunk | 4.5 / 5 | 4.8 / 5 |
+| Cross-source | 4.4 / 5 | 4.9 / 5 |
+| Comparative | 4.0 / 5 | 4.9 / 5 |
+
+`cascade` alone already beats vanilla RAG comfortably. `agent` improves especially on compound questions because it can run `cascade` twice for different subtopics.
+
+## Next step
+
+- [Search modes](/learn/search-modes) — the full panorama.
+- [Communities and Leiden](/learn/communities-leiden) — what `global` does underneath.
+- [KB quickstart](/start/kb-quickstart) — try `cascade` against your own corpus.

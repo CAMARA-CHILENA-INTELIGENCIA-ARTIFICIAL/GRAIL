@@ -1,0 +1,92 @@
+---
+title: Cascade — cuando el hecho no está en el grafo
+description: Por qué cascade es el modo que suele ganar en preguntas factuales, y cómo combina grafo con rescate de texto.
+sidebar_position: 5
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Cascade — cuando el hecho no está en el grafo
+
+GraphRAG vanilla tiene una debilidad conocida: a veces el hecho que buscas vive en un **chunk de texto** cuya entidad principal no se extrajo en la indexación. El grafo no sabe del hecho. La respuesta queda mal.
+
+`cascade` resuelve esto. Es probablemente el modo que más vas a usar.
+
+<Analogy>
+
+Imagina pedirle al bibliotecario que te encuentre el precio exacto de un fármaco en un protocolo médico.
+
+- Si te responde con "consulto mi mapa de conceptos" (modo `local`), puede que el precio nunca se haya extraído como entidad — la respuesta queda "no encontrado".
+- Si te responde con "ojeo las páginas que mencionan el fármaco" (RAG vanilla), trae los chunks correctos pero pierde la estructura del grafo.
+
+`cascade` hace **las dos cosas a la vez**, combina los rankings, y te da la mejor respuesta de ambos mundos.
+
+</Analogy>
+
+## Cómo funciona
+
+1. **Filtrado por entidades.** Embed tu pregunta, encuentra las top-k entidades del grafo más similares. Estas entidades restringen el candidato pool.
+2. **Rescate de texto.** En paralelo, corre **BM25** y **cosine similarity** sobre todos los chunks de texto. Trae los más relevantes aunque sus entidades no estén entre las top-k.
+3. **Ranking combinado.** Junta ambos rankings con un peso configurable. Los chunks que aparecen en ambos suben fuerte; los que solo aparecen en uno también se consideran.
+4. **Síntesis.** El LLM ve el contexto combinado y responde.
+
+```
+                    Tu pregunta
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+  Top-K entidades   BM25 sobre chunks   Cosine sobre chunks
+        │                │                │
+        └────────────────┼────────────────┘
+                         ▼
+                Ranking combinado
+                         │
+                         ▼
+                  Contexto al LLM
+                         │
+                         ▼
+                     Respuesta
+```
+
+## Cuándo usar `cascade`
+
+Es la opción **default** que recomendamos para preguntas factuales. Funciona especialmente bien cuando:
+
+- La pregunta tiene **términos específicos** que probablemente estén en el texto literal ("¿cuántos meses dura X?", "¿qué porcentaje cubre Y?").
+- El corpus tiene **detalles que se pierden** en la extracción de entidades (números, fechas, cláusulas legales).
+- No estás seguro si la respuesta vive en una entidad o solo en texto.
+
+## Cuándo no usar `cascade`
+
+Hay tres casos donde otro modo es mejor:
+
+| Si tu pregunta es… | Usa | Por qué |
+|---|---|---|
+| Sobre **un solo archivo** que ya nombraste | `document` | Más preciso si limitamos el alcance |
+| **Temática amplia** ("de qué trata todo esto") | `global` | Los reportes de comunidad son la respuesta |
+| **Compuesta** ("compara X y Y, considera Z") | `agent` | Necesita múltiples consultas iteradas |
+
+## Configurar el balance
+
+Por default, `cascade` da peso parejo a entidades y texto. Si tu corpus es muy estructurado (mucho schema, pocas notas libres) puedes pesarlo más al grafo; si es muy narrativo, más al texto.
+
+Ver el [glosario de configuración](/reference/cli) para los flags `cascade_*` en `search:` de tu `grail.yaml`.
+
+## Resultado de benchmark
+
+En nuestro benchmark interno (Leyes de Oncología de Chile), `cascade` y `agent` (que usa `cascade` como una de sus herramientas) lideran:
+
+| Categoría de pregunta | `cascade` solo | `agent` |
+|---|---|---|
+| Hechos únicos | 4.6 / 5 | 4.7 / 5 |
+| Multi-chunk | 4.5 / 5 | 4.8 / 5 |
+| Cross-source | 4.4 / 5 | 4.9 / 5 |
+| Comparativas | 4.0 / 5 | 4.9 / 5 |
+
+`cascade` solo ya gana cómodamente a RAG vanilla. `agent` mejora especialmente en preguntas compuestas porque puede ejecutar `cascade` dos veces para distintos subtemas.
+
+## Siguiente paso
+
+- [Modos de búsqueda](/learn/search-modes) — el panorama completo.
+- [Comunidades y Leiden](/learn/communities-leiden) — qué hace `global` por debajo.
+- [Quickstart KB](/start/kb-quickstart) — prueba `cascade` contra tu propio corpus.

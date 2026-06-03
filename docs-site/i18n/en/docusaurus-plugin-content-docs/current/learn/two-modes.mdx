@@ -1,0 +1,92 @@
+---
+title: The two modes
+description: GRAIL's most important distinction — knowledge base vs agentic memory — explained side by side.
+sidebar_position: 2
+---
+
+import Analogy from "@site/src/components/Analogy";
+import ModeBadge from "@site/src/components/ModeBadge";
+
+# The two modes
+
+GRAIL has **one architecture** and **two ways to feed it**. That's the design decision worth understanding before you start.
+
+<Analogy>
+
+Picture a building with **two doors** leading into the same hall.
+
+- Through the **KB door** come crates of documents — someone wrote books, reports, PDFs, code — and the engine digests them so they become queryable.
+- Through the **memory door** walks in an agent — Claude Code, Codex, OpenCode — leaving hand-written notes about what it learns as it goes.
+
+Once inside, the hall is the same, the search tools are the same, and no one cares which door a given fact came in through.
+
+</Analogy>
+
+## Direct comparison
+
+|  | <ModeBadge mode="kb" /> | <ModeBadge mode="memory" /> |
+|---|---|---|
+| **Who writes** | An LLM reads your documents and extracts entities | Your agent writes what it already knows |
+| **What goes in** | `input/` with PDFs, markdown, code | `memories/<category>/` with markdown observations |
+| **Write cost** | One LLM call per document chunk | Zero LLM calls — the agent already knows what it meant |
+| **When to process** | Batch indexing (`grail index`) | Incremental, one observation at a time |
+| **Source of communities** | Leiden algorithm over the graph | Declared folders + reviewed proposals |
+| **Extra search mode** | — | `recall`: structural filter, no LLM |
+| **Init command** | `grail init my-project` | `grail init my-project --memory` |
+| **Python API** | `GRAIL.from_config(...)` | `MemoryProject(...)` |
+
+## Same search layer on both sides
+
+This is the critical part: **the six search modes work identically on both**. When you ask a natural-language question, it doesn't matter which door the facts came through.
+
+- `local` — find entities similar to your question, assemble their context, answer.
+- `cascade` — entity gate + BM25/cosine text rescue, combined ranking.
+- `global` — map-reduce over thematic community reports.
+- `document` — scope the search to a single source file.
+- `agent` — the LLM picks which mode to call per question, iterating up to 5 times.
+- `recall` — pure pandas filter over date, category, tags. **Memory only.** **Zero LLM.**
+
+See [Search modes](/learn/search-modes) for each one in detail.
+
+## When to pick which?
+
+### Pick knowledge base if…
+
+- You have an **existing corpus** you want queryable: a legal library, technical manuals, papers, legacy code.
+- The sources are **authoritative** (not written by your agent).
+- You're going to index **once** or **periodically** and query many times.
+- You care about **exact provenance** to source files for verifiable citations.
+
+### Pick agentic memory if…
+
+- Your agent needs to **remember across sessions** what it decided, observed, or learned.
+- The "sources" don't exist as documents — they're **agent observations** about the conversation, the code, the user's decisions.
+- You want **the agent itself** to control which entities and relationships to create (not an intermediate LLM guessing).
+- You need writes to be **incremental and cheap** — no re-indexing cycle.
+
+### Or both at once
+
+Nothing stops you from mixing them. A project can have **`input/` with reference PDFs** *and* **`memories/` with observations the agent accumulates in use**. Both paths feed the same graph, and the six modes query both sources at once.
+
+<Analogy label="Think of mixed mode as…">
+
+A **researcher with a personal library**. The library is the PDFs (KB mode), the notebook is the researcher's observations (memory mode). When you ask the researcher something, they can pull a book, check their notebook, or combine both.
+
+</Analogy>
+
+## What they share
+
+| Layer | Behaviour |
+|---|---|
+| **Artefacts** | Same parquet files (`final_entities`, `final_relationships`, `final_text_units`, …) |
+| **Graph** | Same NetworkX underneath |
+| **Vector store** | Same (FAISS / LanceDB / ChromaDB) |
+| **Embeddings** | Same model |
+| **Provenance** | Each text unit keeps a pointer to the source file |
+| **Search modes** | The 5 LLM modes work identically; `recall` is the sixth, memory-only |
+
+## Next step
+
+- If you have documents to index → [KB quickstart](/start/kb-quickstart).
+- If you have an agent you want to give memory → [Memory quickstart](/start/memory-quickstart).
+- If you're not sure which mode fits → [The decision tree](/learn/search-modes#when-to-pick-which) breaks it down by question type.

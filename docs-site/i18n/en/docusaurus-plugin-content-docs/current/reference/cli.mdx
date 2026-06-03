@@ -1,0 +1,365 @@
+---
+title: CLI reference
+description: Every grail subcommand with its flags and examples.
+sidebar_position: 1
+---
+
+# CLI reference
+
+GRAIL's CLI is a wrapper over the Python SDK. Each subcommand performs one concrete operation and returns results with standard exit codes.
+
+All commands take a **project directory** as the first positional argument.
+
+## Master table
+
+| Command | What for |
+|---|---|
+| `grail init` | Create a new project |
+| `grail index` | Full indexing pipeline (KB mode) |
+| `grail query` | Query an indexed project |
+| `grail append` | Add files to an existing KB |
+| `grail edit` | Replace a KB file's content |
+| `grail delete` | Remove files from a KB |
+| `grail create-entities` | Discover entity types from a corpus sample |
+| `grail consolidate` | Generate memory proposals (memory mode) |
+| `grail proposals list/apply` | Review and apply proposals |
+| `grail chat` | Interactive terminal chat |
+| `grail ui` | Web chat (FastAPI + React) |
+| `grail viz` | HTML visualisation of the graph |
+| `grail explore` | Browse project artefacts |
+| `grail export-neo4j` | Export the graph to Neo4j |
+| `grail status` | Artefact status |
+| `grail config show` | Resolved project configuration |
+| `grail prompt list/show` | Inspect the prompt registry |
+
+---
+
+## `grail init`
+
+Creates a new project. Default: `knowledge_base` mode. With `--memory`, `memory` mode.
+
+```bash
+grail init <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--name NAME` | string | Project name. Default: directory name. |
+| `--memory` | bool | Create a memory-mode project (`memories/` folder). |
+| `--template NAME` | string | Pre-configured template (`low_cost_setup`, etc.). Excludes `--memory`. |
+| `--templates-dir DIR` | path | Extra directory for your own templates. |
+| `--list-templates` | bool | List available templates and exit. |
+| `--overwrite` | bool | Overwrite an existing scaffold. |
+| `--git / --no-git` | bool | Initialise git repo. Default: on for memory, off for KB. |
+
+**Examples:**
+
+```bash
+# KB with low-cost template (recommended starter)
+grail init ./my-kb --name my-kb --template low_cost_setup
+
+# Memory with git auto-initialised
+grail init ./my-mem --memory
+
+# List available templates
+grail init --list-templates
+```
+
+---
+
+## `grail index`
+
+Runs the full indexing pipeline: chunking → extraction → communities → reports.
+
+```bash
+grail index <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--discover-entities / --no-discover-entities` | bool | LLM proposes entity types from the corpus before extraction. |
+| `--vectorstore NAME`, `--vs` | string | Vector store: `lancedb` (default) \| `faiss` \| `chromadb`. |
+
+**Examples:**
+
+```bash
+grail index ./my-kb
+grail index ./my-kb --discover-entities --vs faiss
+```
+
+---
+
+## `grail query`
+
+Answers a question against an indexed project.
+
+```bash
+grail query <project_dir> "<question>" [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--mode MODE`, `-m` | string | `local` (default) · `cascade` · `global` · `document` · `agent` · `recall` |
+| `--document NAME`, `-d` | string | Required for `--mode document`. File name/path/doc-id. |
+| `--rerank / --no-rerank` | bool | Override reranker config for this query. |
+| `--trace DIR`, `-t` | path | Dump prompts, responses, and context to JSON. |
+| `--output FMT`, `-o` | string | `text` (rich panel) or `json`. |
+| `--vectorstore NAME` | string | Override vector store for this query. |
+
+**Recall filters (combinable with any mode):**
+
+| Flag | Type | Description |
+|---|---|---|
+| `--since DELTA` | string | ISO-8601 (`2026-05-01`) or relative (`1h`, `7d`, `2w`). |
+| `--before DELTA` | string | Same as `--since` but upper bound. |
+| `--category GLOB` | string | Folder glob (`work/clients/**`). |
+| `--tag TAG` | string | Tag filter (repeat for "any of these"). |
+| `--entity-name NAME` | string | Restrict to observations mentioning this entity. |
+| `--type TYPE` | string | Restrict to entities of this type (`PERSON`, `ORGANIZATION`, ...). |
+| `--min-confidence FLOAT` | float | Minimum confidence. |
+
+**Examples:**
+
+```bash
+# Classic cascade
+grail query ./my-kb "How much does FONASA cover?" --mode cascade
+
+# Agent with trace
+grail query ./my-kb "Compare X and Y" --mode agent --trace ./traces
+
+# Pure recall (no LLM)
+grail query ./my-mem --mode recall --since 7d --tag decision
+
+# Cascade scoped to recent memory
+grail query ./my-mem "Why did Acme pick Postgres?" \
+  --mode cascade --since 30d --category "work/clients/acme/**"
+
+# JSON output for scripts
+grail query ./my-kb "..." --mode cascade --output json
+```
+
+---
+
+## `grail append` / `grail edit` / `grail delete`
+
+Incremental updates to the KB. Only re-extract affected chunks.
+
+```bash
+grail append <project_dir> file1 [file2 ...]
+grail edit   <project_dir> --name NAME --src LOCAL_PATH
+grail delete <project_dir> name1 [name2 ...]
+```
+
+**Examples:**
+
+```bash
+grail append ./my-kb papers/2026-new.pdf docs/spec.md
+grail edit   ./my-kb --name spec.md --src /tmp/spec-updated.md
+grail delete ./my-kb obsolete.txt draft.md
+```
+
+---
+
+## `grail create-entities`
+
+LLM proposes entity types reading a corpus sample. Useful for specialised domains (legal, medical, technical).
+
+```bash
+grail create-entities <project_dir> [--write]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--write` | bool | Persist proposed types into `grail.yaml`. |
+
+Without `--write`, only prints types to stdout.
+
+---
+
+## `grail consolidate` (memory mode)
+
+Runs proposal analyses: Leiden + edge density + alias detection + folder split.
+
+```bash
+grail consolidate <project_dir> [--output text|json]
+```
+
+**Key behaviour:** **nothing mutates**. Only generates a file `output/proposals/<timestamp>.json` with proposals for review.
+
+---
+
+## `grail proposals list` / `grail proposals apply`
+
+Inspect and apply proposals generated by `consolidate`.
+
+```bash
+grail proposals list  <project_dir> [--status pending|accepted|rejected]
+grail proposals apply <project_dir> [--accept ID] [--reject ID]
+```
+
+**Examples:**
+
+```bash
+grail proposals list ./my-mem
+# 5 pending proposals:
+#   abc123: merge_aliases  (confidence 0.92)
+#   def456: discover_community (confidence 0.78)
+#   ...
+
+grail proposals apply ./my-mem --accept abc123
+grail proposals apply ./my-mem --reject def456
+```
+
+---
+
+## `grail chat` (TUI)
+
+Terminal chat with SQLite-persisted sessions. Streaming, slash commands, markdown render.
+
+```bash
+grail chat <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--mode MODE`, `-m` | string | Initial mode: `agent` (default) \| `local` \| `cascade` \| `global` \| `document`. |
+| `--session ID`, `-s` | string | Resume existing session (by ID prefix). |
+| `--db PATH` | path | Override SQLite (default: `<project>/.grail/chat.db`). |
+
+Inside the chat, use `/help` to see available slash commands.
+
+---
+
+## `grail ui` (web chat)
+
+Web chat with FastAPI backend and React frontend.
+
+```bash
+grail ui <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--host HOST`, `-h` | string | Bind address. Default: `127.0.0.1`. |
+| `--port PORT`, `-p` | int | Port. Default: `8765`. |
+| `--dev` | bool | Enables CORS for Vite dev server on `:5173`. |
+| `--debug` | bool | Prints every LLM prompt and response with colours. |
+
+---
+
+## `grail viz`
+
+Renders the entity+relationship graph to an interactive HTML.
+
+```bash
+grail viz <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--output FILE.html` | path | Output HTML path. Default: `<project>/graph.html` |
+| `--open-browser` | bool | Open the HTML after generating. |
+| `--layout-seed N` | int | Layout seed (for reproducibility). |
+| `--layout-iterations N` | int | Force-directed layout iterations. |
+
+---
+
+## `grail explore`
+
+Interactive browser of project artefacts (documents, entities, relationships, communities).
+
+```bash
+grail explore <project_dir> [--output text|json]
+```
+
+---
+
+## `grail export-neo4j`
+
+Pushes the graph to a Neo4j database.
+
+```bash
+grail export-neo4j <project_dir> [options]
+```
+
+| Flag | Type | Description |
+|---|---|---|
+| `--uri URI` | string | Bolt URI. Default: `bolt://localhost:7687`. |
+| `--username USER` | string | Default: `neo4j`. |
+| `--password PW` | string | Password. |
+| `--database DB` | string | Database name. Default: `neo4j`. |
+| `--clear` | bool | Clear the database before loading. |
+| `--no-apoc` | bool | Don't use APOC procedures (compatibility). |
+| `--batch-size N` | int | UNWIND batch size. Default: `1000`. |
+
+---
+
+## `grail status`
+
+Shows which artefacts exist, their size and date.
+
+```bash
+grail status <project_dir>
+```
+
+---
+
+## `grail config show`
+
+Prints the resolved configuration (after defaults, env vars, and merges).
+
+```bash
+grail config show <project_dir>
+```
+
+Useful for debugging: see exactly which config GRAIL will use.
+
+---
+
+## `grail prompt list` / `grail prompt show`
+
+Inspects the prompt registry (built-in + custom).
+
+```bash
+grail prompt list [<project_dir>]
+grail prompt show <prompt_name> [<project_dir>]
+```
+
+**Example:**
+
+```bash
+grail prompt list                # list available prompts
+grail prompt show entity_relation # see the full extraction prompt
+```
+
+---
+
+## Global environment variables
+
+| Variable | Purpose |
+|---|---|
+| `GRAIL_LOG_LEVEL` | Log level for the `grail.*` logger. Default: `WARNING`. |
+| `OPENAI_API_KEY` | API key for `openai` endpoint. |
+| `DEEPINFRA_API_KEY` | API key for `deepinfra` endpoint. |
+| `ANTHROPIC_API_KEY` | API key for `anthropic` endpoint. |
+| `TOGETHER_API_KEY` | API key for `together` endpoint. |
+| `GROQ_API_KEY` | API key for `groq` endpoint. |
+| `OPENROUTER_API_KEY` | API key for `openrouter` endpoint. |
+
+API keys are also read from the project's `.env` file if it exists.
+
+---
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | OK |
+| 1 | User error (invalid argument, missing file) |
+| 2 | Configuration or API error (LLM unavailable, missing key) |
+
+## Next step
+
+- [Python SDK](/reference/cli) — the same functionality from code.
+- [Agent skill](/reference/cli) — the skill's CLI scripts, same model.
+- [Config glossary](/reference/cli) — every field of `grail.yaml`.

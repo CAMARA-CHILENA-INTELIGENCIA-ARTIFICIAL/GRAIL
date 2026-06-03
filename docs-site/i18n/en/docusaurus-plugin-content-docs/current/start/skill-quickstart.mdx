@@ -1,0 +1,174 @@
+---
+title: Quickstart — Agent skill
+description: Install GRAIL's skill in Claude Code, Codex, or OpenCode so your agent has persistent memory.
+sidebar_position: 4
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="memory" />
+
+# Quickstart — Agent skill
+
+GRAIL ships with a **portable skill** at `skills/grail/` that your coding agent can use directly. It works in any framework supporting the standard `SKILL.md` format.
+
+## Supported frameworks
+
+| Framework | User scope | Project scope |
+|---|---|---|
+| **Claude Code** (CLI + claude.ai) | `~/.claude/skills/grail/` | `<repo>/.claude/skills/grail/` |
+| **OpenAI Codex** | `~/.agents/skills/grail/` | `<repo>/.agents/skills/grail/` |
+| **OpenCode** and others with `SKILL.md` | framework's skills directory | same |
+
+## 1. Clone GRAIL
+
+If you haven't already:
+
+```bash
+git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
+cd GRAIL
+```
+
+## 2. Install the skill
+
+Recommended: **symlink**, so `git pull` updates the skill automatically.
+
+### Claude Code
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s "$(pwd)/skills/grail" ~/.claude/skills/grail
+```
+
+### Codex
+
+```bash
+mkdir -p ~/.agents/skills
+ln -s "$(pwd)/skills/grail" ~/.agents/skills/grail
+```
+
+### Project scope (skill bundled with your repo)
+
+```bash
+cd /path/to/your/repo
+mkdir -p .claude/skills
+ln -s "$(realpath /path/to/GRAIL/skills/grail)" .claude/skills/grail
+```
+
+If your system doesn't support symlinks (some Windows), replace `ln -s` with `cp -R`.
+
+## 3. First-session setup
+
+The first time your agent uses the skill, `scripts/setup.sh` installs GRAIL via pip. It's idempotent — safe to call every time.
+
+```bash
+bash ~/.claude/skills/grail/scripts/setup.sh
+# → {"ok": true, "status": "installed", "grail_version": "0.1.0"}
+```
+
+Verify with:
+
+```bash
+python ~/.claude/skills/grail/scripts/env_check.py
+```
+
+## 4. What the skill does for you
+
+The skill exposes primitives as CLI scripts that return JSON. Your agent invokes them based on the conversation context.
+
+### Discovery primitives
+
+```bash
+python scripts/list_grail_projects.py     # which projects exist?
+python scripts/status.py --project my-mem # mode? counts? last indexed?
+```
+
+### Memory-mode primitives
+
+```bash
+python scripts/memory/add_observation.py --project my-mem \
+  --title "..." --content "..." --category "..." \
+  --tag decision \
+  --entities '[...]' \
+  --relationships '[...]'
+
+python scripts/memory/recall.py --project my-mem --since 7d --tag decision
+
+python scripts/memory/consolidate.py     --project my-mem
+python scripts/memory/list_proposals.py  --project my-mem
+python scripts/memory/apply_proposal.py  --project my-mem --accept <id>
+```
+
+### KB-mode primitives
+
+```bash
+python scripts/index.py        --project my-kb
+python scripts/query.py        --project my-kb --question "..." --mode cascade
+python scripts/append.py       --project my-kb --file new.pdf
+python scripts/edit.py         --project my-kb --name x.md --src /tmp/y.md
+python scripts/delete.py       --project my-kb --files old.txt
+```
+
+All return the same JSON envelope:
+
+```json
+{
+  "ok": true,
+  "data": { /* the result */ },
+  "warnings": [],
+  "next_steps": []
+}
+```
+
+When something fails:
+
+```json
+{
+  "ok": false,
+  "error": "Human-readable description for the agent",
+  "next_steps": ["Actionable suggestions"]
+}
+```
+
+## 5. Environment variables
+
+The skill needs the API keys used by your `grail.yaml`. If you'll use **memory mode without embeddings**, you don't need any key — `recall` works offline.
+
+If you'll use cascade / local / global / agent / document, yes you need the key for the LLM provider in your config (common: `OPENAI_API_KEY`, `DEEPINFRA_API_KEY`, `ANTHROPIC_API_KEY`).
+
+## 6. Try it in your agent
+
+Once installed, your agent should answer phrases like:
+
+- "Remember that we decided to use Postgres in the Acme project."
+- "What decisions did I make last week?"
+- "List my GRAIL projects."
+- "Index these PDFs into a new project called `papers`."
+
+The skill ships activation language pre-loaded in `SKILL.md` so the agent recognises when to use it.
+
+## How it updates
+
+If you installed via symlink:
+
+```bash
+cd /path/to/GRAIL && git pull
+```
+
+Skill is already updated — nothing else to do.
+
+If you copied with `cp -R`, repeat the copy.
+
+## How it uninstalls
+
+```bash
+rm ~/.claude/skills/grail   # or ~/.agents/skills/grail
+```
+
+The **project registry** (`~/.grail/registry.json`) is independent of the skill — delete it manually if you want a clean slate.
+
+## Next step
+
+- [Create your first memory project](/start/memory-quickstart) and wire it to the agent.
+- [Python SDK](/reference/cli) if you'd rather call GRAIL directly from your app without going through scripts.
+- [Memory model](/learn/memory-model) to understand why folders are communities.

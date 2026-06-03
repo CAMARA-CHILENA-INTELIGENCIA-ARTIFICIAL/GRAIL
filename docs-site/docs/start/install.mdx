@@ -1,0 +1,108 @@
+---
+title: Instalar GRAIL
+description: Cómo poner GRAIL en marcha en tu máquina, con uv o pip, y configurar tus API keys.
+sidebar_position: 1
+---
+
+# Instalar GRAIL
+
+GRAIL corre sobre **Python 3.12** y se instala como un paquete Python normal. Toma menos de un minuto.
+
+## Requisitos
+
+- Python 3.12 o superior.
+- [uv](https://github.com/astral-sh/uv) (recomendado) o pip.
+- Al menos una API key de algún proveedor LLM (OpenAI, DeepInfra, Anthropic, etc.) **excepto** si vas a usar solo modo memoria sin embeddings.
+
+## Con uv (recomendado)
+
+```bash
+git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
+cd GRAIL
+
+uv venv --python 3.12
+uv pip install -e ".[dev]"
+```
+
+Extras opcionales (composables — agrega los que necesites separados por coma):
+
+| Extra | Para qué |
+|---|---|
+| `[s3]` | Backend de almacenamiento S3 |
+| `[ui]` | Chat web (FastAPI + React) |
+| `[dev]` | Tests, lint, mypy |
+
+Ejemplo combinado: `uv pip install -e ".[s3,ui,dev]"`.
+
+## Con pip
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## Configurar API keys
+
+Copia el archivo de ejemplo y rellena las keys de los providers que vayas a usar:
+
+```bash
+cp .env.example .env
+# Edita .env con tu editor preferido
+```
+
+Variables comunes:
+
+| Endpoint | Variable |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| DeepInfra | `DEEPINFRA_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Together | `TOGETHER_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+
+Para **vLLM**, **SGLang**, **Ollama** o **LM Studio** locales no necesitas key — apuntas el endpoint a `localhost`.
+
+## Endpoints incorporados
+
+GRAIL ya viene con 11 endpoints listos:
+
+`openai`, `anthropic`, `deepinfra`, `together`, `groq`, `openrouter`, `ollama`, `vllm`, `sglang`, `lmstudio`, `local`.
+
+En tu `grail.yaml` los referencias por nombre:
+
+```yaml
+llm:
+  endpoint: openai
+  model: gpt-4o-mini
+
+embeddings:
+  endpoint: deepinfra
+  model: Qwen/Qwen3-Embedding-0.6B
+```
+
+Para agregar uno propio, declara un `endpoints.yaml` con la base URL y la variable de entorno de la API key:
+
+```yaml
+endpoints:
+  mi-vllm:
+    base_url: http://mi-vllm.local:8000/v1
+    api_key_env: MI_VLLM_KEY
+    requires_key: false
+```
+
+## Verificar la instalación
+
+```bash
+uv run grail --help
+```
+
+Si ves la lista de subcomandos (`init`, `index`, `query`, `chat`, `ui`, …), está todo correcto.
+
+## Siguiente paso
+
+Elige por dónde empezar según qué quieras hacer:
+
+- **Tienes documentos** → [Quickstart de base de conocimiento](/start/kb-quickstart). 5 minutos hasta tu primera consulta.
+- **Tienes un agente** → [Quickstart de memoria agéntica](/start/memory-quickstart). 5 minutos hasta tu primera observación.
+- **Tienes Claude Code, Codex u OpenCode** → [Quickstart del skill](/start/skill-quickstart). Una línea para que tu agente tenga memoria persistente.

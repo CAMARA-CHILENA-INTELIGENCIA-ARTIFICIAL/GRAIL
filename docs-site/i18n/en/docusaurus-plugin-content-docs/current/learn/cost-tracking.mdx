@@ -1,0 +1,150 @@
+---
+title: Honest cost tracking
+description: How GRAIL distinguishes complete, partial, and undefined pricing — and why you'll never see a fake $0.00.
+sidebar_position: 8
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Honest cost tracking
+
+GRAIL has a deliberate policy on how it reports LLM costs: **it'd rather tell you it doesn't know than make a number up**.
+
+<Analogy>
+
+Picture two friends who help you plan a trip. At the end, both tell you "this cost...":
+
+- The **first** gives you a precise number when they know every price, and warns "I don't know the cost of the second leg, this number is approximate" when data's missing.
+- The **second** always gives you a closed number, even when they're **guessing or assuming $0** for some legs.
+
+Only one is useful for budgeting. GRAIL is the first.
+
+</Analogy>
+
+## The problem
+
+Many frameworks report costs like this:
+
+```
+Indexing complete. Cost: $0.42
+```
+
+But if you look inside, that `$0.42` is **silently lying**:
+
+- The `Qwen/Qwen3.6-35B-A3B` model wasn't in the price book → counted as $0.
+- The embeddings model wasn't either → another $0.
+- The reranker wasn't either.
+
+The user reads "GRAIL charged me 42 cents", but reality is "GRAIL counted 42 cents on the models it knows, and silenced the rest".
+
+That's bad information. Worse than no information if you're budgeting.
+
+## GRAIL's solution
+
+Each LLM call is recorded with its model (`endpoint|model`). Price is looked up in a table. Three possible outcomes:
+
+| Status | Meaning | What the report says |
+|---|---|---|
+| **`complete`** | All used models have a price | `$0.42 (complete)` |
+| **`partial`** | Some models don't have a price | `$0.42 (partial — N models without price)` |
+| **`undefined`** | None have a price | `cost: undefined (M calls, X tokens)` |
+
+If you see `complete`, the number is exact.
+If you see `partial`, real cost is **higher** than reported — and GRAIL tells you how many models weren't counted.
+If you see `undefined`, no estimate is possible — you need to configure prices.
+
+## How to add prices
+
+In your `grail.yaml`:
+
+```yaml
+llm:
+  endpoint: deepinfra
+  model: Qwen/Qwen3.6-35B-A3B
+  extra_pricing:
+    "deepinfra|Qwen/Qwen3.6-35B-A3B": [0.15, 0.95]
+    "deepinfra|Qwen/Qwen3-Embedding-8B": [0.01, 0.0]
+    "deepinfra|Qwen/Qwen3-Reranker-0.6B": [0.005, 0.0]
+```
+
+Key is `"<endpoint>|<model>"`. Value is `[prompt_per_1M, completion_per_1M]` in USD.
+
+After that:
+
+```
+Cost: $0.42 (complete)
+```
+
+No surprises, no assumptions.
+
+## Built-in endpoints
+
+GRAIL ships with a **price book** for the most common providers:
+
+- OpenAI: gpt-4o, gpt-4o-mini, gpt-4-turbo, embeddings, etc.
+- Anthropic: claude-3-5-sonnet, claude-3-5-haiku, claude-3-opus, etc.
+- Some popular models from DeepInfra, Together, Groq.
+
+If you use something outside that (self-hosted open models, new providers, beta models), add `extra_pricing` and you're done.
+
+## Ledger in your code
+
+The `CostTracker` is public — you can read it from Python to build your own dashboard:
+
+```python
+from grail import GRAIL, load_config
+
+grail = GRAIL.from_config(load_config("./my-project"))
+
+# ...after some operations...
+
+print(grail.cost_tracker.render_total_cost())
+# → "$0.42 (complete)"
+
+print(grail.cost_tracker.pricing_status())
+# → "complete" | "partial" | "undefined"
+
+print(grail.cost_tracker.summary(by="tag"))
+# → {
+#     "entity_extraction": {"calls": 124, "cost": 0.31, ...},
+#     "community_reports":  {"calls": 38,  "cost": 0.09, ...},
+#     "create_custom_entities": {"calls": 1, "cost": 0.02, ...},
+#   }
+```
+
+The `by="tag"` parameter breaks it down by logical operation. Useful to understand where your budget goes.
+
+## Typical costs per operation
+
+For sense of magnitude (with DeepInfra + Gemma-4-26B + Qwen3-Embedding-0.6B):
+
+| Operation | Approximate cost |
+|---|---|
+| Index 1 PDF of 30 pages | $0.05–0.15 |
+| Index 100 PDFs | $5–15 |
+| One `local` or `cascade` query | $0.001–0.005 |
+| One `global` query | $0.01–0.05 (depends on # communities) |
+| One `agent` query (3 iterations) | $0.005–0.02 |
+| `consolidate` (memory mode) | $0 (no LLM) |
+| `recall` | $0 (no LLM) |
+
+With OpenAI `gpt-4o`, numbers multiply by ~10. With OpenAI `gpt-4o-mini`, they're comparable to DeepInfra/Gemma.
+
+## Memory mode is essentially free
+
+If you only write observations, no queries, **memory mode is $0**. No LLM extraction, no automatic community reports (`consolidate` is only structural analysis, no LLM).
+
+Cost appears when you query with `local`, `cascade`, `global`, `document`, or `agent`. `recall` is always free.
+
+## For budgeting
+
+1. **Index a sample first**. If you're going to index 1000 PDFs, index 10 and multiply.
+2. **Check `pricing_status`** after the sample — if it's not `complete`, add `extra_pricing`.
+3. **Estimate per query mode**. Define how many queries per mode you expect/day.
+4. **Configure cache if you'll re-run**: `llm.cache_enabled: true` makes repeat calls cost nothing.
+
+## Next step
+
+- [KB quickstart](/start/kb-quickstart) — run your first indexing and see cost in action.
+- [Cost optimisation guide](/guides/cost-optimization) — how to lower the bill without losing quality.
+- [Configuration](/reference/cli) — all flags related to `llm.*` and `extra_pricing`.

@@ -1,0 +1,137 @@
+---
+title: Trace queries for debug
+description: How to see exactly which prompts and context the LLM saw when an answer comes out bad.
+sidebar_position: 11
+---
+
+# Trace queries for debug
+
+When an answer comes out wrong, there are two basic questions:
+
+1. **What context did the LLM see?** Maybe the relevant entities weren't retrieved.
+2. **What prompt did the LLM see?** Maybe the prompt structure is losing information.
+
+`grail query --trace <dir>` gives you both in a structured JSON.
+
+## Enable tracing
+
+```bash
+grail query ./my-kb "How much does FONASA cover?" --mode cascade --trace ./traces
+```
+
+This writes `./traces/<timestamp>_<query-hash>.json` with the full detail. Structure:
+
+```json
+{
+  "query": "How much does FONASA cover?",
+  "mode": "cascade",
+  "started_at": "2026-06-02T14:23:00Z",
+  "completed_at": "2026-06-02T14:23:05Z",
+  "completion_time_seconds": 5.2,
+  "llm_calls": [
+    {
+      "tag": "cascade_answer",
+      "endpoint": "deepinfra",
+      "model": "Qwen/Qwen3.6-35B-A3B",
+      "prompt_tokens": 4321,
+      "completion_tokens": 487,
+      "messages": [
+        {"role": "system", "content": "..."},
+        {"role": "user", "content": "..."}
+      ],
+      "response": "..."
+    }
+  ],
+  "context": {
+    "entities": [...],         // retrieved entities
+    "relationships": [...],
+    "text_units": [...],
+    "community_reports": [...]
+  }
+}
+```
+
+## Inspect context
+
+The `context` block is the first place to look. Key question: **is the info you need there?**
+
+```bash
+cat ./traces/*.json | jq '.context.entities[].name'
+# → "FONASA"
+# → "Law 19.966"
+# → "GES System"
+# → "Ricarte Soto"
+# ...
+```
+
+If the right entity **isn't there**, the problem is retrieval:
+
+- In `local` / `cascade`: your question doesn't match by embeddings.
+- Reshape with the [WHO + WHAT + terms formula](/learn/search-modes#question-shape-matters).
+- Or raise `local_top_k_entities` in your config.
+
+If the right entity **is there but the LLM doesn't use it**, the problem is prompt or model:
+
+- Look at `llm_calls[0].messages` for the full prompt.
+- Consider a more capable model for `search.local_search_model`.
+
+## Inspect LLM calls
+
+```bash
+cat ./traces/*.json | jq '.llm_calls[] | {tag, model, tokens: (.prompt_tokens + .completion_tokens)}'
+```
+
+Useful for understanding:
+
+- **How many calls were made** (`agent` can do 1-N).
+- **How many tokens consumed** (for budgeting).
+- **Which prompt was seen** in each call.
+
+## `global` and `agent` modes
+
+For `global`, you'll see one call per community report (map) plus a final call (reduce). If the reduce is synthesising badly, the issue usually is that individual reports are confusing — review map prompts.
+
+For `agent`, each loop iteration appears as a separate call. Look at the sequence to understand which tools it decided to use and when it "gave up" if the answer is bad.
+
+```bash
+cat ./traces/*.json | jq '.llm_calls[] | .tag'
+# → "agent_decide"
+# → "cascade_answer"     ← agent called cascade first
+# → "agent_decide"
+# → "local_answer"        ← then tried local
+# → "agent_decide"
+# → "agent_synthesize"    ← final synthesis
+```
+
+## Tracing from Python
+
+```python
+from grail.query.trace import QueryTracer
+
+tracer = QueryTracer()
+grail.llm.tracer = tracer
+
+result = await grail.search("...", mode="cascade")
+
+tracer.dump("./traces", context_text=result.context_text)
+```
+
+## Common patterns
+
+### "The answer says 'not found' but the info is in the corpus"
+
+→ Check `context.entities` and `context.text_units`. If empty or wrong, it's retrieval. If they're right, it's prompt/model.
+
+### "The agent never calls cascade when it should"
+
+→ Check the sequence of `tag` in `llm_calls`. If you only see `local_answer`, try forcing `--mode cascade` directly instead of `--mode agent`.
+
+### "Cost is higher than expected"
+
+→ `jq '.llm_calls[].prompt_tokens'` tells you how many tokens each call consumes. If you see very long prompts, consider dropping `local_max_tokens` or `search.global_chunk_size`.
+
+## Next step
+
+- [Optimise costs](/guides/cost-optimization) — to lower consumption after you see where it goes.
+- [Search modes](/learn/search-modes) — picking the right mode upfront avoids debug.
+- [CLI reference](/reference/cli) — all flags of `grail query`.

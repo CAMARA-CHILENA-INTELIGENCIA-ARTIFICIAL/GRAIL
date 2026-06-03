@@ -1,0 +1,360 @@
+---
+title: Python SDK
+description: The GRAIL and MemoryProject classes — the Python API the CLI wraps.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+# Python SDK
+
+GRAIL is **a library first**. The CLI is a wrapper over the same two public classes: `GRAIL` (KB mode) and `MemoryProject` (memory mode).
+
+## Install
+
+```bash
+uv pip install -e .
+```
+
+## Common imports
+
+```python
+from grail import (
+    GRAIL,                  # KB orchestrator
+    MemoryProject,          # Memory orchestrator
+    Config, load_config,    # configuration
+    LLMClient,              # direct LLM client (advanced)
+    EmbeddingClient,        # direct embedding client
+    PromptRegistry,         # prompt registry
+    Entity, Relationship,   # parquet row schemas
+    TextUnit, Community,
+    CommunityReport, Document,
+    SearchResult,           # what search() returns
+    Reply,                  # what MemoryProject methods return
+)
+```
+
+## <ModeBadge mode="kb" /> `GRAIL` class
+
+Knowledge-base mode orchestrator.
+
+### Construction
+
+```python
+from grail import GRAIL, load_config
+
+config = load_config("./my-kb")          # path, dict, or Config object
+grail = GRAIL.from_config(config)
+```
+
+`from_config` wires everything: storage, endpoint registry, LLM cache, cost tracker, LLM and embedding clients, prompts, optional reranker.
+
+Public attributes after construction:
+
+| Attribute | Type |
+|---|---|
+| `grail.config` | `Config` |
+| `grail.storage` | `StorageBackend` |
+| `grail.llm` | `LLMClient` |
+| `grail.embeddings` | `EmbeddingClient` |
+| `grail.prompts` | `PromptRegistry` |
+| `grail.cost_tracker` | `CostTracker` |
+| `grail.reranker` | `RerankerClient \| None` |
+| `grail.reporter` | `Reporter` |
+
+### Methods
+
+All I/O methods are `async`. From a regular script, wrap with `asyncio.run(...)`. From async code (FastAPI, Textual, Jupyter), `await` directly.
+
+| Method | Signature | What for |
+|---|---|---|
+| `index()` | `async () -> dict` | Full pipeline. |
+| `search()` | `async (query, *, mode="local", ...) -> SearchResult` | A single search in any of 5 modes. |
+| `agent_search()` | `async (query, ...) -> SearchResult` | Agentic tool-call loop. |
+| `append()` | `async (new_files: list[str]) -> dict` | Add files incrementally. |
+| `edit()` | `async (replacements: dict[str, str]) -> dict` | Replace files. |
+| `delete()` | `async (file_names: list[str]) -> dict` | Delete files. |
+| `create_entity_types()` | `async (*, sample_chars=8000, ...) -> list[str]` | Discover entity types. |
+| `status()` | `sync () -> dict` | Which artefacts exist. |
+
+### End-to-end example
+
+```python
+import asyncio
+from grail import GRAIL, load_config
+
+async def main():
+    grail = GRAIL.from_config(load_config("./my-kb"))
+
+    # 1. Index
+    await grail.index()
+
+    # 2. Search
+    result = await grail.search(
+        "Who is FONASA?",
+        mode="cascade",
+        use_reranker=True,
+    )
+    print(result.response)
+    print(result.completion_time, "seconds")
+    print(result.llm_calls, "LLM calls")
+
+    # 3. Agent
+    result = await grail.agent_search(
+        "Compare AUGE vs Ricarte Soto Law coverage",
+        max_iterations=5,
+    )
+    print(result.response)
+
+    # 4. Incremental
+    await grail.append(["new_paper.pdf"])
+
+    # 5. Cost
+    print(grail.cost_tracker.render_total_cost())
+
+asyncio.run(main())
+```
+
+### Common `search()` kwargs
+
+| kwarg | Type | Description |
+|---|---|---|
+| `mode` | string | `"local"` \| `"cascade"` \| `"global"` \| `"document"` |
+| `conversation_history` | list | `[{"role": "user", "content": "..."}, ...]` |
+| `document` | string \| None | Only for `mode="document"`. |
+| `include_entity_names` | list[str] | Restrict to these entities. |
+| `exclude_entity_names` | list[str] | Exclude these entities. |
+| `use_reranker` | bool \| None | `None` = use config. |
+| `artifact_instructions` | string | Extra text for the synthesis prompt. |
+
+### `SearchResult`
+
+```python
+@dataclass
+class SearchResult:
+    response: str | dict | list
+    context_data: str | list[DataFrame] | dict[str, DataFrame]
+    context_text: str | list[str] | dict[str, str]
+    completion_time: float
+    llm_calls: int
+```
+
+`response` is the human-readable answer. `context_data` and `context_text` are what the LLM saw (useful for debugging).
+
+---
+
+## <ModeBadge mode="memory" /> `MemoryProject` class
+
+Agentic memory mode orchestrator. **Same engine, different write path.**
+
+### Construction
+
+```python
+from grail import MemoryProject
+
+mp = MemoryProject("./my-memory")
+# Optionally: config=Config(...), embeddings=EmbeddingClient(...)
+```
+
+If `meta.json` doesn't exist in the folder, it's created automatically. If it does, it's opened.
+
+### Main methods
+
+| Method | Signature | What for |
+|---|---|---|
+| `add_observation()` | `async (*, title, content, ...) -> Reply` | Write an observation. |
+| `recall()` | `async (query=None, *, mode="recall", ...) -> Reply` | Search with structural filters (any mode). |
+| `list_observations()` | `sync (*, category=None, since=None, ...) -> Reply` | List observations by filter. |
+| `delete_observation()` | `sync (slug, reason=None) -> Reply` | Delete an observation. |
+| `consolidate()` | `sync () -> Reply` | Generate proposals (no mutation). |
+| `list_proposals()` | `sync (*, status=None) -> Reply` | List pending/applied proposals. |
+| `apply_proposal()` | `sync (proposal_id, *, accept=True) -> Reply` | Accept or reject a proposal. |
+
+### `add_observation`: the core primitive
+
+```python
+reply = await mp.add_observation(
+    title="...",                  # required
+    content="...",                # markdown body
+    category="work/clients/acme", # path for folders-as-communities
+    tags=["decision"],
+    entities=[                    # the agent declares entities
+        {"name": "Acme", "type": "ORGANIZATION", "description": "..."},
+    ],
+    relationships=[
+        {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE",
+         "description": "..."},
+    ],
+    observed_at="2026-06-02T14:00:00Z",  # default: now
+    confidence=0.95,                      # 0.0–1.0
+    source="architecture review",
+    related_to=["abc123", "def456"],     # IDs of related observations
+)
+
+print(reply.ok)                          # True
+print(reply.data["observation_id"])      # assigned ULID
+print(reply.data["slug"])                # markdown file slug
+print(reply.data["file_path"])           # absolute path
+print(reply.data["new_entities"])        # names of new entities
+print(reply.data["updated_entities"])    # existing entities that were updated
+```
+
+### `recall`: structural filters
+
+```python
+# Pure recall mode (no LLM, no embedding)
+reply = await mp.recall(
+    mode="recall",
+    since="7d",
+    category="work/clients/acme/**",
+    tags=["decision"],
+    entity_names=["Postgres"],
+    type="ORGANIZATION",
+    min_confidence=0.8,
+    limit=20,
+)
+
+for obs in reply.data["observations"]:
+    print(obs["observed_at"], obs["title"])
+```
+
+```python
+# Cascade with filters (LLM + structural filter)
+reply = await mp.recall(
+    "Why did we rule out DynamoDB?",
+    mode="cascade",
+    since="30d",
+    category="work/clients/acme/**",
+)
+print(reply.data["response"])
+```
+
+### The `Reply` envelope
+
+Every `MemoryProject` method returns a `Reply`:
+
+```python
+@dataclass
+class Reply:
+    ok: bool
+    data: Any = None
+    warnings: list[str] = field(default_factory=list)
+    next_steps: list[str] = field(default_factory=list)
+    error: str | None = None
+```
+
+It's the same JSON contract the skill scripts emit. SDK and skill read the same keys.
+
+---
+
+## Programmatic configuration
+
+`Config` is Pydantic. You can build it without YAML:
+
+```python
+from grail import Config
+from grail.config import (
+    LLMConfig, EmbeddingsConfig, IndexingConfig, StorageConfig,
+)
+
+config = Config(
+    project_name="my-project",
+    root_dir="/tmp/grail-my-project",
+    llm=LLMConfig(
+        endpoint="openai",
+        model="gpt-4o-mini",
+        extra_pricing={"openai|gpt-4o-mini": [0.15, 0.60]},
+    ),
+    embeddings=EmbeddingsConfig(
+        endpoint="openai",
+        model="text-embedding-3-small",
+    ),
+    indexing=IndexingConfig(
+        entity_types=["PERSON", "ORGANIZATION", "PRODUCT"],
+        chunk_size=1500,
+    ),
+    storage=StorageConfig(backend="local", root="/tmp/grail-my-project"),
+)
+
+grail = GRAIL.from_config(config)
+```
+
+Or from a dict:
+
+```python
+config = Config.model_validate({
+    "project_name": "my-project",
+    "llm": {"endpoint": "openai", "model": "gpt-4o-mini"},
+    "embeddings": {"endpoint": "openai", "model": "text-embedding-3-small"},
+})
+```
+
+---
+
+## Read artefacts directly
+
+When you want raw parquet, not a search response:
+
+```python
+from grail.query.retrieval import load_artifacts_for_search
+
+artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+
+artifacts.documents          # DataFrame
+artifacts.text_units
+artifacts.entities
+artifacts.relationships
+artifacts.communities
+artifacts.community_reports
+artifacts.nodes
+```
+
+---
+
+## Embed in FastAPI
+
+```python
+from fastapi import FastAPI
+from grail import GRAIL, load_config
+
+app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    app.state.grail = GRAIL.from_config(load_config("./my-kb"))
+
+@app.post("/ask")
+async def ask(question: str):
+    result = await app.state.grail.search(question, mode="cascade")
+    return {
+        "answer": result.response,
+        "llm_calls": result.llm_calls,
+        "completion_time": result.completion_time,
+    }
+```
+
+A `GRAIL` instance is **safe to share** across requests — LLM/embedding clients are async-safe and internally rate-limited via `concurrent_requests`.
+
+---
+
+## Customise collaborators
+
+After `from_config`, you can replace any collaborator:
+
+```python
+from grail.storage import StorageBackend
+
+class MyGCSBackend(StorageBackend):
+    ...  # implement the 7 required methods
+
+grail = GRAIL.from_config(config)
+grail.storage = MyGCSBackend(bucket="my-bucket")
+```
+
+Same for reporter, vector store, reranker.
+
+## Next step
+
+- [Agent skill](/reference/cli) — the CLI scripts with the same API in JSON.
+- [CLI reference](/reference/cli) — the complete command line.
+- [Search modes](/learn/search-modes) — which mode for what.

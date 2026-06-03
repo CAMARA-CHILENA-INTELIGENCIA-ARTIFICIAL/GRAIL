@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" role="img" aria-label="GRAIL Agentic Memory Mode animation">
+  <title>GRAIL — Agentic Memory Mode</title>
+  <desc>Animated diagram of GRAIL's agentic-memory pipeline: an agent (Claude Code, Codex, OpenCode) calls add_observation, a markdown file is written under memories/&lt;category&gt;/, entities and relationships merge directly into the graph without LLM extraction, recall runs as a zero-LLM filter, and consolidate produces proposals the agent reviews.</desc>
+
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+      .title       { fill: #f0f0f0; font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+      .subtitle    { fill: #888;    font-size: 11px; letter-spacing: 0.3px; }
+      .stage-label { fill: #b0b0b0; font-size: 11px; font-weight: 500; text-anchor: middle; }
+      .stage-num   { fill: #444;    font-size: 28px; font-weight: 700; text-anchor: middle; }
+
+      .agent-card  { fill: #1a1a1a; stroke: #ffffff; stroke-width: 1.3; }
+      .agent-name  { fill: #e8e8e8; font-size: 10px; text-anchor: middle; }
+
+      .tool-box    { fill: rgba(255,255,255,0.06); stroke: #ffffff; stroke-width: 1.3; }
+      .code-text   { fill: #d8d8d8; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; }
+      .code-key    { fill: #f0c674; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; }
+
+      .md-fill     { fill: #1a1a1a; stroke: #ffffff; stroke-width: 1.3; }
+      .frontmatter { fill: rgba(230,126,34,0.10); stroke: #e67e22; stroke-width: 0.8; }
+      .text-mark   { stroke: #6a6a6a; stroke-width: 1; stroke-linecap: round; }
+      .path-text   { fill: #888; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 9px; }
+      .yaml-text   { fill: #e67e22; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 8.5px; }
+
+      .arrow-base  { stroke: #3a3a3a; stroke-width: 1.5; fill: none; }
+      .entity      { fill: #ffffff; }
+      .edge        { stroke: #6a6a6a; stroke-width: 1; fill: none; }
+      .merge-pulse { fill: rgba(255,255,255,0.08); stroke: #ffffff; stroke-width: 1.3; }
+
+      .no-llm-pill { fill: rgba(39,174,96,0.18); stroke: #27ae60; stroke-width: 1; }
+      .no-llm-txt  { fill: #2ecc71; font-size: 9px; font-weight: 600; text-anchor: middle; }
+      .filter-pill { fill: rgba(74,144,226,0.15); stroke: #4a90e2; stroke-width: 1; }
+      .filter-txt  { fill: #6aa9e9; font-size: 9px; text-anchor: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+      .proposal    { fill: rgba(230,126,34,0.10); stroke: #e67e22; stroke-width: 1; }
+      .proposal-txt{ fill: #e8e8e8; font-size: 9px; text-anchor: middle; }
+      .accept-btn  { fill: rgba(46,204,113,0.18); stroke: #2ecc71; stroke-width: 1; }
+      .accept-txt  { fill: #2ecc71; font-size: 9px; font-weight: 600; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-white" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffffff"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="460" fill="#0a0a0a"/>
+
+  <!-- ─────────────────────── Header ─────────────────────── -->
+  <text x="450" y="34" text-anchor="middle" class="title">GRAIL — Agentic Memory Mode</text>
+  <text x="450" y="54" text-anchor="middle" class="subtitle">agent → tool call → markdown observation → direct graph merge → recall &amp; consolidate</text>
+
+  <!-- ─────────────────────── Faint always-on arrows ─────────────────────── -->
+  <line x1="170" y1="240" x2="210" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="335" y1="240" x2="375" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="490" y1="240" x2="525" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+  <line x1="700" y1="240" x2="740" y2="240" class="arrow-base" marker-end="url(#arrowhead)"/>
+
+  <!-- ═════════════════════ STAGE 1: Agent ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.02;0.06;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- Three stacked agent cards -->
+    <rect x="55"  y="175" width="125" height="32" rx="4" class="agent-card"/>
+    <circle cx="72" cy="191" r="8" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <circle cx="69" cy="189" r="1.5" fill="#fff"/>
+    <circle cx="75" cy="189" r="1.5" fill="#fff"/>
+    <path d="M 67 195 Q 72 199 77 195" stroke="#fff" stroke-width="1" fill="none"/>
+    <text x="125" y="195" class="agent-name">Claude Code</text>
+
+    <rect x="55"  y="215" width="125" height="32" rx="4" class="agent-card"/>
+    <circle cx="72" cy="231" r="8" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <circle cx="69" cy="229" r="1.5" fill="#fff"/>
+    <circle cx="75" cy="229" r="1.5" fill="#fff"/>
+    <path d="M 67 235 Q 72 239 77 235" stroke="#fff" stroke-width="1" fill="none"/>
+    <text x="125" y="235" class="agent-name">Codex</text>
+
+    <rect x="55"  y="255" width="125" height="32" rx="4" class="agent-card"/>
+    <circle cx="72" cy="271" r="8" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <circle cx="69" cy="269" r="1.5" fill="#fff"/>
+    <circle cx="75" cy="269" r="1.5" fill="#fff"/>
+    <path d="M 67 275 Q 72 279 77 275" stroke="#fff" stroke-width="1" fill="none"/>
+    <text x="125" y="275" class="agent-name">OpenCode</text>
+  </g>
+  <text x="117" y="395" class="stage-label">Agent (any framework)</text>
+  <text x="117" y="425" class="stage-num">01</text>
+
+  <!-- ═════════════════════ STAGE 2: Tool call ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.13;0.18;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <rect x="215" y="170" width="125" height="140" rx="4" class="tool-box"/>
+    <text x="225" y="186" class="code-key">add_observation(</text>
+    <text x="237" y="201" class="code-text">title=...</text>
+    <text x="237" y="216" class="code-text">content=...</text>
+    <text x="237" y="231" class="code-text">category=</text>
+    <text x="237" y="243" class="yaml-text" font-size="9">  "work/acme"</text>
+    <text x="237" y="258" class="code-text">tags=[...]</text>
+    <text x="237" y="273" class="code-text">entities=[...]</text>
+    <text x="237" y="288" class="code-text">relationships=</text>
+    <text x="237" y="300" class="code-text">  [...]</text>
+    <text x="225" y="312" class="code-key">)</text>
+
+    <!-- Subtle pulse ring to convey "active call" -->
+    <rect x="213" y="168" width="129" height="144" rx="5" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.4">
+      <animate attributeName="opacity" values="0.4;0.05;0.4" dur="2.2s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <text x="277" y="395" class="stage-label">Tool call</text>
+  <text x="277" y="425" class="stage-num">02</text>
+
+  <!-- ═════════════════════ STAGE 3: Markdown observation ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.28;0.33;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- Folder path above the file -->
+    <text x="432" y="158" text-anchor="middle" class="path-text">memories/work/acme/</text>
+
+    <!-- Markdown file -->
+    <rect x="380" y="168" width="104" height="142" rx="3" class="md-fill"/>
+    <!-- YAML frontmatter region -->
+    <rect x="388" y="176" width="88" height="48" class="frontmatter"/>
+    <text x="392" y="187" class="yaml-text">---</text>
+    <text x="392" y="198" class="yaml-text">title: ...</text>
+    <text x="392" y="209" class="yaml-text">tags: [...]</text>
+    <text x="392" y="220" class="yaml-text">---</text>
+    <!-- Body text marks -->
+    <line x1="388" y1="236" x2="476" y2="236" class="text-mark"/>
+    <line x1="388" y1="246" x2="470" y2="246" class="text-mark"/>
+    <line x1="388" y1="256" x2="476" y2="256" class="text-mark"/>
+    <line x1="388" y1="266" x2="464" y2="266" class="text-mark"/>
+    <line x1="388" y1="276" x2="476" y2="276" class="text-mark"/>
+    <line x1="388" y1="286" x2="458" y2="286" class="text-mark"/>
+    <line x1="388" y1="296" x2="476" y2="296" class="text-mark"/>
+  </g>
+  <text x="432" y="395" class="stage-label">Markdown observation</text>
+  <text x="432" y="425" class="stage-num">03</text>
+
+  <!-- ═════════════════════ STAGE 4: Direct merge to graph ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.45;0.51;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- "Folders as communities" — translucent regions -->
+    <ellipse cx="560" cy="190" rx="55" ry="42" fill="#4a90e2" opacity="0.12"/>
+    <ellipse cx="630" cy="200" rx="48" ry="38" fill="#e67e22" opacity="0.12"/>
+    <ellipse cx="595" cy="295" rx="60" ry="38" fill="#27ae60" opacity="0.12"/>
+
+    <!-- Edges -->
+    <line x1="540" y1="175" x2="575" y2="195" class="edge"/>
+    <line x1="540" y1="175" x2="555" y2="215" class="edge"/>
+    <line x1="575" y1="195" x2="555" y2="215" class="edge"/>
+    <line x1="575" y1="195" x2="620" y2="190" class="edge"/>
+    <line x1="620" y1="190" x2="650" y2="210" class="edge"/>
+    <line x1="620" y1="190" x2="655" y2="180" class="edge"/>
+    <line x1="555" y1="215" x2="580" y2="285" class="edge"/>
+    <line x1="580" y1="285" x2="615" y2="300" class="edge"/>
+    <line x1="580" y1="285" x2="570" y2="315" class="edge"/>
+    <line x1="615" y1="300" x2="570" y2="315" class="edge"/>
+    <line x1="615" y1="300" x2="640" y2="310" class="edge"/>
+    <line x1="650" y1="210" x2="615" y2="300" class="edge"/>
+
+    <!-- Entity nodes -->
+    <circle cx="540" cy="175" r="5" class="entity"/>
+    <circle cx="575" cy="195" r="5" class="entity"/>
+    <circle cx="555" cy="215" r="5" class="entity"/>
+    <circle cx="620" cy="190" r="5" class="entity"/>
+    <circle cx="655" cy="180" r="5" class="entity"/>
+    <circle cx="650" cy="210" r="5" class="entity"/>
+    <circle cx="580" cy="285" r="5" class="entity"/>
+    <circle cx="615" cy="300" r="5" class="entity"/>
+    <circle cx="570" cy="315" r="5" class="entity"/>
+    <circle cx="640" cy="310" r="5" class="entity"/>
+
+    <!-- "no LLM" badge — the differentiator -->
+    <rect x="525" y="125" width="140" height="22" rx="11" class="no-llm-pill"/>
+    <text x="595" y="140" class="no-llm-txt">direct merge · no LLM extract</text>
+  </g>
+  <text x="595" y="395" class="stage-label">Folders = communities</text>
+  <text x="595" y="425" class="stage-num">04</text>
+
+  <!-- ═════════════════════ STAGE 5: Recall + Consolidate ═════════════════════ -->
+  <g opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;1;1;0"
+             keyTimes="0;0.66;0.72;0.96;1"
+             dur="14s" repeatCount="indefinite"/>
+
+    <!-- Recall filter chips -->
+    <text x="812" y="158" text-anchor="middle" class="path-text">recall (zero LLM)</text>
+    <rect x="755" y="166" width="55" height="16" rx="8" class="filter-pill"/>
+    <text x="782" y="177" class="filter-txt">since:7d</text>
+    <rect x="815" y="166" width="60" height="16" rx="8" class="filter-pill"/>
+    <text x="845" y="177" class="filter-txt">tag:decision</text>
+    <rect x="755" y="187" width="120" height="16" rx="8" class="filter-pill"/>
+    <text x="815" y="198" class="filter-txt">category:work/**</text>
+
+    <!-- Filtered result preview -->
+    <rect x="755" y="212" width="115" height="40" rx="4" fill="rgba(255,255,255,0.04)" stroke="#888" stroke-width="1"/>
+    <line x1="763" y1="222" x2="860" y2="222" class="text-mark"/>
+    <line x1="763" y1="232" x2="852" y2="232" class="text-mark"/>
+    <line x1="763" y1="242" x2="858" y2="242" class="text-mark"/>
+
+    <!-- Consolidate proposal card -->
+    <text x="812" y="270" text-anchor="middle" class="path-text">consolidate → proposal</text>
+    <rect x="755" y="277" width="115" height="55" rx="4" class="proposal"/>
+    <text x="812" y="291" class="proposal-txt">merge_aliases</text>
+    <text x="812" y="304" class="proposal-txt" font-size="8" fill="#aaa">conf: 0.92</text>
+    <rect x="772" y="312" width="35" height="14" rx="7" class="accept-btn"/>
+    <text x="789" y="322" class="accept-txt">accept</text>
+    <rect x="818" y="312" width="35" height="14" rx="7" fill="none" stroke="#555" stroke-width="1"/>
+    <text x="835" y="322" fill="#888" font-size="9" text-anchor="middle">reject</text>
+  </g>
+  <text x="812" y="395" class="stage-label">Recall &amp; consolidate</text>
+  <text x="812" y="425" class="stage-num">05</text>
+</svg>

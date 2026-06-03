@@ -1,0 +1,137 @@
+---
+title: Trazar consultas para debug
+description: Cómo ver exactamente qué prompts y contexto vio el LLM cuando una respuesta sale mala.
+sidebar_position: 11
+---
+
+# Trazar consultas para debug
+
+Cuando una respuesta sale mal, hay dos preguntas básicas:
+
+1. **¿Qué contexto vio el LLM?** Maybe las entidades relevantes no se recuperaron.
+2. **¿Qué prompt vio el LLM?** Maybe la estructura del prompt está perdiendo información.
+
+`grail query --trace <dir>` te da ambas en un JSON estructurado.
+
+## Habilitar el tracing
+
+```bash
+grail query ./mi-kb "¿Cuánto cubre FONASA?" --mode cascade --trace ./traces
+```
+
+Esto escribe `./traces/<timestamp>_<query-hash>.json` con todo el detalle. Estructura:
+
+```json
+{
+  "query": "¿Cuánto cubre FONASA?",
+  "mode": "cascade",
+  "started_at": "2026-06-02T14:23:00Z",
+  "completed_at": "2026-06-02T14:23:05Z",
+  "completion_time_seconds": 5.2,
+  "llm_calls": [
+    {
+      "tag": "cascade_answer",
+      "endpoint": "deepinfra",
+      "model": "Qwen/Qwen3.6-35B-A3B",
+      "prompt_tokens": 4321,
+      "completion_tokens": 487,
+      "messages": [
+        {"role": "system", "content": "..."},
+        {"role": "user", "content": "..."}
+      ],
+      "response": "..."
+    }
+  ],
+  "context": {
+    "entities": [...],         // entidades recuperadas
+    "relationships": [...],
+    "text_units": [...],
+    "community_reports": [...]
+  }
+}
+```
+
+## Inspeccionar el contexto
+
+El bloque `context` es lo que primero hay que mirar. Pregunta clave: **¿está la información que necesitas?**
+
+```bash
+cat ./traces/*.json | jq '.context.entities[].name'
+# → "FONASA"
+# → "Ley 19.966"
+# → "Sistema GES"
+# → "Ricarte Soto"
+# ...
+```
+
+Si la entidad correcta **no aparece**, el problema es de retrieval:
+
+- En `local` / `cascade`: tu pregunta no matchea por embeddings.
+- Reformula con la [fórmula QUIÉN + QUÉ + términos](/learn/search-modes#la-forma-de-la-pregunta-importa).
+- O sube `local_top_k_entities` en tu config.
+
+Si la entidad correcta **sí aparece pero el LLM no la usa**, el problema es de prompt o de modelo:
+
+- Mira `llm_calls[0].messages` para ver el prompt completo.
+- Considera un modelo más capaz para `search.local_search_model`.
+
+## Inspeccionar las llamadas LLM
+
+```bash
+cat ./traces/*.json | jq '.llm_calls[] | {tag, model, tokens: (.prompt_tokens + .completion_tokens)}'
+```
+
+Útil para entender:
+
+- **Cuántas llamadas hizo** (`agent` puede hacer 1-N).
+- **Cuántos tokens consumió** (para presupuestar).
+- **Qué prompt vio** en cada llamada.
+
+## Modo `global` y `agent`
+
+Para `global`, vas a ver una llamada por reporte de comunidad (map) más una llamada final (reduce). Si el reduce está sintetizando mal, el problema suele ser que los reports individuales son confusos — revisa los prompts del map.
+
+Para `agent`, cada iteración del bucle aparece como una llamada separada. Mira la secuencia para entender qué herramientas decidió usar y cuándo "se rindió" si la respuesta es mala.
+
+```bash
+cat ./traces/*.json | jq '.llm_calls[] | .tag'
+# → "agent_decide"
+# → "cascade_answer"     ← el agente llamó cascade primero
+# → "agent_decide"
+# → "local_answer"        ← después intentó local
+# → "agent_decide"
+# → "agent_synthesize"    ← síntesis final
+```
+
+## Tracing desde Python
+
+```python
+from grail.query.trace import QueryTracer
+
+tracer = QueryTracer()
+grail.llm.tracer = tracer
+
+result = await grail.search("...", mode="cascade")
+
+tracer.dump("./traces", context_text=result.context_text)
+```
+
+## Patrones comunes
+
+### "La respuesta dice 'no encontrado' pero la info está en el corpus"
+
+→ Mira `context.entities` y `context.text_units`. Si están vacíos o equivocados, es de retrieval. Si están bien, es de prompt/modelo.
+
+### "El agente nunca llama cascade cuando debería"
+
+→ Mira la secuencia de `tag` en `llm_calls`. Si solo ves `local_answer`, prueba forzar `--mode cascade` directo en lugar de `--mode agent`.
+
+### "El costo está más alto de lo esperado"
+
+→ `jq '.llm_calls[].prompt_tokens'` te dice cuántos tokens consume cada llamada. Si ves prompts muy largos, considera bajar `local_max_tokens` o `search.global_chunk_size`.
+
+## Siguiente paso
+
+- [Optimizar costos](/guides/cost-optimization) — para bajar el consumo después de ver dónde se va.
+- [Modos de búsqueda](/learn/search-modes) — elegir el modo correcto desde el comienzo evita debug.
+- [Referencia CLI](/reference/cli) — todos los flags de `grail query`.

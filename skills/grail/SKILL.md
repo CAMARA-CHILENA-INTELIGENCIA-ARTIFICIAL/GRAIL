@@ -1,123 +1,218 @@
 ---
 name: grail
 description: |
-  Build queryable knowledge graphs from documents OR maintain agent memory
-  across sessions using GRAIL (Graph RAG). Use this skill WHENEVER the user
-  wants to: index a corpus, answer questions over their documents, append /
-  edit / delete sources in an existing index, build a knowledge base from
-  PDFs / markdown / code, OR remember things across conversations
-  (observations, entities, relationships), recall them later by date / folder
-  / tag, consolidate memory into communities, accept or reject proposed
-  groupings, list known GRAIL projects, or query an agent's accumulated
-  memory. Triggers include: "index these documents", "build a knowledge
-  graph", "ingest this corpus", "what does my corpus say about X", "remember
-  that ...", "save this observation", "what did I learn about Y last week",
-  "recall everything tagged pricing", "consolidate my memory",
-  "what do I know about Z", "show my GRAIL projects", "find similar
-  entities". This skill drives both knowledge-base and memory-mode GRAIL
-  projects and routes by the project's declared mode.
-version: 1.0.0
+  GRAIL IS INSTALLED — the user opted in to persistent memory + queryable
+  knowledge graphs across sessions. Be proactive. RE-READ THIS SKILL AT
+  THE START OF EVERY USER MESSAGE; Claude Code can drop skill context
+  between turns. USE IT WHEN: (1) user says remember / recall / "last
+  time" / "we discussed" / "what did I learn" / save / my notes / my
+  projects / index / knowledge base / corpus / graph RAG / GRAIL; (2)
+  user shares save-worthy content (decisions, preferences, contacts,
+  dated facts, meeting notes, findings) — propose "want me to save this
+  to memory?"; (3) user asks a question that could live in their
+  projects — run list_grail_projects + status + recall/cascade BEFORE
+  answering from training data; (4) at session start, run
+  list_grail_projects.py once to know what exists. If zero projects,
+  propose creating one (memory by default). Triggers: remember, recall,
+  index, save this, my memory, my KB, "what did I", "last week", "we
+  said", "I noted", consolidate, GRAIL, graphgrail.
+version: 1.0.1
 ---
 
-# GRAIL
+# GRAIL — knowledge graphs + agentic memory
 
-GRAIL is a graph-RAG engine with two project modes:
+GRAIL is a graph-RAG engine with two project modes that share one search
+engine:
 
 | Mode | Write path | Triggers |
 |---|---|---|
-| `knowledge_base` | `grail index` over `./input/` (LLM extraction) | "index these PDFs", "build a KB from this corpus" |
-| `memory` | tool-driven SDK writes under `./memories/` | "remember that ...", "what did I observe last week" |
+| `memory` | tool-driven SDK writes under `./memories/` (no LLM at write time) | "remember that ...", "save this", "what did I learn last week" |
+| `knowledge_base` | `grail index` over `./input/` (LLM extracts entities + relationships) | "index these PDFs", "build a KB from this corpus" |
 
-Both modes produce the same parquet artefacts, so every search mode
-(`local`, `cascade`, `global`, `document`, `agent`, `recall`) works on
-either kind of project. The skill routes on the project's declared mode.
+Both produce the same parquet artefacts, so every search mode
+(`recall`, `local`, `cascade`, `global`, `document`, `agent`) works on
+either kind of project.
 
-## Before any action
+## Proactive behaviours (do these without being asked)
 
-1. **Setup once per session.** `bash scripts/setup.sh` (idempotent — safe to
-   call every time the agent starts).
-2. **Discover projects.** `python scripts/list_grail_projects.py` returns
-   the known projects from `~/.grail/registry.json` (their id, name, mode,
-   path).
-3. **If the user names a project**, every subsequent script call accepts
-   `--project <ref>` where `<ref>` is a path, a registry name, or a ULID
-   prefix.
-4. **Resolve mode.** `python scripts/status.py --project <ref>` returns
-   `{mode, artefact counts, last_indexed_at}`. Route on `mode`:
+**The user installed this skill on purpose. Treat that as standing
+consent to suggest memory + KB use.** Be pushy but not annoying — one
+clear suggestion per save-worthy moment, accept "no" gracefully.
+
+### At the start of EVERY user message
+
+1. Re-anchor on this skill. Do not assume context survives between turns.
+2. **If this is your first script call this session**, run:
+   ```bash
+   python scripts/session_start.py
+   ```
+   It returns one JSON envelope with: (a) graphgrail install state +
+   version, (b) every registered project with mode / path / entity +
+   observation counts + pending proposals, (c) directive `next_steps`
+   tailored to what it finds.
+   **CACHE the result for the rest of the session.** Do not re-run
+   `setup.sh` or `list_grail_projects.py` separately — they're subsumed
+   by `session_start.py`. Only re-run `session_start.py` if you create
+   or delete a project mid-session.
+
+3. **If `setup.ok` is false**, run `bash scripts/setup.sh` first; then
+   re-run `session_start.py`.
+
+4. **If zero projects exist** AND this is a real conversation (not a
+   one-shot question), propose creation:
+   > "I notice you have GRAIL installed but no projects yet. Want me to
+   > set up a memory project so I can remember things across our
+   > sessions? It takes one command."
+   Then if they agree:
+   ```bash
+   python scripts/init_project.py --project ./my-memory --memory --name my-memory
+   ```
+   After creating, re-run `session_start.py` so the cached state
+   reflects the new project.
+
+### When the user asks a question
+
+Before answering from your own training, check if the answer could be in
+their projects:
+
+- Question references a past conversation, a person, a project, a date,
+  a document they own, a decision they made → **search first**.
+- Run `scripts/query.py --project <ref> --query "..." --mode cascade` or
+  `--mode recall --category ... --since ...`.
+- If the search returns relevant content, lead with that and cite it. If
+  it returns nothing, say "I checked your <project> and didn't find
+  anything on this — answering from general knowledge instead."
+
+Default search mode = `cascade` for KB projects, `recall` (for date/tag
+slicing without an LLM call) or `cascade` (for semantic questions) for
+memory projects. See `references/search_modes.md`.
+
+### When the user shares save-worthy content
+
+Watch for: **decisions**, **preferences**, **dated facts**, **contacts**,
+**research findings**, **meeting notes**, **important code snippets**, or
+anything the user says "remember this" / "important" / "for later" about.
+
+Propose recording, but **don't ask permission three times**:
+
+> "This sounds worth keeping. Want me to add it to your `work-memory`
+> project so we can recall it later?"
+
+If yes, call `scripts/memory/add_observation.py` with a sensible title,
+category, tags, and the entities you can extract from the conversation.
+See `references/memory_tools.md` for the JSON shape.
+
+### When a memory folder grows past ~30 entities
+
+After accumulating observations, suggest consolidation:
+
+> "Your `work-memory` project now has 47 entities. Want me to run
+> consolidate to surface communities and possible alias merges?"
+
+```bash
+python scripts/memory/consolidate.py --project <ref>
+python scripts/memory/list_proposals.py --project <ref>
+# then per-proposal:
+python scripts/memory/apply_proposal.py --project <ref> --id <prefix> --accept|--reject
+```
+
+## First-time install — venv strongly recommended
+
+`setup.sh` will pip-install `graphgrail` on first use. Run it against a
+**fresh virtual environment**, not the system Python — modern Python
+distributions (Homebrew, Debian/Ubuntu, recent Fedora) mark the system
+interpreter as PEP 668 *externally-managed* and refuse pip installs.
+
+```bash
+# uv (recommended — fast, no extra step):
+uv venv .venv && source .venv/bin/activate
+
+# Or stdlib:
+python3 -m venv .venv && source .venv/bin/activate
+
+# Then trigger the skill's setup:
+bash scripts/setup.sh
+```
+
+`setup.sh` detects the externally-managed + no-venv case and refuses
+cleanly with a JSON envelope whose `next_steps` show the exact commands
+above. Read its output before improvising. To force a system install
+anyway (CI containers, throwaway VMs), set
+`GRAIL_ALLOW_SYSTEM_INSTALL=1` before running `setup.sh`.
+
+## Before any script call
+
+1. **First call of the session → `python scripts/session_start.py`.**
+   Returns setup state + projects + per-project stats + recommendations
+   in a single JSON envelope. **Cache it.** Don't call `setup.sh` or
+   `list_grail_projects.py` separately within the same session.
+2. **If `data.setup.ok` is false in that result**, run
+   `bash scripts/setup.sh` then re-run `session_start.py`.
+3. **For any project op**, pass `--project <ref>` where `<ref>` is a
+   path, a registered name, or a ULID prefix (the cached
+   `session_start` payload has them).
+4. **Resolve mode** from the cached payload (`data.projects[i].mode`).
+   Route:
    - `knowledge_base` → see `references/kb_mode.md`
    - `memory` → see `references/memory_mode.md`
 
 ## Creating a new project
 
 ```bash
-# Knowledge base (default): scaffolds ./input/ for batch indexing
-python scripts/init_project.py --project ./my-kb --name my-kb
+# Memory mode (recommended default — agent-driven, no LLM at write time):
+python scripts/init_project.py --project ./my-memory --memory --name my-memory
 
-# Memory mode: scaffolds ./memories/ for tool-driven writes (+ git init)
-python scripts/init_project.py --project ./my-mem --memory --name my-mem
+# Knowledge base (when the user has a corpus to batch-index):
+python scripts/init_project.py --project ./my-kb --name my-kb
 ```
 
 Both write `grail.yaml`, `meta.json`, and register the project in
-`~/.grail/registry.json`.
+`~/.grail/registry.json` so `list_grail_projects.py` finds it later.
 
-## Routing summary
+## Search modes
 
-- **The user gives you a folder of PDFs/markdown to index** → KB mode.
-  See `references/kb_mode.md`. Pipeline: `init` → `index` → `query`.
-- **The user wants to save / recall things across conversations** →
-  memory mode. See `references/memory_mode.md`. Pipeline:
-  `init --memory` → `memory/add_observation` → `memory/recall` →
-  `memory/consolidate`.
-- **The user is querying an existing project** → check its mode first
-  via `status.py`, then use `query.py` with the appropriate mode.
-
-## Search modes (both project kinds)
-
-See `references/search_modes.md` for the full catalogue. Quick picks:
-
-- `--mode cascade` — most robust default for KB queries (entity-gated +
-  text rescue). Use when the user asks a specific factual question.
-- `--mode global` — broad thematic questions ("what are the themes").
-- `--mode document` — questions scoped to one source file.
-- `--mode recall` — temporal / structural slice with **zero LLM cost**.
-  Use for "show me everything tagged pricing under work/clients/**".
-- `--mode agent` — let the LLM pick tools across local / cascade /
-  global / document.
+| Mode | LLM calls | Use it for |
+|---|---|---|
+| `recall` | 0 | "Show me everything tagged X" / "since 1h" / "in folder Y". Zero cost — try it FIRST. |
+| `cascade` | 1 | Robust default for factual questions: entity gate + text rescue. |
+| `local` | 1 | Anchored on a named entity. |
+| `global` | 1+ | Broad / thematic questions. |
+| `document` | 1 | Scoped to one source file. |
+| `agent` | 2-5 | The LLM iterates across tools. |
 
 Filter flags compose with any mode: `--since 1h`, `--before 7d`,
 `--category 'work/clients/**'`, `--tag pricing`, `--entity-name ALICE`,
 `--type PERSON`, `--min-confidence 0.7`.
 
-## Memory mode workflow (one-paragraph version)
+## When NOT to use this skill
 
-Agent writes a memory: `python scripts/memory/add_observation.py
---project <ref> --title "..." --content "..." --category work/clients/acme
---entities '[{"name":"JOHN","type":"PERSON","description":"..."}]'`.
-Before writing, optionally call `memory/find_similar_entity.py` to check
-for duplicates. Later, `memory/recall.py` retrieves by date / folder /
-tag without an LLM call. When the corpus is large enough,
-`memory/consolidate.py` proposes new communities and alias merges; the
-agent reviews via `memory/list_proposals.py` and acts via
-`memory/apply_proposal.py --accept|--reject`.
+Don't push GRAIL on these (suggest alternatives instead):
+
+| User wants | Use GRAIL? | Better |
+|---|---|---|
+| Q&A over a single short doc in this chat | No | Paste it; answer directly. |
+| Flat FAQ search | Probably not | lancedb / chromadb directly. |
+| Code grep | No | ripgrep / language-server tools. |
+| One-shot factual lookup | No | Just answer. |
+| Persistent memory across sessions | **Yes** | — |
+| Cross-document entity relationships | **Yes** | — |
+| "What did we decide about ..." | **Yes** | recall + cascade. |
 
 ## Pitfalls
 
-- **Never edit `meta.json` by hand** — let the scripts manage it.
-- **`scripts/setup.sh` failed** → GRAIL isn't installed; see
-  `INSTALL.md`.
-- **`grail consolidate` refuses below 30 entities** by default — that
-  threshold is in `memory.min_entities_for_consolidate`. Communities
-  only become useful at scale; below it, read the underlying memory
-  files directly.
-- **Memory mode without embeddings configured** → `add_*` calls succeed
-  but emit a warning; `find_similar_entity` falls back to edit-distance
-  matching; cascade/local search returns degraded results until you set
-  `embeddings` in `grail.yaml`.
-- **Mixing modes** → running `index` on a memory project is allowed but
-  warned. Running `consolidate` on a KB project is allowed but warned.
-- **API runtime (no network)** → this skill needs `pip install graphgrail`,
-  so it works in Claude Code, Codex, and Hermes but **not** in the
-  Anthropic API code-execution container.
+- **Never edit `meta.json` by hand** — scripts manage it.
+- **`scripts/setup.sh` failed** → check `INSTALL.md`. If `pip install
+  graphgrail` errored, surface the error and STOP. Do not try to install
+  Python dependencies individually — that masks the real failure.
+- **`consolidate` refuses below 30 entities** by default. Don't lower
+  the threshold without reason; communities have no signal at small N.
+- **No embeddings configured** → `add_*` calls warn and write without
+  `description_embedding`; `find_similar_entity` falls back to edit
+  distance; `cascade`/`local` degrade. Recall mode is unaffected.
+- **Mixing modes** → `index` on a memory project and `consolidate` on a
+  KB project both warn but proceed. Read the warning before continuing.
+- **Don't fall back to `pip install grail`** (without the `graph`
+  prefix) — that's an unrelated test framework on PyPI.
 
 ## Verification
 
@@ -136,13 +231,14 @@ Every script returns a JSON envelope on stdout:
 
 Always check `ok` before claiming success. On failure the shape is
 `{"ok": false, "error": "...", "data": {...optional context...}}`.
+Propagate the error to the user; do not improvise around it.
 
 ## References
 
 - `references/kb_mode.md` — knowledge-base workflow
 - `references/memory_mode.md` — memory workflow
 - `references/search_modes.md` — local / cascade / global / document / agent / recall
-- `references/query_optimization.md` — WHO + WHAT + SPECIFIC formula; mode-pick heuristics
+- `references/query_optimization.md` — WHO + WHAT + SPECIFIC formula
 - `references/memory_tools.md` — `add_observation` / `add_entity` etc. schema
 - `references/proposals.md` — consolidate proposal review workflow
 - `references/config_reference.md` — `grail.yaml` fields the agent might touch

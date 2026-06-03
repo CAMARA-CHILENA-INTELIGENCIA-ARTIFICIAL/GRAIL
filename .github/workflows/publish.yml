@@ -1,0 +1,149 @@
+# Publish ``graphgrail`` to PyPI on every ``v*`` tag push, plus a manual
+# dispatch path for TestPyPI dry runs.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   PYPI_TOKEN      — pypi.org API token (https://pypi.org/manage/account/token/)
+#   TESTPYPI_TOKEN  — test.pypi.org API token (separate account)
+#
+# Both should be project-scoped to ``graphgrail`` after v0.1.0 exists.
+# See ``docs/releasing.md`` for the manual-publish runbook + token setup.
+
+name: Publish to PyPI
+
+on:
+  # Tag push → real PyPI.
+  push:
+    tags: ["v*"]
+  # Manual trigger → choose target (default TestPyPI for safety).
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        required: true
+        default: "testpypi"
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  # ---------------------------------------------------------------- test gate
+  test:
+    name: Run test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install project + deps
+        run: uv sync --extra faiss
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -q
+
+  # ---------------------------------------------------------------- publish
+  publish:
+    name: Build and publish
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # Catches the "forgot to bump pyproject.toml" mistake. Only runs on
+      # tag pushes — workflow_dispatch publishes whatever's at HEAD.
+      - name: Verify tag matches pyproject version
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(grep -E '^version = "' pyproject.toml | head -1 | sed -E 's/version = "(.*)"/\1/')"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Tag v$TAG does not match pyproject.toml version $VERSION. Bump pyproject and re-tag."
+            exit 1
+          fi
+          echo "Tag matches pyproject version: $VERSION"
+
+      - name: Build wheel + sdist
+        run: |
+          rm -rf dist build
+          uv build
+          ls -lh dist/
+
+      # TestPyPI path — only on manual dispatch with target=testpypi.
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.TESTPYPI_TOKEN }}
+        run: |
+          uv publish --publish-url https://test.pypi.org/legacy/ dist/*
+          echo "Published to TestPyPI. Verify with:"
+          echo "  uv pip install --index-url https://test.pypi.org/simple/ \\"
+          echo "                 --extra-index-url https://pypi.org/simple/ \\"
+          echo "                 graphgrail"
+
+      # Real PyPI path — on tag push, or on manual dispatch with target=pypi.
+      - name: Publish to PyPI
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi')
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish dist/*
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Published"
+            echo ""
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "- **Target**: PyPI"
+              echo "- **Version**: ${GITHUB_REF_NAME#v}"
+              echo "- **URL**: https://pypi.org/project/graphgrail/${GITHUB_REF_NAME#v}/"
+              echo ""
+              echo "Install:"
+              echo '```bash'
+              echo "uv pip install 'graphgrail[faiss]==${GITHUB_REF_NAME#v}'"
+              echo '```'
+            else
+              echo "- **Target**: ${{ inputs.target }}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------- github release
+  release:
+    name: Create GitHub Release
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version (strip v prefix)
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            **PyPI**: https://pypi.org/project/graphgrail/${{ steps.version.outputs.version }}/
+
+            ```bash
+            uv pip install "graphgrail[faiss]==${{ steps.version.outputs.version }}"
+            ```
+
+            ---
+
+            Release notes below are auto-generated from merged PRs and commit messages since the previous tag.

@@ -1,6 +1,7 @@
 """CRUD tests for MemoryProject — verify parquet shapes and lifecycle."""
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -252,3 +253,142 @@ async def test_recall_filters_by_category_and_tag(tmp_path: Path):
     tagged = (await proj.recall(tag="birthday")).data
     assert len(tagged["observations"]) == 1
     assert tagged["observations"][0]["title"] == "b"
+
+
+# --------------------------------------------------------------- regression tests
+
+
+@pytest.mark.asyncio
+async def test_add_observation_with_entity_already_in_multiple_communities(
+    project: MemoryProject,
+):
+    """Regression for the nudge lambda crashing on parquet-round-tripped lists.
+
+    The bug: ``lambda cids: category in (cids or [])`` raised
+    ``ValueError: The truth value of an array with more than one element is
+    ambiguous`` when ``cids`` was a numpy array (which is what pandas hands
+    back for list columns after a parquet round-trip). The fix uses
+    ``_aslist`` to normalise first.
+    """
+    # Put SHARED_ENT into two folder communities first.
+    for cat in ("work/clients/acme", "personal/friends"):
+        reply = await project.add_observation(
+            title=f"seed-{cat.replace('/', '-')}",
+            content="seed",
+            category=cat,
+            entities=[
+                {"name": "SHARED_ENT", "type": "PERSON", "description": "shared"}
+            ],
+        )
+        assert reply.ok, reply.error
+    # Verify SHARED_ENT is multi-community on disk.
+    ents = pd.read_parquet(project.path / "output" / "final_entities.parquet")
+    cids = list(ents[ents["name"] == "SHARED_ENT"].iloc[0]["community_ids"])
+    assert "work/clients/acme" in cids and "personal/friends" in cids
+
+    # Now add another observation in one of the same folders that ALSO
+    # references SHARED_ENT. The nudge lambda walks every entity's
+    # community_ids — including SHARED_ENT's, which is now a multi-element
+    # numpy array on read. Pre-fix this raised on .apply().
+    reply = await project.add_observation(
+        title="meeting-3",
+        content="follow-up",
+        category="work/clients/acme",
+        entities=[
+            {"name": "SHARED_ENT", "type": "PERSON", "description": "still shared"},
+            {"name": "NEW_ENT", "type": "PERSON", "description": "new"},
+        ],
+    )
+    assert reply.ok, reply.error
+
+
+@pytest.mark.asyncio
+async def test_grail_delete_works_on_memory_project(tmp_path: Path):
+    """Regression for ``GRAIL.delete(file_names=...)`` raising KeyError on
+    memory projects because they lacked ``partial_text_units.parquet``.
+
+    Fix: ``MemoryProject._sync_partial_text_units`` mirrors the final
+    text-units parquet into the partial-text-units parquet so the
+    KB-pipeline loader path (used by ``GRAIL.delete`` / ``GRAIL.edit``)
+    works on memory projects too.
+    """
+    from grail import GRAIL, load_config
+
+    mp = MemoryProject(
+        tmp_path / "p", registry_home=tmp_path / "home", embeddings=None
+    )
+    reply = await mp.add_observation(
+        title="To be deleted",
+        content="some body content",
+        category="work",
+        entities=[
+            {"name": "DELETE_ME", "type": "CONCEPT", "description": "will go"}
+        ],
+    )
+    assert reply.ok
+    file_path = Path(reply.data["file_path"])
+    assert file_path.exists()
+
+    # The partial-text-units mirror must now exist.
+    partial = mp.path / "output" / "partial_text_units.parquet"
+    assert partial.exists(), "partial_text_units.parquet was not synced"
+    partial_df = pd.read_parquet(partial)
+    assert "id" in partial_df.columns
+    assert len(partial_df) >= 1
+
+    # Now route through ``GRAIL.delete`` — this is the path the CLI /
+    # skill uses and is what was previously broken. The library matches
+    # filenames by basename. Need to pin the config's storage root at
+    # the project path explicitly (CLI ``grail init --memory`` would
+    # write grail.yaml with this set; MemoryProject's ad-hoc opens skip
+    # the yaml write).
+    cfg = load_config(mp.path)
+    cfg.root_dir = str(mp.path)
+    cfg.storage.root = str(mp.path)
+    grail = GRAIL.from_config(cfg)
+    result = await grail.delete(file_names=[file_path.name])
+    assert result.get("ok"), f"GRAIL.delete failed: {result.get('reason')}"
+    # Final docs parquet should no longer reference the deleted file.
+    docs_after = pd.read_parquet(mp.path / "output" / "final_docs.parquet")
+    assert not docs_after["path"].apply(
+        lambda p: Path(p).name == file_path.name
+    ).any()
+
+
+@pytest.mark.asyncio
+async def test_delete_observation_syncs_partial_text_units(
+    project: MemoryProject,
+):
+    """After a delete, partial_text_units should also lose the deleted TU."""
+    r1 = await project.add_observation(
+        title="keep",
+        content="content one",
+        category="cat",
+        entities=[{"name": "K", "type": "CONCEPT", "description": "x"}],
+    )
+    r2 = await project.add_observation(
+        title="trash",
+        content="content two",
+        category="cat",
+        entities=[{"name": "T", "type": "CONCEPT", "description": "x"}],
+    )
+    project.delete_observation(r2.data["slug"])
+    partial = project.path / "output" / "partial_text_units.parquet"
+    assert partial.exists()
+    final = pd.read_parquet(project.path / "output" / "final_text_units.parquet")
+    pdf = pd.read_parquet(partial)
+    # Same ids in both after sync.
+    assert set(final["id"].astype(str)) == set(pdf["id"].astype(str))
+
+
+def test_runtime_version_matches_installed_metadata():
+    """``import grail; grail.__version__`` must match the installed
+    package metadata for ``graphgrail`` — not the hardcoded fallback."""
+    import grail
+    from importlib.metadata import version
+
+    try:
+        installed = version("graphgrail")
+    except Exception:
+        pytest.skip("graphgrail not installed via metadata; editable mode")
+    assert grail.__version__ == installed

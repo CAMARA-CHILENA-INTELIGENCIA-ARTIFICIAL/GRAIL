@@ -1,0 +1,16 @@
+{
+  "link.title.Documentación": { "message": "Documentation" },
+  "link.title.Proyecto": { "message": "Project" },
+  "link.title.Autor": { "message": "Author" },
+  "link.item.label.Inicio": { "message": "Home" },
+  "link.item.label.Aprende": { "message": "Learn" },
+  "link.item.label.Empieza": { "message": "Get started" },
+  "link.item.label.Referencia": { "message": "Reference" },
+  "link.item.label.GitHub": { "message": "GitHub" },
+  "link.item.label.Cámara Chilena de IA": { "message": "Cámara Chilena de IA" },
+  "link.item.label.Nirvai": { "message": "Nirvai" },
+  "link.item.label.Benjamín González Guerrero": { "message": "Benjamín González Guerrero" },
+  "copyright": {
+    "message": "MIT © 2026 Cámara Chilena de Inteligencia Artificial · Built with Docusaurus"
+  }
+}

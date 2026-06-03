@@ -1,28 +1,35 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Search, Globe, FileText } from "lucide-react";
+import { X, Workflow, LocateFixed, Globe, Layers2 } from "lucide-react";
 import { useChatStore } from "../lib/store";
 
 const MODES = [
   {
-    icon: Sparkles,
+    Icon: Workflow,
     title: "Agent",
-    badge: "Recommended",
-    description: "AI automatically picks the best search strategy. It can combine local and global searches for the most complete answer.",
+    tag: "recommended",
+    description:
+      "An LLM loop that decides which searches to run and chains them. Best when the question spans entities and themes, or you're not sure where to look.",
   },
   {
-    icon: Search,
-    title: "Local Search",
-    description: "Finds specific entities, relationships, and facts closest to your query. Best for targeted questions about particular topics.",
+    Icon: LocateFixed,
+    title: "Local",
+    tag: "entity-first",
+    description:
+      "Anchors on the entities in your question and walks their neighborhood — relationships, attributes, and the chunks that mention them. Precise and grounded.",
   },
   {
-    icon: Globe,
-    title: "Global Search",
-    description: "Synthesizes themes and patterns across your entire knowledge base. Best for broad, high-level questions.",
+    Icon: Globe,
+    title: "Global",
+    tag: "theme-first",
+    description:
+      "Map-reduces across community reports built during indexing. Best for broad, corpus-wide questions where no single entity holds the answer.",
   },
   {
-    icon: FileText,
-    title: "Document Scope",
-    description: "Focus your search on a specific document. Select a document using the document button in the toolbar.",
+    Icon: Layers2,
+    title: "Rerank",
+    tag: "optional",
+    description:
+      "When a reranker is configured, candidate passages are re-scored for relevance before synthesis — sharpening citations on dense corpora.",
   },
 ];
 
@@ -34,82 +41,59 @@ export default function InfoPanel() {
       {showInfo && (
         <>
           <motion.div
-            className="fixed inset-0 z-50"
-            style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+            className="scrim"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={() => setShowInfo(false)}
           />
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-2xl rounded-t-2xl p-6"
-            style={{
-              background: "var(--surface-1)",
-              border: "1px solid var(--border)",
-              borderBottom: "none",
-              boxShadow: "0 -8px 40px -8px rgba(0,0,0,0.5)",
-            }}
+            className="sheet"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
           >
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-                How search works
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowInfo(false)}
-                className="rounded-lg p-1 transition-colors duration-150"
-                style={{ color: "var(--text-tertiary)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-tertiary)"; }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {MODES.map((mode, i) => {
-                const Icon = mode.icon;
-                return (
-                  <motion.div
-                    key={mode.title}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 * i, duration: 0.3 }}
-                    className="rounded-xl p-4"
-                    style={{
-                      background: "var(--surface-0)",
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                  >
-                    <div className="mb-2 flex items-center gap-2">
-                      <div
-                        className="flex h-6 w-6 items-center justify-center rounded-lg"
-                        style={{ background: "var(--accent-soft)" }}
-                      >
-                        <Icon size={13} style={{ color: "var(--accent)" }} />
+            <div className="sheet-inner">
+              <div className="sheet-grip" />
+              <div className="sheet-head">
+                <img className="glyph" src="/assets/grail_isotype.png" alt="" />
+                <div>
+                  <h2>How search works</h2>
+                  <p>GRAIL chooses how to traverse your graph. Four modes, one knowledge base.</p>
+                </div>
+                <button
+                  type="button"
+                  className="close"
+                  onClick={() => setShowInfo(false)}
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="mode-grid">
+                {MODES.map((mode, i) => {
+                  const Icon = mode.Icon;
+                  return (
+                    <motion.div
+                      key={mode.title}
+                      className="mode-tile"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.25 }}
+                    >
+                      <div className="mt-ico">
+                        <Icon size={16} />
                       </div>
-                      <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                        {mode.title}
-                      </span>
-                      {mode.badge && (
-                        <span
-                          className="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-medium"
-                          style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
-                        >
-                          {mode.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                      {mode.description}
-                    </p>
-                  </motion.div>
-                );
-              })}
+                      <h3>
+                        {mode.title} <span className="tag">{mode.tag}</span>
+                      </h3>
+                      <p>{mode.description}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         </>

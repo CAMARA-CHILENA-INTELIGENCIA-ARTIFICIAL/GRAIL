@@ -1,0 +1,74 @@
+---
+title: Knowledge graphs in 5 minutes
+description: The intuition behind a knowledge graph — no algebra, with the library analogy.
+sidebar_position: 3
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Knowledge graphs in 5 minutes
+
+A **knowledge graph** is just two things: **dots** and **lines**.
+
+- The dots are called **entities**: people, organisations, drugs, laws, concepts. Any "important noun" in your corpus.
+- The lines are called **relationships**: how those entities connect. "Acme picked Postgres", "the law regulates treatment X", "Alice works with Bob".
+
+That's it. What GRAIL does is build that graph automatically from your text.
+
+<Analogy>
+
+Imagine that instead of an **alphabetical list** of every book in a library, you have a **wall map** where each author is a dot and lines connect authors who cite each other, books that share a topic, characters that appear in multiple works.
+
+For questions like "which books talk about Don Quixote?" the alphabetical list is barely useful. The map answers by **walking the nodes** instead of reading pages.
+
+</Analogy>
+
+## Why it matters for Q&A
+
+Traditional RAG says: "I'll search for pages most similar to your question and hand them to the LLM". That works for questions whose answer fits in one text chunk.
+
+But it fails when:
+
+- The answer **crosses documents** ("how does X from this report relate to Y in that one?").
+- The question is **structural** ("which drugs does oncologist Pérez's protocol cover?" — you have to walk oncologist → protocols → drugs).
+- You need **thematic synthesis** ("what's this whole thing about?").
+
+A graph makes those questions **structural**, not probabilistic. If Acme is connected to Postgres with a "CHOSE" edge, the answer to "which DB did Acme pick?" is a one-hop walk, not a similarity search.
+
+## What GRAIL adds on top of the basic graph
+
+A "bare" graph (entities + relationships) is already useful. GRAIL layers three more things on it:
+
+### 1. Communities
+
+GRAIL runs the **Leiden** algorithm to group densely connected entities into **communities**. It's like dividing the library into themed sections, automatically and at multiple granularities.
+
+### 2. Community reports
+
+For each community, an LLM writes a **narrative summary** of what it's about. It's the "section pamphlet" the librarian hands you when you ask something broad.
+
+This is what makes `global` mode work: the answer to "what are the central themes?" isn't reading the whole corpus — it's reading the reports.
+
+### 3. Retrieval queries on entities
+
+Each entity stores **2-3 anticipated questions** in its embedding text. It's the "post-it the author stuck on each book" saying "read me if you care about X".
+
+This dramatically improves cross-lingual and intent-based matching. A vague question matches well if the right entity has a post-it that resembles it.
+
+## Why GRAIL is more expensive up front (and cheaper in use)
+
+Building the graph costs one LLM call per **chunk** of corpus. For a corpus of 200 PDFs, that's hundreds or thousands of calls during indexing.
+
+But after that, in use, **each question costs one call** (or a few with `agent`). Vanilla RAG also costs one call per question — but answers structural questions worse.
+
+The math tips in GRAIL's favour when:
+
+- You're going to ask **many questions** of the same corpus.
+- The questions are **structural** or **synthesis**.
+- You care about **quality** more than per-question cost.
+
+## Next step
+
+- [Search modes](/learn/search-modes) — how the graph translates into six answer strategies.
+- [Cascade](/learn/cascade) — the mode that combines graph with text for factual questions.
+- [Communities and Leiden](/learn/communities-leiden) — more detail on how communities form.

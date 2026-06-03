@@ -1,0 +1,129 @@
+---
+title: Comunidades y Leiden
+description: Cómo GRAIL agrupa entidades en comunidades temáticas y por qué es lo que hace funcionar el modo global.
+sidebar_position: 6
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Comunidades y Leiden
+
+Las **comunidades** son la capa intermedia entre "puntos sueltos en un grafo" y "respuestas inteligentes a preguntas temáticas". Si el grafo es el esqueleto, las comunidades son los **órganos**: agrupaciones funcionales que dan estructura a la información.
+
+<Analogy>
+
+Imagina una biblioteca con **10.000 libros**. Sin organización, cada vez que te preguntan "¿qué hay sobre filosofía estoica?" tienes que escanear todos los lomos.
+
+Ahora imagina que alguien etiquetó los libros en **secciones**: filosofía, historia, ciencia, arte. Y dentro de filosofía, **subsecciones**: griega antigua, medieval, moderna, contemporánea. Y dentro de griega antigua: **micro-secciones**: presocráticos, sócratico, post-aristotélicos.
+
+Las **comunidades de GRAIL son esas secciones jerárquicas**, pero descubiertas automáticamente desde la estructura de las relaciones, no asignadas a mano.
+
+</Analogy>
+
+## El problema que resuelven
+
+Un grafo de 5.000 entidades es difícil de razonar. Una pregunta como "¿de qué trata todo esto?" no se responde mirando 5.000 puntos individuales — se responde mirando **clústeres densamente conectados** que representan temas coherentes.
+
+Ahí entra el algoritmo Leiden.
+
+## Qué hace Leiden
+
+[Leiden](https://www.nature.com/articles/s41598-019-41695-z) es un algoritmo de detección de comunidades en grafos. Toma como entrada un grafo (los nodos son entidades, las aristas son relaciones con peso), y devuelve una **partición jerárquica** de los nodos en grupos densos.
+
+Densamente conectado quiere decir: muchas aristas adentro del grupo, pocas aristas hacia afuera. Eso suele coincidir con temas semánticos coherentes.
+
+### Tres propiedades importantes
+
+1. **Jerárquico**: Leiden produce **varios niveles** de clústeres. Un nivel coarse (pocos grupos grandes) y niveles finos (muchos grupos chicos). En GRAIL elegimos qué nivel usar con `community_level`.
+
+2. **Reproducible**: con la misma semilla (`community.seed` en `grail.yaml`), la partición es determinística. Útil para tests y benchmarks.
+
+3. **Multi-nivel inteligente**: a diferencia de Louvain (su predecesor), Leiden garantiza que cada subcomunidad sea **conexa** y resuelve el problema de "resolution limit". Es decir, no fusiona artificialmente grupos chicos que deberían quedar separados.
+
+## Tres niveles, una decisión
+
+Después de correr Leiden, GRAIL te deja elegir qué granularidad usar:
+
+| `community_level` | Comportamiento | Cuándo conviene |
+|---|---|---|
+| `"coarsest"` (default) | Pocas comunidades grandes | Reportes globales temáticos amplios |
+| `"finest"` | Muchas comunidades chicas | Análisis detallado, dashboards |
+| `"all"` | Todas las jerarquías | Cuando quieres ambas vistas |
+| Un entero (ej. `2`) | Nivel específico | Casos avanzados |
+
+Configurable en `grail.yaml`:
+
+```yaml
+community:
+  community_level: "coarsest"
+  min_report_size: 3            # ignora comunidades de < 3 entidades
+```
+
+## Reportes de comunidad
+
+Una vez que tienes las comunidades, GRAIL le pide al LLM que escriba un **reporte narrativo** por cada una:
+
+```json
+{
+  "title": "Sistema GES y guarantías de salud",
+  "summary": "Esta comunidad agrupa entidades relacionadas con el sistema GES...",
+  "findings": [
+    {
+      "summary": "FONASA cubre el 100% del costo...",
+      "explanation": "Según la Ley 19.966, FONASA tiene obligación de..."
+    }
+  ],
+  "rank": 8.5
+}
+```
+
+Este reporte es lo que `global` consulta. Sin él, "¿cuáles son los temas centrales?" sería irresoluble sin leer el corpus completo.
+
+## Carpetas como comunidades (modo memoria)
+
+En modo memoria, GRAIL **no necesita correr Leiden** para identificar comunidades — la **estructura de carpetas bajo `memories/`** ya las declara:
+
+```
+memories/
+├── work/
+│   ├── clients/acme/        ← una comunidad
+│   └── clients/zorp/        ← otra comunidad
+├── personal/
+│   └── learning/python/     ← una comunidad
+└── decisions/
+    └── 2026-q2/             ← una comunidad
+```
+
+Cada entidad puede pertenecer a **varias comunidades a la vez** (multi-pertenencia). Acme puede aparecer en `work/clients/acme/` pero también en `decisions/2026-q2/`.
+
+### Cuándo conviene correr `consolidate`
+
+Folders-as-communities funciona bien hasta cierto punto. Pero cuando el grafo crece, conviene combinar lo declarado con lo descubierto:
+
+```bash
+grail consolidate ./mi-memoria
+```
+
+Esto corre el análisis estructural sobre el grafo y propone:
+
+- **`discover_community`**: "Estas entidades están densamente conectadas pero no comparten carpeta — son una comunidad emergente".
+- **`split_folder`**: "Esta carpeta tiene dos clústeres distintos — convendría dividirla".
+
+Tú decides aceptar o rechazar. Nada muta sin tu consentimiento.
+
+## Detalles técnicos
+
+| Configuración | Default | Para qué |
+|---|---|---|
+| `community.max_cluster_size` | `10` | Límite superior de tamaño de cluster por nivel |
+| `community.use_lcc` | `true` | Si usar solo el componente conectado más grande |
+| `community.min_community_size` | `1` | Comunidades más chicas se descartan |
+| `community.embedding_merge_eps` | `0.95` | Umbral DBSCAN para mergear entidades casi-duplicadas antes de Leiden |
+
+Ver `docs/glossary.md` del repo para la lista completa.
+
+## Siguiente paso
+
+- [El modelo de memoria](/learn/memory-model) — cómo las carpetas se vuelven comunidades de primera clase.
+- [Modos de búsqueda](/learn/search-modes) — cómo `global` usa los reportes de comunidad.
+- [Quickstart KB](/start/kb-quickstart) — ve las comunidades formándose en tu propio corpus.

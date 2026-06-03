@@ -1,0 +1,140 @@
+---
+title: Optimise indexing costs
+description: How to index large corpora without scary bills.
+sidebar_position: 10
+---
+
+# Optimise indexing costs
+
+The indexing phase is **the most expensive** part of a GRAIL project's lifecycle. It makes one LLM call per corpus chunk. For 200 PDFs of 30 pages each, that's thousands of calls.
+
+This guide gives you the five most effective levers to lower cost.
+
+## 1. Use a cheap model for extraction
+
+Entity + relationship extraction **doesn't need a frontier model**. Models like `gpt-4o-mini`, `claude-3-5-haiku`, `google/gemma-4-26B-A4B-it` (DeepInfra) do the job well at a fraction of the cost of `gpt-4o` or `claude-3-5-sonnet`.
+
+```yaml
+# grail.yaml
+llm:
+  endpoint: deepinfra
+  model: google/gemma-4-26B-A4B-it
+  extra_pricing:
+    "deepinfra|google/gemma-4-26B-A4B-it": [0.07, 0.34]
+```
+
+**Reserve expensive models** for `agent` / `global` modes at query time, where reasoning matters more.
+
+```yaml
+search:
+  agent_search_endpoint: anthropic
+  agent_search_model: claude-3-5-sonnet-20241022
+```
+
+## 2. Enable LLM cache
+
+If you'll re-index (because you tweaked a prompt, a config, or a model), identical calls shouldn't cost twice:
+
+```yaml
+llm:
+  cache_enabled: true
+  cache_dir: ./cache/llm  # optional, default is <root>/cache/llm
+```
+
+The cache is **deterministic**: same prompt + same parameters = same hit. Especially useful in iterative development.
+
+## 3. Tune chunk size
+
+Larger chunks = fewer calls, but also:
+
+- More tokens per call (can push total cost up).
+- Less granularity in extraction.
+
+```yaml
+indexing:
+  chunk_size: 1500           # default 2000
+  chunk_overlap: 100         # default 100
+```
+
+**Rule of thumb**: if your model handles 8K input comfortably, push to `chunk_size: 1500–2000`. If you use a small model with a 4K window, drop to `chunk_size: 800`.
+
+## 4. Reduce `max_gleanings`
+
+By default GRAIL runs a "second pass" over each chunk to find entities missed in the first. This costs double the calls for marginal improvement on many corpora.
+
+```yaml
+indexing:
+  max_gleanings: 0   # default 1. Set 0 to disable the second pass.
+```
+
+**When to keep `max_gleanings: 1`**: technical corpora with many dense entities (legal, medical).
+**When to set `max_gleanings: 0`**: more narrative corpora, or while you're iterating fast.
+
+## 5. Index a sample first
+
+Before unleashing 1000 PDFs:
+
+```bash
+# Copy 10 representative files
+mkdir my-kb-sample/input
+cp my-kb/input/{0,1,2,3,4,5,6,7,8,9}*.pdf my-kb-sample/input/
+
+# Index the sample
+grail index ./my-kb-sample
+
+# Look at the cost
+grail status ./my-kb-sample
+```
+
+Multiply by 100 and you have your estimate. If the figure is reasonable, index the full corpus. If not, tune the levers above and re-sample.
+
+## 6. Conservative but not excessive concurrency
+
+More concurrency = more speed but also more chance of hitting rate limits and costly retries.
+
+```yaml
+llm:
+  concurrent_requests: 8     # default 8
+  max_retries: 3
+```
+
+If you see lots of retries in the logs, drop to 4. If your provider allows much more, push to 16 or 24.
+
+## 7. Reranker only when it helps
+
+Reranker improves quality but **costs one extra call per query**. For queries where precision isn't critical, leave it off:
+
+```yaml
+reranker:
+  enabled: false
+```
+
+Override per-query with `--rerank` / `--no-rerank`.
+
+## 8. Memory mode is essentially $0 writes
+
+If your use case is agentic memory more than KB-style, **writing is free** — the agent declares entities, no LLM extraction. Only `consolidate` does reflection (and it doesn't use an LLM in GRAIL, it's pure structural analysis).
+
+You only pay when **you query** (cascade, local, global, agent).
+
+## Typical savings table
+
+For a 200-PDF corpus (~5K chunks):
+
+| Optimisation | Approximate cost | Savings vs default |
+|---|---|---|
+| Default (gpt-4o + reranker + gleanings=1) | $50–80 | — |
+| `gpt-4o-mini` replaces `gpt-4o` | $8–15 | 80% |
+| + `max_gleanings: 0` | $5–9 | 90% |
+| + cache enabled (re-runs) | depends | up to 100% |
+
+## When NOT to skimp
+
+- **Embedding model**: if you drop quality a lot, the whole retrieval system degrades. Keep a decent model (Qwen3-Embedding-8B, text-embedding-3-small, or similar).
+- **Community reports**: these are the basis of `global` mode. Very small models produce bad reports.
+
+## Next step
+
+- [Honest cost tracking](/learn/cost-tracking) — how to read cost reports.
+- [Search modes](/learn/search-modes) — which mode fits each question type.
+- [KB quickstart](/start/kb-quickstart) — to run the sample.

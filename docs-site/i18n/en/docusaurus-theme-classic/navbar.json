@@ -1,0 +1,38 @@
+{
+  "title": {
+    "message": "GRAIL",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "GRAIL",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Inicio": {
+    "message": "Home",
+    "description": "Navbar item Home"
+  },
+  "item.label.Aprende": {
+    "message": "Learn",
+    "description": "Navbar item Learn"
+  },
+  "item.label.Empieza": {
+    "message": "Get started",
+    "description": "Navbar item Get started"
+  },
+  "item.label.Guías": {
+    "message": "Guides",
+    "description": "Navbar item Guides"
+  },
+  "item.label.Referencia": {
+    "message": "Reference",
+    "description": "Navbar item Reference"
+  },
+  "item.label.Recetario": {
+    "message": "Cookbook",
+    "description": "Navbar item Cookbook"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item GitHub"
+  }
+}

@@ -1,0 +1,698 @@
+/* ========================================================================
+   GRAIL — global brand styling
+   Palette drawn from grail_logo_dark and the SVG animations.
+   ====================================================================== */
+
+@import url("https://rsms.me/inter/inter.css");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+:root {
+  /* Brand */
+  --grail-ink: #ffffff;
+  --grail-paper: #0a0a0a;
+  --grail-paper-soft: #141414;
+  --grail-paper-card: #1a1a1a;
+  --grail-line: #2a2a2a;
+  --grail-line-strong: #3a3a3a;
+  --grail-muted: #8a8a8a;
+  --grail-muted-strong: #b0b0b0;
+
+  /* Mode accents — same as the animations */
+  --grail-kb: #4a90e2;
+  --grail-kb-soft: rgba(74, 144, 226, 0.12);
+  --grail-memory: #e67e22;
+  --grail-memory-soft: rgba(230, 126, 34, 0.12);
+
+  /* Semantic */
+  --grail-ok: #27ae60;
+  --grail-ok-soft: rgba(39, 174, 96, 0.16);
+  --grail-warn: #e67e22;
+  --grail-bad: #e74c3c;
+
+  /* Infima overrides — LIGHT mode */
+  --ifm-color-primary: #1a1a1a;
+  --ifm-color-primary-dark: #000000;
+  --ifm-color-primary-darker: #000000;
+  --ifm-color-primary-darkest: #000000;
+  --ifm-color-primary-light: #2a2a2a;
+  --ifm-color-primary-lighter: #3a3a3a;
+  --ifm-color-primary-lightest: #4a4a4a;
+
+  --ifm-font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --ifm-font-family-monospace: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ifm-heading-font-weight: 700;
+  --ifm-heading-line-height: 1.2;
+  --ifm-h1-font-size: 2.6rem;
+  --ifm-h2-font-size: 1.9rem;
+  --ifm-h3-font-size: 1.4rem;
+  --ifm-code-font-size: 88%;
+  --ifm-code-padding-vertical: 0.15rem;
+  --ifm-code-padding-horizontal: 0.35rem;
+  --ifm-code-border-radius: 4px;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+  --ifm-color-primary: #ffffff;
+  --ifm-color-primary-dark: #e0e0e0;
+  --ifm-color-primary-darker: #c0c0c0;
+  --ifm-color-primary-darkest: #909090;
+  --ifm-color-primary-light: #ffffff;
+  --ifm-color-primary-lighter: #ffffff;
+  --ifm-color-primary-lightest: #ffffff;
+
+  --ifm-background-color: var(--grail-paper);
+  --ifm-background-surface-color: var(--grail-paper-soft);
+  --ifm-navbar-background-color: var(--grail-paper);
+  --ifm-footer-background-color: var(--grail-paper-soft);
+  --ifm-color-content: #e8e8e8;
+  --ifm-color-content-secondary: var(--grail-muted-strong);
+  --ifm-toc-border-color: var(--grail-line);
+  --ifm-table-border-color: var(--grail-line);
+  --ifm-color-emphasis-300: var(--grail-line-strong);
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================ Navbar ============================ */
+.navbar {
+  border-bottom: 1px solid var(--grail-line);
+  backdrop-filter: saturate(140%) blur(8px);
+}
+[data-theme="dark"] .navbar {
+  background-color: rgba(10, 10, 10, 0.85);
+}
+.navbar__title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.navbar__brand img {
+  height: 28px;
+}
+
+/* ============================ Landing wrapper (custom React page) ============================ */
+.grail-home-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ============================ Hero ============================ */
+.grail-hero {
+  position: relative;
+  padding: 2.5rem 1.5rem 2.25rem;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% -10%, rgba(74, 144, 226, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 40%, rgba(230, 126, 34, 0.06), transparent 60%),
+    var(--grail-paper);
+  border-bottom: 1px solid var(--grail-line);
+}
+.grail-hero__inner {
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.grail-hero__logo {
+  display: block;
+  width: auto;
+  max-width: 560px;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  filter: drop-shadow(0 0 32px rgba(255, 255, 255, 0.08));
+}
+@media (max-width: 768px) {
+  .grail-hero__logo { max-width: 420px; }
+}
+@media (max-width: 540px) {
+  .grail-hero__logo { max-width: 320px; }
+}
+.grail-hero__tagline {
+  font-size: 1.5rem;
+  color: var(--grail-ink);
+  margin: 0 auto 0.55rem;
+  max-width: 760px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.grail-hero__sub {
+  font-size: 1rem;
+  color: var(--grail-muted-strong);
+  margin: 0 auto 1.5rem;
+  max-width: 620px;
+  line-height: 1.5;
+}
+.grail-hero__meta {
+  font-size: 0.78rem;
+  color: var(--grail-muted);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.grail-hero__cta {
+  display: inline-flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.grail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border: 1px solid var(--grail-line-strong);
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.grail-btn:hover { transform: translateY(-1px); text-decoration: none; }
+.grail-btn--primary {
+  background: var(--grail-ink);
+  color: var(--grail-paper);
+  border-color: var(--grail-ink);
+}
+.grail-btn--primary:hover { background: #f0f0f0; color: var(--grail-paper); }
+.grail-btn--ghost {
+  background: transparent;
+  color: var(--grail-ink);
+}
+.grail-btn--ghost:hover { background: var(--grail-paper-card); color: var(--grail-ink); border-color: var(--grail-muted); }
+
+/* ============================ Mode cards on home ============================ */
+.grail-modes {
+  padding: 2.5rem 1.5rem 4rem;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.grail-modes__title {
+  text-align: center;
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: var(--grail-ink);
+  letter-spacing: -0.2px;
+}
+.grail-modes__lede {
+  text-align: center;
+  color: var(--grail-muted-strong);
+  margin-bottom: 1.75rem;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.95rem;
+}
+.grail-modes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1rem;
+}
+.grail-mode-card {
+  position: relative;
+  background: var(--grail-paper-card);
+  border: 1px solid var(--grail-line);
+  border-radius: 14px;
+  padding: 1.6rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+  text-decoration: none !important;
+  color: inherit;
+  overflow: hidden;
+}
+.grail-mode-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, height 0.2s ease;
+}
+.grail-mode-card--kb::before     { background: var(--grail-kb); }
+.grail-mode-card--memory::before { background: var(--grail-memory); }
+.grail-mode-card--skill::before  { background: var(--grail-ok); }
+.grail-mode-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--grail-muted);
+}
+.grail-mode-card--kb:hover     { box-shadow: 0 8px 32px rgba(74, 144, 226, 0.18); }
+.grail-mode-card--memory:hover { box-shadow: 0 8px 32px rgba(230, 126, 34, 0.18); }
+.grail-mode-card--skill:hover  { box-shadow: 0 8px 32px rgba(39, 174, 96, 0.18); }
+.grail-mode-card:hover::before { opacity: 1; height: 3px; }
+.grail-mode-card__badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 0.28rem 0.65rem;
+  border-radius: 5px;
+  display: inline-block;
+  margin-bottom: 0.95rem;
+  align-self: flex-start;
+}
+.grail-mode-card--kb .grail-mode-card__badge {
+  background: var(--grail-kb-soft);
+  color: var(--grail-kb);
+}
+.grail-mode-card--memory .grail-mode-card__badge {
+  background: var(--grail-memory-soft);
+  color: var(--grail-memory);
+}
+.grail-mode-card--skill .grail-mode-card__badge {
+  background: var(--grail-ok-soft);
+  color: var(--grail-ok);
+}
+.grail-mode-card__title {
+  font-size: 1.32rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+  color: var(--grail-ink);
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+}
+.grail-mode-card__body {
+  color: var(--grail-muted-strong);
+  font-size: 0.92rem;
+  flex-grow: 1;
+  line-height: 1.55;
+}
+.grail-mode-card__cta {
+  margin-top: 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--grail-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.grail-mode-card:hover .grail-mode-card__cta {
+  gap: 0.55rem;
+}
+
+/* ============================ Mode badge ============================ */
+.grail-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.grail-mode-badge--kb {
+  background: var(--grail-kb-soft);
+  color: var(--grail-kb);
+  border: 1px solid rgba(74, 144, 226, 0.25);
+}
+.grail-mode-badge--memory {
+  background: var(--grail-memory-soft);
+  color: var(--grail-memory);
+  border: 1px solid rgba(230, 126, 34, 0.25);
+}
+.grail-mode-badge--both {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--grail-muted-strong);
+  border: 1px solid var(--grail-line-strong);
+}
+
+/* ============================ Analogy callout ============================ */
+.grail-analogy {
+  position: relative;
+  margin: 1.75rem 0;
+  padding: 1.25rem 1.5rem 1.25rem 3.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  border: 1px solid var(--grail-line);
+  border-left: 3px solid var(--grail-ink);
+  border-radius: 10px;
+}
+.grail-analogy::before {
+  content: "✦";
+  position: absolute;
+  top: 1.15rem;
+  left: 1.1rem;
+  font-size: 1.25rem;
+  color: var(--grail-ink);
+  opacity: 0.65;
+}
+.grail-analogy__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--grail-muted);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+.grail-analogy__body {
+  color: var(--grail-ink);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.grail-analogy__body p:last-child { margin-bottom: 0; }
+
+/* ============================ Section header w/ animation ============================ */
+.grail-anim {
+  margin: 1.75rem 0;
+  background: var(--grail-paper-soft);
+  border: 1px solid var(--grail-line);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.grail-anim img { width: 100%; height: auto; display: block; }
+
+/* ============================ Tables ============================ */
+.markdown table {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--grail-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.markdown thead { background: var(--grail-paper-soft); }
+.markdown th, .markdown td { border: none; border-bottom: 1px solid var(--grail-line); }
+.markdown tr:last-child td { border-bottom: none; }
+
+/* ============================ Code ============================ */
+.prism-code, code {
+  font-family: var(--ifm-font-family-monospace);
+}
+[data-theme="dark"] code {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--grail-line);
+}
+
+/* ============================ Footer ============================ */
+.footer--dark {
+  --ifm-footer-background-color: var(--grail-paper-soft);
+  border-top: 1px solid var(--grail-line);
+}
+.footer__logo {
+  max-width: 200px;
+  margin-bottom: 1.5rem;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+.footer__logo:hover { opacity: 1; }
+
+/* ============================ Modes section wrapper ============================ */
+.grail-modes__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ============================ Generic documentation section (Learn/Start/Resources) ============================ */
+.grail-section {
+  padding: 4rem 1.5rem;
+  border-top: 1px solid var(--grail-line);
+}
+.grail-section:nth-of-type(even) { background: var(--grail-paper-soft); }
+.grail-section__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.grail-section__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--grail-muted);
+  margin-bottom: 0.6rem;
+}
+.grail-section__title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 0.5rem;
+  color: var(--grail-ink);
+}
+.grail-section__lede {
+  font-size: 1.05rem;
+  color: var(--grail-muted-strong);
+  margin-bottom: 2.25rem;
+  max-width: 720px;
+  line-height: 1.55;
+}
+.grail-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1rem;
+}
+.grail-doc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.5rem 1.25rem;
+  background: var(--grail-paper-card);
+  border: 1px solid var(--grail-line);
+  border-radius: 12px;
+  text-decoration: none !important;
+  color: inherit;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.grail-doc-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--grail-muted);
+  background: #1f1f1f;
+}
+.grail-doc-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--grail-ink);
+  letter-spacing: -0.15px;
+  line-height: 1.3;
+}
+.grail-doc-card__body {
+  font-size: 0.9rem;
+  color: var(--grail-muted-strong);
+  line-height: 1.55;
+  flex-grow: 1;
+  margin: 0;
+}
+.grail-doc-card__cta {
+  align-self: flex-start;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  color: var(--grail-muted);
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+.grail-doc-card:hover .grail-doc-card__cta {
+  color: var(--grail-ink);
+  transform: translateX(4px);
+}
+
+/* ============================ CCHIA Banner ============================ */
+.grail-banner {
+  padding: 4rem 1.5rem;
+  background:
+    radial-gradient(ellipse 90% 80% at 20% 50%, rgba(74, 144, 226, 0.06), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 90% 50%, rgba(230, 126, 34, 0.04), transparent 60%),
+    var(--grail-paper);
+  border-top: 1px solid var(--grail-line);
+}
+.grail-banner__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .grail-banner__inner { grid-template-columns: 1fr; text-align: center; }
+}
+.grail-banner__logo-link {
+  display: inline-block;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+.grail-banner__logo-link:hover { opacity: 1; }
+.grail-banner__logo {
+  max-width: 280px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.04));
+}
+.grail-banner__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--grail-muted);
+  margin-bottom: 0.5rem;
+}
+.grail-banner__title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 0.75rem;
+  color: var(--grail-ink);
+}
+.grail-banner__lede {
+  font-size: 1rem;
+  color: var(--grail-muted-strong);
+  line-height: 1.55;
+  margin-bottom: 1.5rem;
+  max-width: 640px;
+}
+.grail-banner__cta {
+  display: inline-flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .grail-banner__cta { justify-content: center; }
+}
+
+/* ============================ Acknowledgements ============================ */
+.grail-ack {
+  padding: 3.5rem 1.5rem 4rem;
+  border-top: 1px solid var(--grail-line);
+  background: var(--grail-paper);
+}
+.grail-ack__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.grail-ack__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--grail-muted);
+  margin-bottom: 0.45rem;
+}
+.grail-ack__title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  margin-bottom: 1.75rem;
+  color: var(--grail-ink);
+}
+.grail-ack__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+.grail-ack__item {
+  background: var(--grail-paper-card);
+  border: 1px solid var(--grail-line);
+  border-radius: 12px;
+  padding: 1.4rem 1.5rem 1.5rem;
+}
+.grail-ack__item-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--grail-muted-strong);
+  margin: 0 0 0.85rem;
+}
+.grail-ack__item-body {
+  font-size: 0.93rem;
+  color: var(--grail-ink);
+  line-height: 1.65;
+  margin: 0;
+}
+.grail-ack__item-body a {
+  color: var(--grail-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--grail-line-strong);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.2s ease;
+}
+.grail-ack__item-body a:hover {
+  text-decoration-color: var(--grail-ink);
+}
+
+/* ============================ Slim sponsor strip (Nirvai) ============================ */
+.grail-sponsor-strip {
+  margin-top: 2rem;
+  padding: 0.85rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--grail-paper-card);
+  border: 1px solid var(--grail-line);
+  border-radius: 999px;
+  text-decoration: none !important;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+.grail-sponsor-strip:hover {
+  border-color: var(--grail-muted);
+  transform: translateY(-1px);
+  background: #1f1f1f;
+}
+.grail-sponsor-strip__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--grail-muted);
+}
+.grail-sponsor-strip__logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(120, 100, 200, 0.25));
+}
+.grail-sponsor-strip__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--grail-ink);
+  letter-spacing: -0.1px;
+}
+.grail-sponsor-strip__cta {
+  font-size: 0.8rem;
+  color: var(--grail-muted);
+  margin-left: 0.4rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--grail-line);
+  transition: color 0.2s ease;
+}
+.grail-sponsor-strip:hover .grail-sponsor-strip__cta {
+  color: var(--grail-ink);
+}
+
+/* ============================ Search bar in navbar ============================ */
+.navbar__search-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--grail-line);
+  color: var(--grail-ink);
+  width: 220px;
+  padding-left: 2.25rem;
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.navbar__search-input::placeholder {
+  color: var(--grail-muted);
+}
+.navbar__search-input:focus {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--grail-muted);
+  outline: none;
+}
+[data-theme="dark"] .navbar__search-input {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ============================ Sidebar styling ============================ */
+.menu__link {
+  font-size: 0.9rem;
+}
+.menu__link--sublist-caret {
+  font-weight: 700;
+}
+.menu__list-item-collapsible--active,
+.menu__link--active {
+  background: rgba(255, 255, 255, 0.04);
+}

@@ -1,0 +1,175 @@
+---
+title: Bot Q&A sobre corpus de PDFs
+description: Receta completa para convertir una carpeta de PDFs en un bot de preguntas y respuestas con UI web.
+sidebar_position: 2
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="kb" />
+
+# Bot Q&A sobre corpus de PDFs
+
+## Qué vamos a construir
+
+Una webapp simple donde cualquiera puede hacer preguntas sobre una colección de PDFs (papers, manuales, documentación legal, lo que sea). El bot busca con `cascade` por default y muestra las fuentes citadas.
+
+**End state**: `http://localhost:8765` con un chat funcional, citas verificables a los PDFs originales.
+
+## Stack
+
+| Pieza | Elección |
+|---|---|
+| Modo | Base de conocimiento |
+| LLM | DeepInfra + Gemma-4-26B (costo bajo, calidad alta) |
+| Embeddings | DeepInfra + Qwen3-Embedding-8B |
+| Vector store | FAISS (default) |
+| Storage | Local |
+| UI | `grail ui` (FastAPI + React) |
+
+Costo estimado para 50 PDFs de ~30 páginas: **$2–5 de indexación, $0.005/consulta**.
+
+## 1. Instalar GRAIL
+
+```bash
+git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
+cd GRAIL
+uv venv --python 3.12
+uv pip install -e ".[dev,ui]"
+```
+
+El extra `ui` agrega FastAPI + dependencias del chat web.
+
+## 2. Crear el proyecto
+
+```bash
+uv run grail init ./mi-bot --name mi-bot --template low_cost_setup
+```
+
+## 3. Configurar la key de DeepInfra
+
+```bash
+cd mi-bot
+cp .env.example .env
+# Edita .env y agrega tu DEEPINFRA_API_KEY=...
+```
+
+(Si prefieres OpenAI, edita `grail.yaml` para `llm.endpoint: openai` + `llm.model: gpt-4o-mini` y usa `OPENAI_API_KEY`.)
+
+## 4. Copiar los PDFs
+
+```bash
+cp ~/Documents/mis-papers/*.pdf ./mi-bot/input/
+```
+
+## 5. Indexar
+
+```bash
+cd ..
+uv run grail index ./mi-bot
+```
+
+Sale algo como:
+
+```
+✓ Indexed 47 documents, 1234 text units, 2841 entities, 6127 relationships,
+  142 communities, 142 reports.
+  Cost: $3.45 (complete)
+```
+
+Si vuelve `partial` o `undefined`, agrega `extra_pricing` a `grail.yaml` (ver [Optimización de costos](/guides/cost-optimization)).
+
+## 6. Probar en CLI primero
+
+```bash
+# Cascade — el modo default recomendado
+uv run grail query ./mi-bot "¿De qué tratan los papers?" --mode global
+
+uv run grail query ./mi-bot "¿Qué dice el paper de Smith sobre el método X?" --mode cascade
+```
+
+Si las respuestas vienen razonables, sigue. Si no, [traza la consulta](/guides/query-tracing) para entender qué falló.
+
+## 7. Levantar la UI
+
+```bash
+uv run grail ui ./mi-bot --host 0.0.0.0 --port 8765
+```
+
+Abre `http://localhost:8765`. El primer usuario crea cuenta (auth básico). Después puede chatear.
+
+La UI por default usa modo `agent`, que decide entre `local`, `cascade`, `global`, `document` por cada pregunta. Si quieres forzar un modo específico, edita `grail.yaml`:
+
+```yaml
+search:
+  agent_search_endpoint: deepinfra
+  agent_search_model: Qwen/Qwen3.6-35B-A3B  # más capaz para razonar
+```
+
+## 8. Citas verificables
+
+Cada respuesta de la UI muestra las fuentes citadas: archivos PDF, número de chunk, snippets relevantes. El usuario puede clickear y verificar.
+
+Bajo el capó, esto viene de `file-level provenance`: cada text unit guarda un puntero al archivo fuente. Es lo que hace que las respuestas no sean "alucinaciones" sino respuestas anclables.
+
+## 9. Mantener actualizado
+
+Cuando agregues nuevos PDFs:
+
+```bash
+# Copia los nuevos
+cp ~/Documents/mis-papers-nuevos/*.pdf ./mi-bot/input/
+
+# Append incremental — solo procesa los nuevos
+uv run grail append ./mi-bot \
+  ./mi-bot/input/paper-2026.pdf \
+  ./mi-bot/input/paper-2026-2.pdf
+```
+
+Para reemplazar:
+
+```bash
+uv run grail edit ./mi-bot --name viejo.pdf --src /tmp/nuevo.pdf
+```
+
+Para eliminar:
+
+```bash
+uv run grail delete ./mi-bot obsoleto.pdf
+```
+
+GRAIL re-extrae solo los chunks afectados y actualiza las comunidades con un scheduler inteligente — no re-indexa todo.
+
+## Extender
+
+### Para más calidad
+
+- Habilita el **reranker**: `reranker.enabled: true` en `grail.yaml`. Cuesta una llamada extra por consulta pero mejora la precisión.
+- Usa un **modelo más capaz** para `search.local_search_model` y `search.agent_search_model` (ej. `claude-3-5-sonnet`).
+- Ajusta `indexing.entity_types` para tu dominio (ej. para papers médicos: `["AUTHOR", "DISEASE", "DRUG", "STUDY", "FINDING"]`).
+
+### Para más velocidad
+
+- Cambia a **LanceDB** o **ChromaDB** si tu corpus tiene >1M vectores: `--vectorstore lancedb`.
+- Sube `llm.concurrent_requests` (cuidado con los rate limits).
+
+### Para deployment
+
+- Mueve el storage a **S3**: `pip install -e ".[s3]"`, configura `storage.backend: s3`.
+- Dockerizá el `grail ui` para correr en cualquier host.
+- Para producción con autenticación seria, expón solo `grail.search` desde tu propio backend en lugar de usar `grail ui` directo.
+
+## Cuando algo sale mal
+
+| Síntoma | Probablemente | Fix |
+|---|---|---|
+| "No encontré nada sobre X" | La extracción no creó la entidad X | Verifica con `grail viz`; si falta, edita `entity_types` |
+| Respuestas vagas o genéricas | La pregunta no es lo suficientemente específica | Aplica la [fórmula QUIÉN + QUÉ + términos](/learn/search-modes#la-forma-de-la-pregunta-importa) |
+| UI no carga | Falta extra `ui` | `uv pip install -e ".[ui]"` |
+| 401 al chatear | API key de DeepInfra inválida | Revisa `.env` y restart |
+
+## Siguiente paso
+
+- [Trazar consultas](/guides/query-tracing) para debuggear respuestas malas.
+- [Modos de búsqueda](/learn/search-modes) para entender cuándo `cascade` no es suficiente.
+- [Optimizar costos](/guides/cost-optimization) si la factura mensual te incomoda.

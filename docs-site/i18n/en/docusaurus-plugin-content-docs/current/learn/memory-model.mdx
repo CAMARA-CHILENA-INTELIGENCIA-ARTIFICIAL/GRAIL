@@ -1,0 +1,177 @@
+---
+title: Agentic memory model
+description: How GRAIL thinks about agent memory — observations, folders as communities, recall, and the role of consolidate.
+sidebar_position: 7
+---
+
+import Analogy from "@site/src/components/Analogy";
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="memory" />
+
+# Agentic memory model
+
+GRAIL's memory mode isn't "RAG over agent conversations". It's a **deliberate cognitive model** of how an agent should remember: with typed observations, clear provenance, temporal decay, and a consolidation routine you control.
+
+<Analogy>
+
+Think about how a **serious researcher** remembers, not how a search engine remembers:
+
+- Takes **explicit notes** about what they learn ("today I discovered that X causes Y").
+- Organises them by **project and topic** in physical or digital folders.
+- **Dates and signs** them — knows when they happened, how confident they were.
+- From time to time, **reviews and consolidates**: "these three notes seem to refer to the same person", "this topic deserves its own section".
+
+GRAIL emulates exactly that model. The agent is the researcher; GRAIL is its notebook + filing cabinet + consolidation assistant.
+
+</Analogy>
+
+## The four design decisions
+
+### 1. The agent writes directly — no intermediate LLM
+
+In KB mode, an LLM reads your documents and **guesses** which entities to extract. It can be wrong, miss things, or duplicate.
+
+In memory mode, the agent **declares explicitly** the entities and relationships when calling `add_observation()`. There's no extraction step that can go wrong — the agent already knows what it meant.
+
+```python
+await mp.add_observation(
+    title="...",
+    content="...",
+    entities=[
+        {"name": "Acme", "type": "ORGANIZATION"},
+        {"name": "Postgres", "type": "TECHNOLOGY"},
+    ],
+    relationships=[
+        {"source": "Acme", "target": "Postgres", "relationship_type": "CHOSE"},
+    ],
+)
+```
+
+This is **dramatically cheaper and more precise** than the KB flow. Each observation costs zero LLM calls. And since the agent declares, quality is at the agent's level, not the extractor's.
+
+### 2. Folders as communities
+
+The structure of `memories/<category>/` **is** the community structure. No need to run Leiden every time you write:
+
+```
+memories/
+├── work/clients/acme/        ← "acme" community
+├── work/clients/zorp/        ← "zorp" community
+├── personal/health/          ← "health" community
+└── learning/python/asyncio/  ← "asyncio" community
+```
+
+This is called **folders-as-communities**. The good part: each new observation enters its community automatically, no re-clustering. Extra good: one entity can live in multiple folders (multi-membership).
+
+### 3. Provenance and time, always
+
+Every observation carries structured metadata in its YAML frontmatter:
+
+```yaml
+---
+id: 01HXY...                      # unique ULID
+title: "Acme picked Postgres..."
+observed_at: 2026-06-02T14:23:00Z
+category: work/clients/acme
+tags: [decision, architecture]
+confidence: 0.95
+source: "architecture review meeting"
+entities: [...]                    # those that apply to this observation
+relationships: [...]
+---
+
+(markdown body with the content)
+```
+
+That metadata is what makes `recall` work. No LLM, no embedding, just filters over structured columns.
+
+### 4. Consolidation with agent consent
+
+As memory grows, patterns deserving reorganisation appear: aliases to merge, folders to split, emergent communities to discover.
+
+GRAIL **doesn't mutate your graph without permission**. The `consolidate()` function runs the analysis and emits **proposals** — the agent reviews and accepts or rejects.
+
+```bash
+grail consolidate ./my-memory
+# Generates output/proposals/<timestamp>.json
+
+grail proposals list ./my-memory
+# Lists pending proposals
+
+grail proposals apply ./my-memory --accept <id>
+# Applies a specific proposal
+```
+
+This "propose → review → apply" loop is the opposite of frameworks that **mutate automatically** with every call. It gives you auditable control over your own graph.
+
+## Recall: zero LLM, maximum control
+
+`recall` is the memory-exclusive search mode. Filters observations by structured columns:
+
+```python
+result = await mp.recall(
+    mode="recall",
+    since="7d",                          # last 7 days
+    category="work/clients/acme/**",     # folder glob
+    tags=["decision"],                   # must have this tag
+    entity_names=["Postgres"],           # must mention this entity
+    min_confidence=0.8,                  # min confidence
+)
+```
+
+**Important properties:**
+
+- **No LLM call**. It's a `pandas` filter over parquet.
+- **No query embedding**. You don't need embeddings configured.
+- **Instant** for memories up to tens of thousands of observations.
+- **Exact**: no approximate similarity, just equality/comparison over columns.
+
+You can combine it as a **modifier** on other modes:
+
+```python
+# Cascade scoped to recent Acme observations
+result = await mp.recall(
+    "Why did Acme rule out DynamoDB?",
+    mode="cascade",
+    since="30d",
+    category="work/clients/acme/**",
+)
+```
+
+## The natural cycle of agentic memory
+
+```
+                ┌─→ add_observation   ←──┐
+                │   (agent writes)       │
+                │                        │
+        many times                       │
+                │                        │
+                └─→ recall / cascade  ───┤
+                    (agent reads)        │
+                                         │
+                                         │
+                every N observations     │
+                                         │
+                consolidate              │
+                (proposals)              │
+                                         │
+                proposals apply  ────────┘
+                (agent accepts what's useful)
+```
+
+The first two boxes (writing and reading) are cheap and frequent. Consolidation is rare (weekly, monthly) and deliberate.
+
+## When NOT to use memory mode
+
+- If your agent only needs **ephemeral context** (current session, then gone), an in-memory buffer is simpler.
+- If you want **automatic memory without control** (everything the agent says gets indexed), GRAIL isn't the simplest — Letta or mem0 are more opinionated.
+- If your "observations" are actually **documents** that already exist (PDFs, papers), use KB mode.
+
+GRAIL shines when you want a **deliberate, auditable, structured** memory the agent can query with surgical precision.
+
+## Next step
+
+- [Agentic memory quickstart](/start/memory-quickstart) — implement the full cycle in 5 minutes.
+- [Skill quickstart](/start/skill-quickstart) — wire this to Claude Code, Codex, or OpenCode.
+- [Search modes](/learn/search-modes) — how to combine `recall` with `cascade` for hybrid queries.

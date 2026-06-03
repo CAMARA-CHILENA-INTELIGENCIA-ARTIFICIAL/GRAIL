@@ -1,0 +1,124 @@
+---
+title: The six search modes
+description: One tool per question — how GRAIL decides which search mode to use, and when you'd pick it yourself.
+sidebar_position: 4
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# The six search modes
+
+GRAIL has **six distinct ways** to answer a question. Five use an LLM, one doesn't. Learning which to use for what kind of question is the core skill to use GRAIL well.
+
+<Analogy>
+
+Picture walking into the library and asking the librarian something. Before answering, she has six mental strategies:
+
+1. "I have three authors in my head who wrote about that" → **local**.
+2. "I'll check the index and also flip through the pages that mention your word" → **cascade**.
+3. "Let me consult my thematic section summaries" → **global**.
+4. "This lives whole in one book; let me leaf through it" → **document**.
+5. "I'll combine several strategies and come back with the best mix" → **agent**.
+6. "Filter to notes I wrote this week about this client" → **recall**.
+
+GRAIL lets you pick the strategy, or ask the agent to decide for itself.
+
+</Analogy>
+
+## Quick table
+
+| Mode | Best for | LLM cost | Command |
+|---|---|---|---|
+| `local` | Named concepts ("who is X?", "what does Y do?") | 1 call | `grail query <proj> "..." --mode local` |
+| `cascade` | Specific facts ("what dosage does protocol X cite?") | 1 call | `--mode cascade` |
+| `global` | Broad thematic questions ("what is this all about?") | several (map-reduce) | `--mode global` |
+| `document` | Single source ("summarise law-21250.pdf") | 1 call | `--mode document -d file.pdf` |
+| `agent` | Compound questions ("compare X and Y") | 1–N calls | `--mode agent` |
+| `recall` | Memory by structural filter | **0 calls** | `--mode recall --since 7d --tag X` |
+
+## When to pick which
+
+### `local` — entities as anchor
+
+Embed the question, find the most similar entities in the graph, bring their linked text, relationships, and reports, answer.
+
+```bash
+grail query my-project "Who is the Ricarte Soto Law?" --mode local
+```
+
+Works well when your question **names things** that are likely to be entities in the graph. If the question is vague or has no clear nouns, consider `cascade`.
+
+### `cascade` — entities + text rescue
+
+Vanilla GraphRAG's big problem: sometimes the fact you want lives in a text chunk whose main entity wasn't extracted. `cascade` solves this by adding BM25/cosine text rescue and combining both rankings.
+
+```bash
+grail query my-project "How many months does chemotherapy coverage last?" --mode cascade
+```
+
+**This is usually the best option for specific factual questions.** If you come from traditional RAG, `cascade` is the mode that will pleasantly surprise you.
+
+### `global` — bird's-eye view
+
+Map-reduce over community reports. Each report contributes a thematic perspective; the reduce synthesises them.
+
+```bash
+grail query my-project "What are the central themes of the corpus?" --mode global
+```
+
+Expensive for large corpora (one LLM call per report above N tokens), but unique for synthesis questions.
+
+### `document` — a single file
+
+Scope the entire search to one document. Useful for "summarise X" or "what does Y say about Z" when you already know which file to point at.
+
+```bash
+grail query my-project "Summarise this" --mode document -d law-21250.pdf
+```
+
+### `agent` — let the LLM decide
+
+The agent receives the question and has `local`, `cascade`, `global`, `document` as tools. It decides which to call, repeats if needed up to 5 iterations, then synthesises a final answer.
+
+```bash
+grail query my-project "Compare AUGE vs Ricarte Soto Law coverage" --mode agent
+```
+
+**Best option for compound or ambiguous questions.** More expensive but more robust.
+
+### `recall` — no LLM
+
+Pure filter over the structural columns: `observed_at`, `category`, `tag`, `entity`, `confidence`. No embedding, no LLM, no cost. Memory only.
+
+```bash
+# Last week's decisions
+grail query my-memory --mode recall --since 7d --tag decision
+
+# Everything for one client, any date
+grail query my-memory --mode recall --category "work/clients/acme/**"
+```
+
+The same filter flags also **combine with other modes** as a candidate modifier:
+
+```bash
+# Cascade but only over the last month's observations tagged "decision"
+grail query my-memory "What did we decide about the migration?" \
+  --mode cascade --since 30d --tag decision
+```
+
+## Question shape matters
+
+For `local` and `cascade`, a well-shaped question matches ~3× better than a poorly shaped one. The formula that works in our benchmarks:
+
+> **[WHO does it] + [WHAT is the process] + [SPECIFIC TERMS from the domain]**
+
+Compare:
+
+- ❌ "How much does treatment cost" — vague, no named entities.
+- ✅ "How much does FONASA cover for oncological chemotherapy treatment" — names the entity (FONASA), the process (cover treatment), and specific terms (oncological chemotherapy).
+
+## Next step
+
+- [Cascade in depth](/learn/cascade) — why it changes the rules vs vanilla RAG.
+- [Memory model](/learn/memory-model) — how to leverage `recall` and structural filters.
+- [Install GRAIL](/start/install) and test the modes against your own corpus.

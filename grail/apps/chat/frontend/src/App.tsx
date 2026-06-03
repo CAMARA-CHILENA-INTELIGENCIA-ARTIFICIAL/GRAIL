@@ -21,27 +21,35 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center" style={{ background: "var(--surface-0)" }}>
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--surface-0)",
+        }}
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center gap-4"
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}
         >
-          <span
-            className="text-2xl font-semibold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #5eead4, #14b8a6)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            GRAIL
-          </span>
-          <div className="flex gap-1.5">
-            <span className="loading-dot h-1.5 w-1.5 rounded-full bg-teal-500" />
-            <span className="loading-dot h-1.5 w-1.5 rounded-full bg-teal-500" />
-            <span className="loading-dot h-1.5 w-1.5 rounded-full bg-teal-500" />
+          <img src="/assets/grail_logotype.png" alt="GRAIL" style={{ height: 56, opacity: 0.9 }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <span
+              className="loading-dot"
+              style={{ width: 6, height: 6, borderRadius: 99, background: "var(--accent)" }}
+            />
+            <span
+              className="loading-dot"
+              style={{ width: 6, height: 6, borderRadius: 99, background: "var(--accent)" }}
+            />
+            <span
+              className="loading-dot"
+              style={{ width: 6, height: 6, borderRadius: 99, background: "var(--accent)" }}
+            />
           </div>
         </motion.div>
       </div>
@@ -66,7 +74,7 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="h-screen"
+          style={{ height: "100vh" }}
         >
           <Layout />
         </motion.div>
