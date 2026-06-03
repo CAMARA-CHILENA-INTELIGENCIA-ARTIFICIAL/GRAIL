@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Message, SourceReference } from "../lib/store";
 import { useChatStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 import { api } from "../lib/api";
 import MarkdownRenderer from "./MarkdownRenderer";
 
@@ -74,6 +75,7 @@ function classifyFile(title: string): { type: string; Icon: typeof FileText } {
 
 function Source({ src }: { src: SourceReference }) {
   const { currentMode, setDraftInput } = useChatStore();
+  const t = useT();
   const { type, Icon } = classifyFile(src.title);
   const isAgent = currentMode === "agent";
 
@@ -100,15 +102,15 @@ function Source({ src }: { src: SourceReference }) {
       <div className="info">
         <div className="fname">{src.title}</div>
         <div className="fmeta">
-          <span>{src.path && src.path !== src.title ? truncate(src.path, 28) : "source"}</span>
+          <span>{src.path && src.path !== src.title ? truncate(src.path, 28) : t("msg.sourceFallback")}</span>
         </div>
       </div>
       <div className="actions">
-        <button onClick={handleDownload} title="Download">
+        <button onClick={handleDownload} title={t("msg.download")}>
           <Download size={13} />
         </button>
         {isAgent && (
-          <button onClick={handleAskAgent} title="Ask agent about this document">
+          <button onClick={handleAskAgent} title={t("msg.askAgent")}>
             <MessageSquare size={13} />
           </button>
         )}
@@ -123,11 +125,26 @@ function truncate(s: string, n: number): string {
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const t = useT();
 
   if (isUser) {
+    const docScope = message.metadata?.document_scope;
     return (
       <div className="msg user">
         <div className="body">
+          {docScope && (
+            <div className="bubble-user-scope">
+              <span className="file-pill">
+                <span className="ftype">
+                  <FileText size={13} />
+                </span>
+                <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                  <span className="scope-tag">{t("msg.docSearchTag")}</span>
+                  <span className="fname" title={docScope}>{docScope}</span>
+                </span>
+              </span>
+            </div>
+          )}
           <div className="bubble-user">{message.content}</div>
           {message.created_at && (
             <div className="meta">
@@ -147,7 +164,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       <div className="avatar">
         <img src="/assets/grail_isotype.png" alt="" />
       </div>
-      <div className="body" style={{ flex: 1, minWidth: 0 }}>
+      <div className="body">
         <div className="bubble-assistant">
           <MarkdownRenderer content={message.content} />
 
@@ -156,7 +173,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
               <div className="sources">
                 <div className="sources-label">
                   <Quote size={13} />
-                  Sources
+                  {t("msg.sources")}
                 </div>
                 <div className="source-list">
                   {sources.map((src) => (
@@ -178,13 +195,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
               {meta.llm_calls != null && (
                 <span className="pill">
                   <Cpu size={12} />
-                  {meta.llm_calls} LLM call{meta.llm_calls !== 1 ? "s" : ""}
+                  {t(meta.llm_calls === 1 ? "msg.llmCall" : "msg.llmCalls", { n: meta.llm_calls })}
                 </span>
               )}
               {sources.length > 0 && (
                 <span className="pill">
                   <GitCommitHorizontal size={12} />
-                  {sources.length} source{sources.length !== 1 ? "s" : ""}
+                  {t(sources.length === 1 ? "msg.source" : "msg.sources_n", { n: sources.length })}
                 </span>
               )}
               {message.created_at && (
@@ -199,21 +216,22 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 }
 
 export function StreamingBubble({ content }: { content: string }) {
+  const isEmpty = !content;
   return (
-    <div className="msg assistant">
+    <div className={`msg assistant ${isEmpty ? "streaming-msg" : ""}`}>
       <div className="avatar">
         <img src="/assets/grail_isotype.png" alt="" />
       </div>
-      <div className="body" style={{ flex: 1, minWidth: 0 }}>
-        <div className="bubble-assistant" style={{ padding: content ? "4px 20px 16px" : 0 }}>
-          {content ? (
-            <MarkdownRenderer content={content} />
-          ) : (
+      <div className="body">
+        <div className="bubble-assistant">
+          {isEmpty ? (
             <div className="streaming">
               <span className="dot" />
               <span className="dot" />
               <span className="dot" />
             </div>
+          ) : (
+            <MarkdownRenderer content={content} />
           )}
         </div>
       </div>

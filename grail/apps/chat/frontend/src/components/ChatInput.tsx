@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { ArrowUp, HelpCircle, FileText } from "lucide-react";
-import { useChatStore } from "../lib/store";
+import { useChatStore, useSessionStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 import { ModeChips, DocumentScopePill, DocumentPicker } from "./ModeSelector";
 
 interface ChatInputProps {
@@ -18,6 +19,12 @@ export default function ChatInput({ onSend }: ChatInputProps) {
     setDraftInput,
     documents,
   } = useChatStore();
+  const activeSessionId = useSessionStore((s) => s.activeSessionId);
+  const t = useT();
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, [activeSessionId]);
 
   useEffect(() => {
     if (draftInput) {
@@ -74,7 +81,7 @@ export default function ChatInput({ onSend }: ChatInputProps) {
                 type="button"
                 className="tool-btn"
                 onClick={() => setDocPickerOpen((v) => !v)}
-                title="Scope to a document"
+                title={t("composer.docScopeTitle")}
               >
                 <FileText size={15} />
               </button>
@@ -87,7 +94,7 @@ export default function ChatInput({ onSend }: ChatInputProps) {
             type="button"
             className="tool-btn"
             onClick={() => setShowInfo(true)}
-            title="How search works"
+            title={t("composer.helpTitle")}
           >
             <HelpCircle size={15} />
           </button>
@@ -102,7 +109,7 @@ export default function ChatInput({ onSend }: ChatInputProps) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask your knowledge graph…"
+          placeholder={t("composer.placeholder")}
           disabled={isStreaming}
           rows={1}
         />
@@ -110,7 +117,7 @@ export default function ChatInput({ onSend }: ChatInputProps) {
           type="submit"
           className={`send ${canSend ? "" : "disabled"}`}
           disabled={!canSend}
-          aria-label="Send message"
+          aria-label={t("composer.sendAria")}
         >
           <ArrowUp size={16} />
         </button>

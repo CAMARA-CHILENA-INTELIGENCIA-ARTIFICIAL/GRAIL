@@ -33,11 +33,12 @@ export interface Message {
     completion_time?: number;
     llm_calls?: number;
     sources?: SourceReference[];
+    document_scope?: string;
   };
   created_at: string;
 }
 
-export type SearchMode = "local" | "global" | "agent";
+export type SearchMode = "local" | "cascade" | "global" | "agent";
 
 export interface AppConfig {
   project_name: string;
@@ -330,6 +331,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     set({ isStreaming: true, streamingContent: "", statusText: null });
+
+    // Document scope is one-shot: clear it now so the next prompt isn't
+    // accidentally still scoped. The server stamps `document_scope` into the
+    // user-message metadata so the bubble still reflects what was sent.
+    if (get().documentScope) {
+      set({ documentScope: null });
+    }
 
     try {
       const reader = await api.stream("/chat", {

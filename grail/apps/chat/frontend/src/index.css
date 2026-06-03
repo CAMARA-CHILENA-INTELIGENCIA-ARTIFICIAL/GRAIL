@@ -234,6 +234,59 @@ textarea { field-sizing: content; }
 .sb-credit span { font-size: 10px; color: var(--text-tertiary); letter-spacing: 0.01em; }
 .sb-credit b { color: var(--text-secondary); font-weight: 500; }
 
+/* external links row (docs + repo) */
+.sb-links {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 4px 0; margin-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+.sb-links a {
+  flex: 1 1 auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 8px; border-radius: var(--r-sm);
+  color: var(--text-tertiary); font-size: 11px; font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s var(--ease);
+}
+.sb-links a:hover { background: var(--surface-2); color: var(--accent-bright); }
+.app-shell.collapsed .sb-links { flex-direction: column; padding: 6px 0 0; gap: 2px; }
+.app-shell.collapsed .sb-links a { padding: 7px 0; }
+.app-shell.collapsed .sb-links a span { display: none; }
+
+/* language toggle */
+.lang-toggle {
+  display: inline-flex; align-items: center;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 99px; padding: 2px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+}
+.lang-toggle button {
+  padding: 3px 8px; border-radius: 99px; color: var(--text-tertiary);
+  text-transform: uppercase; transition: all 0.15s var(--ease);
+}
+.lang-toggle button.active {
+  background: var(--accent-soft); color: var(--accent-bright);
+}
+.lang-toggle button:not(.active):hover { color: var(--text-secondary); }
+
+.sb-foot-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 8px; padding: 0 4px;
+}
+.app-shell.collapsed .sb-foot-row { display: none; }
+
+/* login: same links row, anchored near the credit */
+.lg-links {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  margin-top: 14px;
+}
+.lg-links a {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.15s var(--ease);
+}
+.lg-links a:hover { color: var(--accent-bright); }
+
 /* sidebar empty state note */
 .sb-empty-note {
   padding: 18px 10px; text-align: center;
@@ -289,9 +342,10 @@ textarea { field-sizing: content; }
 .statusbar .stxt b { color: var(--accent-bright); font-weight: 500; font-family: var(--font-mono); font-size: 11.5px; }
 .statusbar .elapsed { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
 
-/* message stream */
+/* message stream — outer max-width = composer column + 2 × side padding so the
+   bubble bounds align with the composer card edges. */
 .stream-wrap { flex: 1 1 auto; overflow-y: auto; position: relative; }
-.stream { max-width: var(--col); margin: 0 auto; padding: 30px 28px 40px; width: 100%; }
+.stream { max-width: calc(var(--col) + 56px); margin: 0 auto; padding: 30px 28px 40px; width: 100%; }
 
 /* msg */
 .msg { display: flex; gap: 13px; margin-bottom: 30px; animation: fadeUp 0.3s var(--ease) both; }
@@ -305,18 +359,26 @@ textarea { field-sizing: content; }
 .msg .avatar img { width: 17px; height: 17px; opacity: 0.92; }
 .msg .body { min-width: 0; max-width: 100%; }
 
-.bubble-user {
-  max-width: 78%;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  color: var(--text-primary);
-  padding: 11px 15px; border-radius: var(--r-lg) var(--r-lg) var(--r-xs) var(--r-lg);
-  font-size: 14px; line-height: 1.5;
-  white-space: pre-wrap;
+/* user bubble: neutral, content-hugged pill (prompt-kit style).
+   The 70%/540 cap lives on .body so the bubble has a real reference to
+   shrink against — without it, inline-block + percentage max-width causes
+   a shrink loop that wraps to one character per line. */
+.msg.user .body {
+  display: flex; flex-direction: column; align-items: flex-end;
+  max-width: min(70%, 540px); min-width: 0;
 }
-.msg.user .meta { text-align: right; justify-content: flex-end; }
+.bubble-user {
+  display: inline-block;
+  max-width: 100%;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  padding: 8px 14px; border-radius: 14px;
+  font-size: 14px; line-height: 1.5;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+.msg.user .meta { justify-content: flex-end; }
 .meta {
-  display: flex; align-items: center; gap: 12px; margin-top: 7px;
+  display: flex; align-items: center; gap: 12px; margin-top: 6px;
   font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary);
   flex-wrap: wrap;
 }
@@ -324,16 +386,18 @@ textarea { field-sizing: content; }
 .msg:hover .meta .t-hover { opacity: 1; }
 .meta .pill { display: inline-flex; align-items: center; gap: 4px; }
 
+/* assistant: no bubble shell — content flows next to the avatar */
 .bubble-assistant {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-xs) var(--r-lg) var(--r-lg) var(--r-lg);
-  padding: 4px 20px 16px;
-  box-shadow: var(--shadow-card);
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
+.msg.assistant .body { flex: 1 1 auto; min-width: 0; padding-top: 3px; }
+.msg.assistant.streaming-msg .body { flex: 0 0 auto; }
 
 /* streaming dots */
-.streaming { display: flex; align-items: center; gap: 6px; padding: 16px 20px; }
+.streaming { display: inline-flex; align-items: center; gap: 6px; padding: 6px 2px; }
 .streaming .dot { width: 7px; height: 7px; border-radius: 99px; background: var(--text-tertiary); animation: pulse 1.4s var(--ease) infinite; }
 .streaming .dot:nth-child(2){ animation-delay: 0.2s; }
 .streaming .dot:nth-child(3){ animation-delay: 0.4s; }
@@ -514,13 +578,37 @@ textarea { field-sizing: content; }
 .tool-btn:hover { background: var(--surface-2); color: var(--text-secondary); border-color: var(--border-subtle); }
 
 .docscope { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; }
-.docscope .scope-pill {
-  display: inline-flex; align-items: center; gap: 7px; padding: 4px 6px 4px 10px; border-radius: 99px;
-  background: var(--accent-soft); border: 1px solid var(--accent-border); color: var(--accent-bright);
-  font-size: 11.5px; font-weight: 500;
+.file-pill {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 5px 9px 5px 5px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--accent-border);
+  color: var(--text-primary); font-size: 12px; font-weight: 500;
+  max-width: 100%;
 }
-.docscope .scope-pill .x { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 99px; color: var(--accent); }
-.docscope .scope-pill .x:hover { background: var(--accent-mid); }
+.file-pill .ftype {
+  width: 22px; height: 22px; flex: 0 0 auto; border-radius: var(--r-xs);
+  display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-bright);
+}
+.file-pill .fname {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;
+}
+.file-pill .scope-tag {
+  font-family: var(--font-mono); font-size: 10px; color: var(--accent-bright);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.file-pill .x {
+  width: 20px; height: 20px; display: grid; place-items: center;
+  border-radius: 99px; color: var(--text-tertiary);
+  transition: all 0.15s var(--ease);
+}
+.file-pill .x:hover { background: var(--surface-3); color: var(--text-primary); }
+
+/* user message: doc-scope chip sits above the bubble */
+.bubble-user-scope {
+  margin-bottom: 6px;
+  display: inline-flex; max-width: 100%;
+}
 
 .composer-input { display: flex; align-items: flex-end; gap: 10px; }
 .composer-input textarea {

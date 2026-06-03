@@ -1,40 +1,50 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Workflow, LocateFixed, Globe, Layers2 } from "lucide-react";
+import { X, Workflow, LocateFixed, Globe, Layers2, Combine } from "lucide-react";
 import { useChatStore } from "../lib/store";
+import { useT } from "../lib/i18n";
+import type { StringKey } from "../lib/i18n";
 
-const MODES = [
+const MODES: {
+  Icon: typeof Workflow;
+  titleKey: StringKey;
+  tagKey: StringKey;
+  descKey: StringKey;
+}[] = [
   {
     Icon: Workflow,
-    title: "Agent",
-    tag: "recommended",
-    description:
-      "An LLM loop that decides which searches to run and chains them. Best when the question spans entities and themes, or you're not sure where to look.",
+    titleKey: "mode.agent",
+    tagKey: "info.tagRecommended",
+    descKey: "info.agentDesc",
   },
   {
     Icon: LocateFixed,
-    title: "Local",
-    tag: "entity-first",
-    description:
-      "Anchors on the entities in your question and walks their neighborhood — relationships, attributes, and the chunks that mention them. Precise and grounded.",
+    titleKey: "mode.local",
+    tagKey: "info.tagEntityFirst",
+    descKey: "info.localDesc",
+  },
+  {
+    Icon: Combine,
+    titleKey: "mode.cascade",
+    tagKey: "info.tagHybrid",
+    descKey: "info.cascadeDesc",
   },
   {
     Icon: Globe,
-    title: "Global",
-    tag: "theme-first",
-    description:
-      "Map-reduces across community reports built during indexing. Best for broad, corpus-wide questions where no single entity holds the answer.",
+    titleKey: "mode.global",
+    tagKey: "info.tagThemeFirst",
+    descKey: "info.globalDesc",
   },
   {
     Icon: Layers2,
-    title: "Rerank",
-    tag: "optional",
-    description:
-      "When a reranker is configured, candidate passages are re-scored for relevance before synthesis — sharpening citations on dense corpora.",
+    titleKey: "mode.rerank",
+    tagKey: "info.tagOptional",
+    descKey: "info.rerankDesc",
   },
 ];
 
 export default function InfoPanel() {
   const { showInfo, setShowInfo } = useChatStore();
+  const t = useT();
 
   return (
     <AnimatePresence>
@@ -60,14 +70,14 @@ export default function InfoPanel() {
               <div className="sheet-head">
                 <img className="glyph" src="/assets/grail_isotype.png" alt="" />
                 <div>
-                  <h2>How search works</h2>
-                  <p>GRAIL chooses how to traverse your graph. Four modes, one knowledge base.</p>
+                  <h2>{t("info.title")}</h2>
+                  <p>{t("info.sub")}</p>
                 </div>
                 <button
                   type="button"
                   className="close"
                   onClick={() => setShowInfo(false)}
-                  aria-label="Close"
+                  aria-label={t("info.close")}
                 >
                   <X size={18} />
                 </button>
@@ -77,7 +87,7 @@ export default function InfoPanel() {
                   const Icon = mode.Icon;
                   return (
                     <motion.div
-                      key={mode.title}
+                      key={mode.titleKey}
                       className="mode-tile"
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -87,9 +97,9 @@ export default function InfoPanel() {
                         <Icon size={16} />
                       </div>
                       <h3>
-                        {mode.title} <span className="tag">{mode.tag}</span>
+                        {t(mode.titleKey)} <span className="tag">{t(mode.tagKey)}</span>
                       </h3>
-                      <p>{mode.description}</p>
+                      <p>{t(mode.descKey)}</p>
                     </motion.div>
                   );
                 })}

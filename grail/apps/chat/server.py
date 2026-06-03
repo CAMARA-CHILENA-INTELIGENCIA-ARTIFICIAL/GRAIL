@@ -208,7 +208,12 @@ def create_app(
         mode = body.mode or session["mode"]
 
         async def event_stream() -> AsyncIterator[dict[str, Any]]:
-            user_msg = await create_message(body.session_id, "user", body.message)
+            user_meta: dict[str, Any] = {}
+            if body.document:
+                user_meta["document_scope"] = body.document
+            user_msg = await create_message(
+                body.session_id, "user", body.message, metadata=user_meta or None
+            )
             yield {"event": "user_message", "data": json.dumps(user_msg)}
             yield {"event": "status", "data": json.dumps({"status": "searching", "mode": mode})}
 
@@ -323,7 +328,7 @@ def create_app(
         return ConfigResponse(
             project_name=grail.config.project_name,
             project_path=str(grail.config.resolved_root()),
-            modes=["local", "global", "document", "agent"],
+            modes=["local", "cascade", "global", "document", "agent"],
             has_reranker=grail.config.reranker.enabled,
             version=__version__,
         )

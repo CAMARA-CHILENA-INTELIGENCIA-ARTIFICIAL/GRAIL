@@ -1659,5 +1659,57 @@ def proposals_apply(
         rprint(f"[yellow]Rejected[/yellow] {reply.data['proposal_id'][:8]}")
 
 
+# ================================================================ user-add
+
+
+@app.command("user-add")
+def user_add(
+    username: str = typer.Argument(..., help="Username to create."),
+    db: Path = typer.Option(
+        None,
+        "--db",
+        help="Override chat DB path (default: ~/.grail/chat.db, matches the web UI).",
+    ),
+) -> None:
+    """Create a chat-UI user (works as the first-user bootstrap or to add more)."""
+    try:
+        from grail.apps.chat.auth import hash_password
+        from grail.apps.chat.database import (
+            configure_db_path,
+            create_user,
+            get_user_by_username,
+            init_db,
+        )
+    except ImportError as exc:
+        rprint(
+            f"[red]Missing dependencies for the chat UI.[/red] "
+            f"Install with: pip install graphgrail[ui]\n[dim]{exc}[/dim]"
+        )
+        raise typer.Exit(code=1)
+
+    if db:
+        configure_db_path(db)
+
+    password = typer.prompt("Password", hide_input=True, confirmation_prompt=True)
+    if len(password) < 4:
+        rprint("[red]Password must be at least 4 characters.[/red]")
+        raise typer.Exit(code=1)
+
+    async def _run() -> None:
+        await init_db()
+        existing = await get_user_by_username(username)
+        if existing:
+            rprint(f"[red]User '{username}' already exists.[/red]")
+            raise typer.Exit(code=1)
+        hashed = hash_password(password)
+        user = await create_user(username, hashed)
+        rprint(
+            f"[green]Created user[/green] [bold]{user['username']}[/bold] "
+            f"[dim]({user['id'][:8]})[/dim]"
+        )
+
+    asyncio.run(_run())
+
+
 if __name__ == "__main__":  # pragma: no cover
     app()

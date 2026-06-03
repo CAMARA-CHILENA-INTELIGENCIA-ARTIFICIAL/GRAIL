@@ -134,6 +134,24 @@ def map_query_to_entities(
         return out.sort_values("__score__", ascending=False).head(top_k)
 
     embeddings = entities_df["description_embedding"]
+    query_dim = len(query_embedding)
+    sample_dim: int | None = None
+    for emb in embeddings:
+        if emb is None or (isinstance(emb, float) and np.isnan(emb)):
+            continue
+        sample_dim = len(emb)
+        break
+    if sample_dim is not None and sample_dim != query_dim:
+        raise ValueError(
+            f"Embedding dimension mismatch: query produced {query_dim}-d vectors, "
+            f"but the indexed entity embeddings are {sample_dim}-d. "
+            f"This means the embedding model in your config does NOT match the one "
+            f"used at index time. Check `embeddings.model` in your grail.yaml and "
+            f"either (a) revert it to the model that produced the index, or "
+            f"(b) re-run `grail index` to rebuild embeddings with the new model. "
+            f"GRAIL requires the same embedding model for indexing and querying."
+        )
+
     scores = []
     for emb in embeddings:
         if emb is None or (isinstance(emb, float) and np.isnan(emb)):

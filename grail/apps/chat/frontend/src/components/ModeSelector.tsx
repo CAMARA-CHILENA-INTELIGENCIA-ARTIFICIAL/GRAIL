@@ -1,15 +1,18 @@
 import { useEffect, useRef } from "react";
 import { useChatStore, type SearchMode } from "../lib/store";
-import { Workflow, LocateFixed, Globe, Layers2, FileText, X } from "lucide-react";
+import { useT } from "../lib/i18n";
+import { Workflow, LocateFixed, Globe, Layers2, FileText, X, Combine } from "lucide-react";
 
 export function ModeChips() {
   const { currentMode, setMode, useRerankerMode, setUseRerankerMode, config } = useChatStore();
+  const t = useT();
 
   const modes: { id: string; label: string; Icon: typeof Workflow; recommended?: boolean }[] = [
-    { id: "agent", label: "Agent", Icon: Workflow, recommended: true },
-    { id: "local", label: "Local", Icon: LocateFixed },
-    ...(config?.has_reranker ? [{ id: "local_rerank", label: "Rerank", Icon: Layers2 }] : []),
-    { id: "global", label: "Global", Icon: Globe },
+    { id: "agent", label: t("mode.agent"), Icon: Workflow, recommended: true },
+    { id: "local", label: t("mode.local"), Icon: LocateFixed },
+    { id: "cascade", label: t("mode.cascade"), Icon: Combine },
+    { id: "global", label: t("mode.global"), Icon: Globe },
+    ...(config?.has_reranker ? [{ id: "local_rerank", label: t("mode.rerank"), Icon: Layers2 }] : []),
   ];
 
   function handleSelect(id: string) {
@@ -48,19 +51,25 @@ export function ModeChips() {
 
 export function DocumentScopePill() {
   const { documentScope, setDocumentScope } = useChatStore();
+  const t = useT();
   if (!documentScope) return null;
   return (
     <div className="docscope">
-      <span className="scope-pill">
-        <FileText size={13} />
-        {documentScope}
+      <span className="file-pill">
+        <span className="ftype">
+          <FileText size={13} />
+        </span>
+        <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+          <span className="scope-tag">{t("composer.scopedTag")}</span>
+          <span className="fname" title={documentScope}>{documentScope}</span>
+        </span>
         <button
           type="button"
           className="x"
           onClick={() => setDocumentScope(null)}
-          aria-label="Clear document scope"
+          aria-label={t("composer.clearScope")}
         >
-          <X size={11} />
+          <X size={12} />
         </button>
       </span>
     </div>
@@ -73,6 +82,7 @@ interface DocumentPickerProps {
 
 export function DocumentPicker({ onClose }: DocumentPickerProps) {
   const { documents, documentScope, setDocumentScope } = useChatStore();
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,7 +96,7 @@ export function DocumentPicker({ onClose }: DocumentPickerProps) {
   return (
     <div className="doc-popup" ref={ref}>
       <div className="popup-head">
-        <span>Select document</span>
+        <span>{t("doc.selectTitle")}</span>
       </div>
       <div className="popup-list">
         {documentScope && (
@@ -100,7 +110,7 @@ export function DocumentPicker({ onClose }: DocumentPickerProps) {
           >
             <X size={13} style={{ marginTop: 2, color: "var(--text-tertiary)" }} />
             <div className="doc-name" style={{ color: "var(--text-secondary)" }}>
-              Clear scope
+              {t("doc.clear")}
             </div>
           </button>
         )}

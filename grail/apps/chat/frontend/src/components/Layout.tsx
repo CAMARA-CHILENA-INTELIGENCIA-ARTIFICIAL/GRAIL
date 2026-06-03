@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSessionStore, useChatStore } from "../lib/store";
+import { useT } from "../lib/i18n";
+import type { StringKey } from "../lib/i18n";
 import Sidebar from "./Sidebar";
 import WelcomeView from "./WelcomeView";
 import ChatView from "./ChatView";
@@ -13,6 +15,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { activeSessionId, createSession, loadSessions } = useSessionStore();
   const { currentMode, sendMessage, statusText } = useChatStore();
+  const t = useT();
   const streamRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,9 +94,9 @@ export default function Layout() {
           <div className="composer-inner">
             <ChatInput onSend={handleSend} />
             <div className="composer-hint">
-              <span>{modeHint(currentMode)}</span>
+              <span>{t(modeHintKey(currentMode))}</span>
               <span>
-                <kbd>↵</kbd> send &nbsp;·&nbsp; <kbd>⇧↵</kbd> newline
+                <kbd>↵</kbd> {t("composer.send")} &nbsp;·&nbsp; <kbd>⇧↵</kbd> {t("composer.newline")}
               </span>
             </div>
           </div>
@@ -105,15 +108,12 @@ export default function Layout() {
   );
 }
 
-function modeHint(mode: string): string {
+function modeHintKey(mode: string): StringKey {
   switch (mode) {
-    case "agent":
-      return "Agent mode · chains searches automatically";
-    case "local":
-      return "Local search · walks the entity neighborhood";
-    case "global":
-      return "Global search · synthesizes community reports";
-    default:
-      return "Ask your knowledge graph";
+    case "agent": return "hint.agent";
+    case "local": return "hint.local";
+    case "cascade": return "hint.cascade";
+    case "global": return "hint.global";
+    default: return "hint.default";
   }
 }

@@ -1,48 +1,48 @@
 import { motion } from "framer-motion";
 import { Workflow, LocateFixed, Globe, Star, Layers, UserSearch, GitCompare } from "lucide-react";
 import { useChatStore, type SearchMode } from "../lib/store";
+import { useT } from "../lib/i18n";
+import type { StringKey } from "../lib/i18n";
 
 const ease = [0.25, 0.4, 0.25, 1] as const;
 
 const CARDS: {
   id: SearchMode;
   icon: typeof Workflow;
-  title: string;
-  description: string;
+  titleKey: StringKey;
+  descKey: StringKey;
   recommended?: boolean;
 }[] = [
   {
     id: "agent",
     icon: Workflow,
-    title: "Agent",
-    description:
-      "Lets GRAIL decide which searches to run and chain them — best for open-ended questions.",
+    titleKey: "welcome.cardAgentTitle",
+    descKey: "welcome.cardAgentDesc",
     recommended: true,
   },
   {
     id: "local",
     icon: LocateFixed,
-    title: "Local",
-    description:
-      "Walks the neighborhood around specific entities. Best for precise, grounded lookups.",
+    titleKey: "welcome.cardLocalTitle",
+    descKey: "welcome.cardLocalDesc",
   },
   {
     id: "global",
     icon: Globe,
-    title: "Global",
-    description:
-      "Map-reduces over community reports. Best for broad themes across the whole corpus.",
+    titleKey: "welcome.cardGlobalTitle",
+    descKey: "welcome.cardGlobalDesc",
   },
 ];
 
-const SAMPLE_PROMPTS: { icon: typeof Layers; text: string }[] = [
-  { icon: Layers, text: "What are the main themes across my documents?" },
-  { icon: UserSearch, text: "Who is mentioned most in the corpus?" },
-  { icon: GitCompare, text: "Summarize what changed between versions." },
+const SAMPLE_PROMPTS: { icon: typeof Layers; key: StringKey }[] = [
+  { icon: Layers, key: "welcome.sample1" },
+  { icon: UserSearch, key: "welcome.sample2" },
+  { icon: GitCompare, key: "welcome.sample3" },
 ];
 
 export default function WelcomeView() {
   const { currentMode, setMode, setUseRerankerMode, setDraftInput } = useChatStore();
+  const t = useT();
 
   function handleCardClick(mode: SearchMode) {
     setMode(mode);
@@ -70,7 +70,7 @@ export default function WelcomeView() {
         transition={{ duration: 0.5, ease, delay: 0.08 }}
         className="lede"
       >
-        Ask your <em>knowledge graph.</em>
+        {t("welcome.lede1")} <em>{t("welcome.lede2")}</em>
       </motion.h1>
 
       <motion.p
@@ -79,8 +79,7 @@ export default function WelcomeView() {
         transition={{ duration: 0.5, ease, delay: 0.14 }}
         className="sub"
       >
-        GRAIL turns your documents into a graph of entities and relationships — then answers
-        from it, with sources you can trace.
+        {t("welcome.sub")}
       </motion.p>
 
       <motion.div
@@ -105,14 +104,14 @@ export default function WelcomeView() {
               {card.recommended && (
                 <span className="mc-badge">
                   <Star size={11} />
-                  Recommended
+                  {t("welcome.recommended")}
                 </span>
               )}
               <div className="mc-ico">
                 <Icon size={17} />
               </div>
-              <div className="mc-title">{card.title}</div>
-              <div className="mc-desc">{card.description}</div>
+              <div className="mc-title">{t(card.titleKey)}</div>
+              <div className="mc-desc">{t(card.descKey)}</div>
             </motion.button>
           );
         })}
@@ -126,15 +125,16 @@ export default function WelcomeView() {
       >
         {SAMPLE_PROMPTS.map((p) => {
           const Icon = p.icon;
+          const text = t(p.key);
           return (
             <button
-              key={p.text}
+              key={p.key}
               type="button"
               className="sample-chip"
-              onClick={() => handleSampleClick(p.text)}
+              onClick={() => handleSampleClick(text)}
             >
               <Icon size={13} />
-              {p.text}
+              {text}
             </button>
           );
         })}

@@ -1,11 +1,13 @@
 import { useRef, useEffect } from "react";
 import { Database } from "lucide-react";
 import { useSessionStore, useChatStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 import MessageBubble, { StreamingBubble } from "./MessageBubble";
 
 export default function ChatView() {
   const { activeSessionId, messages, isLoadingMessages, sessions } = useSessionStore();
   const { isStreaming, streamingContent, documentScope } = useChatStore();
+  const t = useT();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
@@ -32,8 +34,8 @@ export default function ChatView() {
     return (
       <section className="empty-session" style={{ minHeight: "calc(100vh - 200px)" }}>
         <img className="glyph" src="/assets/grail_isotype.png" alt="" />
-        <h2 className="es-title">Start the conversation below.</h2>
-        <p className="es-sub">This session is empty. Ask anything about your indexed corpus.</p>
+        <h2 className="es-title">{t("empty.title")}</h2>
+        <p className="es-sub">{t("empty.sub")}</p>
         {documentScope && (
           <div
             style={{
@@ -50,7 +52,7 @@ export default function ChatView() {
             }}
           >
             <Database size={13} style={{ color: "var(--accent)" }} />
-            Scoped to <b style={{ color: "var(--text-secondary)", fontWeight: 500 }}>{documentScope}</b>
+            {t("empty.scopedTo")} <b style={{ color: "var(--text-secondary)", fontWeight: 500 }}>{documentScope}</b>
           </div>
         )}
         {activeSession && (
@@ -63,7 +65,7 @@ export default function ChatView() {
               letterSpacing: "0.03em",
             }}
           >
-            mode · {activeSession.mode}
+            {t("empty.mode", { mode: activeSession.mode })}
           </div>
         )}
       </section>

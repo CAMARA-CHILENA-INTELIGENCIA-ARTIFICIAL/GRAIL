@@ -1,13 +1,19 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useSessionStore, useAuthStore, useChatStore } from "../lib/store";
+import { useT, useI18nStore } from "../lib/i18n";
 import {
   Plus,
   Trash2,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  BookOpen,
+  Github,
 } from "lucide-react";
+
+const DOCS_URL = "https://grail-docs.vercel.app/";
+const REPO_URL = "https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL";
 import type { Session } from "../lib/store";
 
 interface SidebarProps {
@@ -16,17 +22,19 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-function groupSessionsByDate(sessions: Session[]) {
+type GroupKey = "today" | "yesterday" | "week" | "older";
+
+function groupSessionsByDate(sessions: Session[]): { key: GroupKey; sessions: Session[] }[] {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86400000);
   const weekAgo = new Date(today.getTime() - 7 * 86400000);
 
-  const groups: { label: string; sessions: Session[] }[] = [
-    { label: "Today", sessions: [] },
-    { label: "Yesterday", sessions: [] },
-    { label: "Previous 7 days", sessions: [] },
-    { label: "Older", sessions: [] },
+  const groups: { key: GroupKey; sessions: Session[] }[] = [
+    { key: "today", sessions: [] },
+    { key: "yesterday", sessions: [] },
+    { key: "week", sessions: [] },
+    { key: "older", sessions: [] },
   ];
 
   for (const s of sessions) {
@@ -67,7 +75,18 @@ export default function Sidebar({
   } = useSessionStore();
   const { currentMode } = useChatStore();
   const { logout, user } = useAuthStore();
+  const t = useT();
+  const { lang, setLang } = useI18nStore();
   const groups = useMemo(() => groupSessionsByDate(sessions), [sessions]);
+
+  const groupLabel = (k: GroupKey): string => {
+    switch (k) {
+      case "today": return t("sb.groupToday");
+      case "yesterday": return t("sb.groupYesterday");
+      case "week": return t("sb.groupWeek");
+      case "older": return t("sb.groupOlder");
+    }
+  };
 
   const isEmpty = sessions.length === 0;
 
@@ -83,7 +102,7 @@ export default function Sidebar({
         <button
           className="sb-collapse"
           onClick={onToggleCollapsed}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? t("sb.expand") : t("sb.collapse")}
         >
           {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
         </button>
@@ -91,7 +110,7 @@ export default function Sidebar({
 
       <button className="sb-new" onClick={handleNew}>
         <Plus size={15} />
-        <span>New chat</span>
+        <span>{t("sb.newChat")}</span>
       </button>
 
       {collapsed && (
@@ -113,15 +132,15 @@ export default function Sidebar({
           {isEmpty ? (
             <div className="sb-scroll">
               <div className="sb-empty-note">
-                No conversations yet.<br />
-                Start one to build your graph trail.
+                {t("sb.emptyTitle")}<br />
+                {t("sb.emptySub")}
               </div>
             </div>
           ) : (
             <div className="sb-scroll">
               {groups.map((group) => (
-                <div key={group.label} className="sb-group">
-                  <div className="sb-group-label">{group.label}</div>
+                <div key={group.key} className="sb-group">
+                  <div className="sb-group-label">{groupLabel(group.key)}</div>
                   {group.sessions.map((session, i) => (
                     <motion.div
                       key={session.id}
@@ -138,6 +157,8 @@ export default function Sidebar({
                           }
                         }}
                         onDelete={() => deleteSession(session.id)}
+                        deleteLabel={t("sb.delete")}
+                        untitledLabel={t("sb.untitled")}
                       />
                     </motion.div>
                   ))}
@@ -155,9 +176,9 @@ export default function Sidebar({
           </div>
           <div className="who">
             <div className="name">{user?.username}</div>
-            <div className="mail">GRAIL · {currentMode}</div>
+            <div className="mail">{t("sb.modeLine", { mode: currentMode })}</div>
           </div>
-          <button className="logout" onClick={logout} title="Sign out">
+          <button className="logout" onClick={logout} title={t("sb.signOut")}>
             <LogOut size={14} />
           </button>
         </div>
@@ -165,10 +186,50 @@ export default function Sidebar({
           <div className="sb-credit">
             <img src="/assets/cchia.png" alt="CCHIA" />
             <span>
-              Open source by <b>CCHIA × Nirvai</b>
+              {t("sb.credit")} <b>CCHIA × Nirvai</b>
             </span>
           </div>
         )}
+        <div className="sb-links">
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t("sb.docs")}
+          >
+            <BookOpen size={13} />
+            <span>{t("sb.docs")}</span>
+          </a>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t("sb.github")}
+          >
+            <Github size={13} />
+            <span>{t("sb.github")}</span>
+          </a>
+        </div>
+        <div className="sb-foot-row">
+          <div className="lang-toggle" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={lang === "en" ? "active" : ""}
+              onClick={() => setLang("en")}
+              aria-pressed={lang === "en"}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={lang === "es" ? "active" : ""}
+              onClick={() => setLang("es")}
+              aria-pressed={lang === "es"}
+            >
+              ES
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
   );
@@ -186,11 +247,15 @@ function SessionItem({
   isActive,
   onSelect,
   onDelete,
+  deleteLabel,
+  untitledLabel,
 }: {
   session: Session;
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  deleteLabel: string;
+  untitledLabel: string;
 }) {
   return (
     <div
@@ -198,7 +263,7 @@ function SessionItem({
       onClick={onSelect}
     >
       <span className="dot" />
-      <span className="title">{session.title || "New chat"}</span>
+      <span className="title">{session.title || untitledLabel}</span>
       <span className="when">{formatWhen(session.updated_at || session.created_at)}</span>
       <button
         className="del"
@@ -206,7 +271,7 @@ function SessionItem({
           e.stopPropagation();
           onDelete();
         }}
-        title="Delete"
+        title={deleteLabel}
       >
         <Trash2 size={12} />
       </button>
