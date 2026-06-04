@@ -16,7 +16,7 @@ description: |
   propose creating one (memory by default). Triggers: remember, recall,
   index, save this, my memory, my KB, "what did I", "last week", "we
   said", "I noted", consolidate, GRAIL, graphgrail.
-version: 1.0.1
+version: 1.0.2
 ---
 
 # GRAIL — knowledge graphs + agentic memory

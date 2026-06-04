@@ -15,6 +15,6 @@ try:
         __version__ = version("graphgrail")
     except PackageNotFoundError:
         # Editable / source install where the dist-info isn't present.
-        __version__ = "0.1.2"
+        __version__ = "0.1.3"
 except ImportError:  # pragma: no cover - Python <3.8, not supported anyway
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
