@@ -1,0 +1,298 @@
+---
+title: Tunear prompts para tu dominio
+description: Cómo personalizar los prompts de GRAIL para que entienda tu dominio — extracción más precisa, búsquedas más útiles, respuestas más naturales. La palanca de mayor impacto después de la indexación inicial.
+sidebar_position: 6
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Tunear prompts para tu dominio
+
+GRAIL funciona bien out-of-the-box porque sus prompts son **generalistas**: cubren texto narrativo, papers científicos, código, contratos legales — todo razonablemente. Pero la diferencia entre **razonable** y **excelente** vive en los prompts.
+
+Si te tomas una tarde para tunear los dos o tres prompts críticos para tu dominio, vas a ver mejoras compuestas en cada capa.
+
+<Analogy>
+
+GRAIL out-of-the-box es como un **médico general**: te atiende cualquier consulta, da un diagnóstico aceptable en la mayoría de casos. Tunear prompts es **contratar al especialista** para tu dominio específico — el oncólogo, el contador tributario, el ingeniero estructural.
+
+El generalista no se equivoca; pero el especialista **ve cosas que el generalista no ve**, usa el vocabulario correcto, y produce respuestas más útiles porque su modelo mental matchea tu problema.
+
+</Analogy>
+
+## Por qué importa (las ganancias se componen)
+
+Los prompts afectan **cuatro capas en cascada**:
+
+```
+prompts de extracción      →  mejor grafo
+       ↓
+prompts de reportes        →  mejores reportes de comunidad
+       ↓
+prompts de búsqueda        →  mejor contexto al LLM
+       ↓
+prompts de síntesis        →  mejores respuestas finales
+```
+
+Una mejora del 20% en extracción no produce un 20% mejor en respuestas — produce algo más cercano al **60%**, porque cada capa amplifica la anterior.
+
+## Lo que puedes tunear
+
+GRAIL trae **10 prompts** override-ables. Agrúpalos mentalmente en tres familias:
+
+### Familia 1 — Construcción del grafo (impacto altísimo)
+
+| Prompt | Qué hace | Cuándo conviene tunear |
+|---|---|---|
+| `entity_relation` | Extracción en una pasada — entidades, relaciones, descripciones, queries anticipadas | Casi siempre si tu corpus no es genérico |
+| `community_report` | Resumen narrativo por comunidad — base del modo `global` | Cuando los reportes globales se sienten vagos |
+| `summarize_description` | Consolida descripciones cuando una entidad aparece muchas veces | Cuando ves descripciones contradictorias |
+| `entity_dedup` | Detecta entidades duplicadas para mergear | Si tu corpus tiene mucho ruido en nombres |
+| `create_custom_entities` | Descubre tipos de entidad nuevos desde una muestra | Cuando empiezas en un dominio nuevo |
+
+### Familia 2 — Síntesis de respuestas
+
+| Prompt | Qué hace | Cuándo conviene tunear |
+|---|---|---|
+| `local_search` | Ensambla el contexto local y responde | Para fijar **voz**, estructura, citas obligatorias |
+| `global_map` | Scoring de relevancia de reportes de comunidad | Avanzado, raramente necesario |
+| `global_reduce` | Síntesis final del modo `global` | Para controlar formato del resumen temático |
+
+### Familia 3 — Apoyo (raramente tunear)
+
+| Prompt | Qué hace | Cuándo conviene tunear |
+|---|---|---|
+| `json_correction` | Repara JSON malformado (fallback) | Casi nunca |
+| `claim_extraction` | Extracción de claims/covariates (opcional) | Solo si activaste covariates |
+
+## Cómo funciona (1 minuto de arquitectura)
+
+Cada prompt en GRAIL es un **módulo Python** con tres exports:
+
+```python
+NAME = "entity_relation"                          # nombre lógico (debe matchear filename)
+REQUIRED_PARAMS = ["entity_types", "input_text"]  # validados antes de llamar
+
+def build_messages(**params) -> list[dict]:
+    return [
+        {"role": "system", "content": "..."},
+        {"role": "user",   "content": "..."},
+    ]
+```
+
+El `PromptRegistry` resuelve por nombre, en este orden:
+
+```
+custom_paths (en el orden que los listas)  →  builtin  →  KeyError
+```
+
+Si tu directorio custom no tiene `entity_relation.py`, se usa el builtin. Si lo tiene, **gana el tuyo**.
+
+## Setup en 3 minutos
+
+### 1. Crea el directorio de prompts
+
+```bash
+mkdir -p mi-proyecto/my_prompts
+```
+
+### 2. Copia el builtin que quieres tunear
+
+```bash
+cp grail/prompts/builtin/entity_relation.py mi-proyecto/my_prompts/entity_relation.py
+```
+
+(O ve el código fuente del builtin con `grail prompt show entity_relation`.)
+
+### 3. Apúntalo en `grail.yaml`
+
+```yaml
+prompts:
+  custom_paths:
+    - ./my_prompts
+  strict: false   # true = exige que provean LOS 10 prompts
+```
+
+### 4. Edita el prompt y re-indexa
+
+```bash
+grail index ./mi-proyecto
+```
+
+Listo. GRAIL ahora usa tu versión para `entity_relation` y los builtins para el resto.
+
+## Estrategias de tuneo (las que más pagan)
+
+### Estrategia A — Cambia los ejemplos del prompt
+
+El builtin de `entity_relation` trae tres ejemplos: ficción narrativa, paper científico, y código. **Estos ejemplos sesgan al LLM**.
+
+Si tu corpus es médico, cambia los ejemplos por consultas reales con sus extracciones esperadas. El LLM va a imitar el patrón.
+
+```python
+EXAMPLES = """
+Texto de ejemplo: "El paciente con glioblastoma multiforme grado IV recibió
+temozolomida + radioterapia adyuvante según protocolo Stupp."
+
+Salida esperada:
+<extracted_data>
+("entity"<|>GLIOBLASTOMA MULTIFORME<|>DISEASE<|>Tumor cerebral primario...)##
+("entity"<|>TEMOZOLOMIDA<|>DRUG<|>Agente alquilante oral...)##
+("entity"<|>PROTOCOLO STUPP<|>GUIDELINE<|>Régimen estándar...)##
+("relationship"<|>TEMOZOLOMIDA<|>GLIOBLASTOMA MULTIFORME<|>tratamiento primario<|>9)##
+</extracted_data>
+"""
+```
+
+### Estrategia B — Restringe los tipos de relación
+
+GRAIL puede classificar relaciones con un vocabulario controlado:
+
+```yaml
+indexing:
+  extract_relationship_types: true
+  relationship_types:
+    - TREATS
+    - CONTRAINDICATES
+    - INTERACTS_WITH
+    - METABOLIZES
+```
+
+Esto convierte las aristas de `RELATED` (genérico) a relaciones tipadas, lo que hace queries estructurales mucho más útiles.
+
+### Estrategia C — Fija la voz del modo `local`
+
+Por default, `local_search` responde en estilo asistente neutral. Si tu producto necesita voz específica (formal-legal, técnica-médica, conversacional), edita el system prompt:
+
+```python
+def build_messages(context_data, user_query, **kwargs):
+    return [
+        {"role": "system", "content":
+            "Eres un asistente legal especializado en derecho chileno. "
+            "Citas siempre el artículo y la ley específica. "
+            "No respondes con generalidades — solo con texto verificable "
+            "del corpus. Si no encuentras la respuesta, dilo explícitamente."
+        },
+        {"role": "user", "content":
+            f"Contexto:\n{context_data}\n\nPregunta: {user_query}"
+        },
+    ]
+```
+
+### Estrategia D — Pack multilingual completo
+
+Para una experiencia 100% en español (no solo traducir queries), crea un pack que reemplace **todos** los prompts con versiones en español:
+
+```yaml
+prompts:
+  custom_paths:
+    - ./prompts_es
+  strict: true   # error si falta alguno → fuerza un pack completo
+```
+
+Recomendamos `strict: true` solo cuando estás seguro de tener los 10 archivos — falla rápido en el startup en lugar de mezclar idiomas.
+
+## Workflow de desarrollo iterativo
+
+Tunear prompts es **iterar**. GRAIL trae herramientas para que el ciclo sea barato y reproducible:
+
+### 1. Habilita el cache de LLM
+
+```yaml
+llm:
+  cache_enabled: true
+```
+
+Si re-corres con el mismo prompt + mismo input, no se vuelve a pagar al proveedor. Esto convierte el ciclo "ajusta → indexa → revisa" en algo gratis después de la primera corrida.
+
+### 2. Indexa un sample, no el corpus completo
+
+```bash
+mkdir mi-proyecto-sample/input
+cp mi-proyecto/input/{0,1,2}*.pdf mi-proyecto-sample/input/
+grail index ./mi-proyecto-sample
+```
+
+3 PDFs te dan suficiente feedback para iterar. Solo cuando estés contento con el prompt, indexa el corpus completo.
+
+### 3. Inspecciona los prompts efectivos
+
+```bash
+grail prompt list                          # lista todos los prompts registrados
+grail prompt show entity_relation           # imprime el prompt completo
+grail prompt show entity_relation --project ./mi-proyecto  # usa tu pack custom
+```
+
+### 4. Traza una consulta para ver el prompt en vivo
+
+```bash
+grail query ./mi-proyecto-sample "..." --mode local --trace ./traces
+cat ./traces/*.json | jq '.llm_calls[0].messages'
+```
+
+Ver [Trazar consultas](/guides/query-tracing) para el detalle.
+
+## Pitfalls comunes
+
+### 1. Cambiaste los delimitadores del `entity_relation` y ahora extrae 0 entidades
+
+El parser en `grail.indexing.entities_relationships` lee `DEFAULT_DELIMITERS` del módulo del prompt. Si cambias los delimitadores en el contenido del prompt **pero no exportas `DEFAULT_DELIMITERS`**, el parser usa los viejos y todo se rompe en silencio.
+
+**Fix:** exporta los nuevos en tu módulo:
+
+```python
+DEFAULT_DELIMITERS = {
+    "tuple_delimiter": "||",
+    "record_delimiter": "@@",
+    "start_delimiter": "<data>",
+    "completion_delimiter": "</data>",
+}
+```
+
+### 2. Modelo de razonamiento (Qwen3.6 thinking, etc.) usa todo `max_tokens` en `<think>` y la respuesta sale truncada
+
+Sube los límites:
+
+```yaml
+indexing:
+  extraction_max_tokens: 16384
+community:
+  max_report_length: 16384
+search:
+  response_max_tokens: 16384
+```
+
+### 3. `strict: true` y olvidaste un prompt
+
+GRAIL falla en el startup con un mensaje claro listando qué falta. Soluciones:
+- Lista todos los 10 en tu directorio custom, o
+- Cambia a `strict: false` para mergear con builtins
+
+### 4. Tu prompt no se está usando
+
+Verifica el orden en `custom_paths`:
+
+```yaml
+prompts:
+  custom_paths:
+    - ./prompts_v2   # tiene entity_relation.py
+    - ./prompts_v1   # también tiene entity_relation.py
+```
+
+Gana el **primero** en la lista. Para revertir a v1, swapea el orden.
+
+## Cuándo NO tunear prompts
+
+- **Tu corpus es realmente genérico** (Wikipedia, libros de ficción, código mixto sin un patrón). Los builtins van a competir bien.
+- **No tienes tiempo de iterar.** Tunear sin iterar suele empeorar las cosas — el dominio expert correcto en tu cabeza no es lo mismo que el prompt correcto.
+- **Estás validando si GRAIL te sirve.** Primero corre el quickstart con builtins. Solo invierte en prompts cuando confirmes que el resto del sistema funciona.
+
+## Referencia interna
+
+Para la inmersión técnica completa — incluyendo el contrato exacto del parser de `entity_relation`, todos los parámetros de cada prompt, y workflows avanzados (ej. prompts adaptativos por tipo de chunk) — ver el doc interno [`docs/prompt_customization.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/prompt_customization.md) en el repo.
+
+## Siguiente paso
+
+- [Trazar consultas](/guides/query-tracing) — verifica qué prompts vio el LLM en cada respuesta.
+- [Optimizar costos](/guides/cost-optimization) — el cache de LLM hace que iterar prompts sea gratis.
+- [Modelo de memoria](/learn/memory-model) — en modo memoria los prompts cuentan menos (el agente declara directamente), pero `community_report` y `local_search` igual aplican a las consultas.

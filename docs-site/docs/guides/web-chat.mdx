@@ -1,0 +1,120 @@
+---
+title: Chat web
+description: Levanta el chat web de GRAIL (FastAPI + React) — interfaz bilingüe, sesiones persistentes, selector de modo, panel de fuentes y streaming.
+sidebar_position: 4
+---
+
+# Chat web
+
+GRAIL trae un **chat web bilingüe** listo para usar — backend FastAPI, frontend React. Sin configuración adicional, sirve el chat sobre tu proyecto y queda accesible por navegador.
+
+<img
+  src="/img/screenshots/web-chat-welcome.png"
+  alt="Pantalla de bienvenida del chat web de GRAIL en español"
+  style={{ width: "100%", borderRadius: 8, border: "1px solid var(--grail-line)" }}
+/>
+
+## Levantarlo
+
+```bash
+uv run grail ui ./mi-proyecto
+```
+
+Esto arranca el servidor en `http://127.0.0.1:8765` por defecto. Abre esa URL en cualquier navegador.
+
+**Flags útiles:**
+
+| Flag | Default | Para qué |
+|---|---|---|
+| `--host`, `-h` | `127.0.0.1` | Dirección de bind. Usa `0.0.0.0` para exponerlo en la red local. |
+| `--port`, `-p` | `8765` | Puerto del servidor. |
+| `--dev` | off | Habilita CORS para Vite dev server en `:5173`. Solo si estás iterando el frontend. |
+| `--debug` | off | Imprime cada prompt y respuesta de LLM en la terminal con colores. Útil para entender qué hace el agente. |
+
+## Primer ingreso
+
+La primera vez que abres el chat te pide crear una cuenta — usuario y contraseña. Esto crea el primer usuario administrador. Después puedes:
+
+- Loguearte con esa cuenta en futuras sesiones
+- Crear cuentas adicionales desde el panel de usuarios
+
+Las cuentas viven en SQLite local (`<proyecto>/.grail/users.db`), no se sincronizan a ninguna parte.
+
+## Lo que ves en pantalla
+
+### Sidebar (izquierda)
+
+- **+ Nuevo chat** — crea una sesión nueva.
+- **Lista de chats** — agrupados por fecha (Hoy, Ayer, Esta semana, …). Cada chat se renombra automáticamente con el título de tu primera pregunta.
+- **Tu cuenta** abajo — email y el modo activo de GRAIL.
+- **Selector de idioma** — alterna entre **ES** y **EN** sin recargar. La interfaz completa cambia: títulos, descripciones, placeholders y prompts del agente.
+
+:::tip[Nuevo en esta versión]
+
+El chat web ahora es **bilingüe ES/EN**. El selector queda fijo en el footer del sidebar y persiste tu preferencia entre sesiones.
+
+:::
+
+### Pantalla de bienvenida
+
+Aparece cuando abres un chat nuevo, con tres elementos para arrancar sin pensar:
+
+- **Tagline animada** — "Pregúntale a tu grafo de conocimiento".
+- **Tarjetas de modo recomendado** — Agente (recomendado), Local, Global con descripciones de cuándo elegir cada uno.
+- **Preguntas sugeridas** — chips clicables como "¿Cuáles son los temas principales en mis documentos?" para no quedarse mirando un cursor parpadeando.
+
+### Selector de modo (sobre el input)
+
+Tienes acceso rápido a los modos de búsqueda principales:
+
+- **Agente** ⭐ — el LLM decide qué modo usar por cada pregunta. Default recomendado.
+- **Local** — entidades como ancla.
+- **Cascada** — entidades + rescate de texto. Mejor para hechos específicos.
+- **Global** — síntesis temática sobre comunidades.
+- **Rerank** — toggle que activa o desactiva el reranker cross-encoder.
+
+Ver [los seis modos de búsqueda](/learn/search-modes) si necesitas decidir cuál usar.
+
+### Input y streaming
+
+- **Enter** envía. **Shift+Enter** inserta un salto de línea.
+- La respuesta se va **streameando en tiempo real** — verás texto aparecer palabra por palabra mientras el LLM piensa.
+- El **markdown se renderiza** con código, tablas, listas y citas.
+- Cuando el agente termina, ves un resumen abajo: cuántas llamadas a LLM se hicieron y el tiempo total.
+
+### Panel de fuentes
+
+Cada respuesta abre (opcionalmente) un panel lateral con las **fuentes citadas**: archivos exactos, número de chunk, snippets relevantes. Click en cualquiera para ver el contenido completo.
+
+Esto es lo que hace que GRAIL no sea una caja negra — puedes verificar de dónde sacó cada afirmación.
+
+## Acceder desde otra máquina
+
+Si quieres conectarte desde tu teléfono o desde una segunda máquina en la red local:
+
+```bash
+uv run grail ui ./mi-proyecto --host 0.0.0.0 --port 8765
+```
+
+Luego desde el otro dispositivo abre `http://<ip-de-tu-mac>:8765`. Cuidado: esto deja el chat expuesto en tu red local, no en internet.
+
+## Comportamiento por sesión
+
+- Las sesiones se persisten automáticamente en `<proyecto>/.grail/chat.db` (SQLite).
+- Puedes cerrar el chat y seguir donde lo dejaste — solo abre la misma sesión desde la lista lateral.
+- Cada sesión guarda el historial completo: tus preguntas, las respuestas, las herramientas que usó el agente, los costos por pregunta.
+
+## Si algo se ve raro
+
+| Síntoma | Probable causa | Solución |
+|---|---|---|
+| El chat se queda colgado en "Cargando…" | El proyecto no ha sido indexado | Ejecuta `grail index ./mi-proyecto` primero |
+| Respuestas vacías | La pregunta no matchea ninguna entidad | Reformula con la [fórmula QUIÉN + QUÉ + términos](/learn/search-modes#la-forma-de-la-pregunta-importa) |
+| 401 al loguearte | Contraseña incorrecta o BD corrupta | Borra `<proyecto>/.grail/users.db` y crea cuenta de nuevo |
+| `Missing dependencies for the chat UI` | Falta el extra `ui` | `uv pip install -e ".[ui]"` |
+
+## Siguiente paso
+
+- [Chat de terminal (CLI)](/guides/cli-chat) — la otra interfaz de chat, en Textual TUI con sesiones persistentes.
+- [Modos de búsqueda](/learn/search-modes) — cómo elegir qué modo usar para qué pregunta.
+- [Trazar consultas](/guides/query-tracing) — debug cuando una respuesta sale mal.

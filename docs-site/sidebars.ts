@@ -43,6 +43,9 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "guides/index" },
       items: [
+        "guides/web-chat",
+        "guides/cli-chat",
+        "guides/prompt-tuning",
         "guides/cost-optimization",
         "guides/query-tracing",
         "guides/visualization",

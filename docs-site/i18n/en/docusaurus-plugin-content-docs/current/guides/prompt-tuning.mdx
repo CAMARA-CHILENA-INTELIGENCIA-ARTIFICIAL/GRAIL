@@ -1,0 +1,298 @@
+---
+title: Tune prompts to your domain
+description: How to customise GRAIL's prompts for your domain — sharper extraction, more useful search, more natural answers. The single highest-leverage lever after initial indexing.
+sidebar_position: 6
+---
+
+import Analogy from "@site/src/components/Analogy";
+
+# Tune prompts to your domain
+
+GRAIL works well out-of-the-box because its prompts are **generalists**: they cover narrative text, scientific papers, code, legal contracts — all reasonably. But the gap between **reasonable** and **excellent** lives in the prompts.
+
+If you spend an afternoon tuning the two or three critical prompts for your domain, you'll see compounding improvements across every layer.
+
+<Analogy>
+
+GRAIL out-of-the-box is like a **general practitioner**: takes any case, makes an acceptable diagnosis most of the time. Tuning prompts is **hiring the specialist** for your specific domain — the oncologist, the tax accountant, the structural engineer.
+
+The generalist isn't wrong; but the specialist **sees things the generalist misses**, uses the correct vocabulary, and produces more useful answers because their mental model matches your problem.
+
+</Analogy>
+
+## Why it matters (gains compound)
+
+Prompts affect **four cascading layers**:
+
+```
+extraction prompts      →  better graph
+       ↓
+report prompts          →  better community reports
+       ↓
+search prompts          →  better context to the LLM
+       ↓
+synthesis prompts       →  better final answers
+```
+
+A 20% improvement in extraction doesn't yield 20% better answers — it yields something closer to **60%**, because each layer amplifies the previous.
+
+## What you can tune
+
+GRAIL ships **10 overrideable prompts**. Group them mentally into three families:
+
+### Family 1 — Graph construction (highest impact)
+
+| Prompt | What it does | When to tune |
+|---|---|---|
+| `entity_relation` | Single-pass extraction — entities, relationships, descriptions, anticipated queries | Almost always for non-generic corpora |
+| `community_report` | Narrative summary per community — basis of `global` mode | When global answers feel vague |
+| `summarize_description` | Consolidates descriptions when an entity appears many times | When you see contradictory descriptions |
+| `entity_dedup` | Detects duplicate entities for merging | If your corpus has noisy naming |
+| `create_custom_entities` | Discovers new entity types from a sample | When starting in a new domain |
+
+### Family 2 — Answer synthesis
+
+| Prompt | What it does | When to tune |
+|---|---|---|
+| `local_search` | Assembles local context and answers | To pin **voice**, structure, mandatory citations |
+| `global_map` | Relevance scoring of community reports | Advanced, rarely needed |
+| `global_reduce` | Final synthesis of `global` mode | To control the shape of the thematic summary |
+
+### Family 3 — Support (rarely tune)
+
+| Prompt | What it does | When to tune |
+|---|---|---|
+| `json_correction` | Repairs malformed JSON (fallback) | Almost never |
+| `claim_extraction` | Extracts claims/covariates (optional) | Only if you enabled covariates |
+
+## How it works (1 minute of architecture)
+
+Each prompt in GRAIL is a **Python module** with three exports:
+
+```python
+NAME = "entity_relation"                          # logical name (must match filename)
+REQUIRED_PARAMS = ["entity_types", "input_text"]  # validated before calling
+
+def build_messages(**params) -> list[dict]:
+    return [
+        {"role": "system", "content": "..."},
+        {"role": "user",   "content": "..."},
+    ]
+```
+
+The `PromptRegistry` resolves by name, in this order:
+
+```
+custom_paths (in the order you list them)  →  builtin  →  KeyError
+```
+
+If your custom directory doesn't have `entity_relation.py`, the builtin is used. If it does, **yours wins**.
+
+## 3-minute setup
+
+### 1. Create the prompts directory
+
+```bash
+mkdir -p my-project/my_prompts
+```
+
+### 2. Copy the builtin you want to tune
+
+```bash
+cp grail/prompts/builtin/entity_relation.py my-project/my_prompts/entity_relation.py
+```
+
+(Or read the builtin source with `grail prompt show entity_relation`.)
+
+### 3. Point at it in `grail.yaml`
+
+```yaml
+prompts:
+  custom_paths:
+    - ./my_prompts
+  strict: false   # true = requires all 10 prompts to be provided
+```
+
+### 4. Edit the prompt and re-index
+
+```bash
+grail index ./my-project
+```
+
+Done. GRAIL now uses your version for `entity_relation` and the builtins for everything else.
+
+## Tuning strategies (the ones that pay)
+
+### Strategy A — Change the prompt's examples
+
+The builtin `entity_relation` ships three examples: narrative fiction, scientific paper, and code. **These examples bias the LLM**.
+
+If your corpus is medical, replace the examples with real queries plus their expected extractions. The LLM will imitate the pattern.
+
+```python
+EXAMPLES = """
+Sample text: "The patient with grade IV glioblastoma multiforme received
+adjuvant temozolomide + radiotherapy per the Stupp protocol."
+
+Expected output:
+<extracted_data>
+("entity"<|>GLIOBLASTOMA MULTIFORME<|>DISEASE<|>Primary brain tumor...)##
+("entity"<|>TEMOZOLOMIDE<|>DRUG<|>Oral alkylating agent...)##
+("entity"<|>STUPP PROTOCOL<|>GUIDELINE<|>Standard regimen...)##
+("relationship"<|>TEMOZOLOMIDE<|>GLIOBLASTOMA MULTIFORME<|>first-line treatment<|>9)##
+</extracted_data>
+"""
+```
+
+### Strategy B — Constrain relationship types
+
+GRAIL can classify relationships with a controlled vocabulary:
+
+```yaml
+indexing:
+  extract_relationship_types: true
+  relationship_types:
+    - TREATS
+    - CONTRAINDICATES
+    - INTERACTS_WITH
+    - METABOLIZES
+```
+
+This turns edges from `RELATED` (generic) into typed relationships, which makes structural queries dramatically more useful.
+
+### Strategy C — Pin the voice of `local` mode
+
+By default, `local_search` answers in neutral assistant tone. If your product needs a specific voice (formal-legal, technical-medical, conversational), edit the system prompt:
+
+```python
+def build_messages(context_data, user_query, **kwargs):
+    return [
+        {"role": "system", "content":
+            "You are a legal assistant specialised in Chilean law. "
+            "Always cite the specific article and statute. "
+            "Don't answer with generalities — only with verifiable text "
+            "from the corpus. If you can't find an answer, say so explicitly."
+        },
+        {"role": "user", "content":
+            f"Context:\n{context_data}\n\nQuestion: {user_query}"
+        },
+    ]
+```
+
+### Strategy D — Full multilingual pack
+
+For a 100% non-English experience (not just translating queries), create a pack that replaces **all** prompts with versions in your target language:
+
+```yaml
+prompts:
+  custom_paths:
+    - ./prompts_es
+  strict: true   # error if any are missing → forces a complete pack
+```
+
+We recommend `strict: true` only when you're sure all 10 files exist — fail fast at startup instead of mixing languages.
+
+## Iterative development workflow
+
+Tuning prompts means **iterating**. GRAIL ships tools to make the loop cheap and reproducible:
+
+### 1. Enable LLM cache
+
+```yaml
+llm:
+  cache_enabled: true
+```
+
+If you re-run with the same prompt + same input, the provider isn't charged again. This turns the "tweak → index → review" loop into a free iteration after the first pass.
+
+### 2. Index a sample, not the full corpus
+
+```bash
+mkdir my-project-sample/input
+cp my-project/input/{0,1,2}*.pdf my-project-sample/input/
+grail index ./my-project-sample
+```
+
+3 PDFs give you enough feedback to iterate. Only once you're happy with the prompt should you index the full corpus.
+
+### 3. Inspect the effective prompts
+
+```bash
+grail prompt list                                         # all registered prompts
+grail prompt show entity_relation                          # print the full prompt
+grail prompt show entity_relation --project ./my-project   # uses your custom pack
+```
+
+### 4. Trace a query to see the prompt live
+
+```bash
+grail query ./my-project-sample "..." --mode local --trace ./traces
+cat ./traces/*.json | jq '.llm_calls[0].messages'
+```
+
+See [Trace queries](/guides/query-tracing) for the full story.
+
+## Common pitfalls
+
+### 1. You changed `entity_relation` delimiters and now extract 0 entities
+
+The parser in `grail.indexing.entities_relationships` reads `DEFAULT_DELIMITERS` from the prompt module. If you change the delimiters in the prompt content **without exporting `DEFAULT_DELIMITERS`**, the parser uses the old ones and everything silently breaks.
+
+**Fix:** export the new ones in your module:
+
+```python
+DEFAULT_DELIMITERS = {
+    "tuple_delimiter": "||",
+    "record_delimiter": "@@",
+    "start_delimiter": "<data>",
+    "completion_delimiter": "</data>",
+}
+```
+
+### 2. Thinking model (Qwen3.6, etc.) burns all `max_tokens` on `<think>` and the answer comes back truncated
+
+Raise the limits:
+
+```yaml
+indexing:
+  extraction_max_tokens: 16384
+community:
+  max_report_length: 16384
+search:
+  response_max_tokens: 16384
+```
+
+### 3. `strict: true` and you forgot a prompt
+
+GRAIL fails at startup with a clear message listing what's missing. Fixes:
+- List all 10 in your custom directory, or
+- Switch to `strict: false` to merge with builtins
+
+### 4. Your prompt isn't being used
+
+Check the order in `custom_paths`:
+
+```yaml
+prompts:
+  custom_paths:
+    - ./prompts_v2   # has entity_relation.py
+    - ./prompts_v1   # also has entity_relation.py
+```
+
+The **first** in the list wins. To revert to v1, swap the order.
+
+## When NOT to tune prompts
+
+- **Your corpus is genuinely generic** (Wikipedia, novels, mixed code without a pattern). The builtins will compete well.
+- **You don't have time to iterate.** Tuning without iterating tends to make things worse — the right domain expert in your head isn't the same as the right prompt.
+- **You're validating whether GRAIL fits.** First run the quickstart with builtins. Only invest in prompts after the rest of the system works.
+
+## Internal reference
+
+For the full technical deep-dive — including the exact parser contract for `entity_relation`, every parameter of every prompt, and advanced workflows (e.g. adaptive prompts per chunk type) — see the internal doc [`docs/prompt_customization.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/docs/prompt_customization.md) in the repo.
+
+## Next step
+
+- [Trace queries](/guides/query-tracing) — verify which prompts the LLM saw on each answer.
+- [Cost optimisation](/guides/cost-optimization) — LLM cache makes prompt iteration free.
+- [Memory model](/learn/memory-model) — in memory mode prompts matter less (the agent declares directly), but `community_report` and `local_search` still apply to queries.

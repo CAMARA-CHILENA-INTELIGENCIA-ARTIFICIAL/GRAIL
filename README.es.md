@@ -18,7 +18,11 @@
   <a href="#sdk-de-python">SDK</a> ·
   <a href="#almacenamiento-y-vector-stores">Backends</a> ·
   <a href="#benchmarks">Benchmarks</a> ·
-  <a href="docs/getting-started.md">Documentación</a>
+  <a href="https://grail-docs.vercel.app/">Documentación</a>
+</p>
+
+<p align="center">
+  📖 <strong>Documentación oficial:</strong> <a href="https://grail-docs.vercel.app/"><strong>grail-docs.vercel.app</strong></a> — tutoriales guiados, conceptos con analogías, referencia completa de CLI/SDK y recetas (ES + EN).
 </p>
 
 <p align="center">
@@ -39,12 +43,13 @@
 8. [Skill para agentes](#skill-para-agentes)
 9. [Referencia de CLI](#referencia-de-cli)
 10. [Modos de búsqueda](#modos-de-búsqueda)
-11. [Almacenamiento y vector stores](#almacenamiento-y-vector-stores)
-12. [Benchmarks](#benchmarks)
-13. [Documentación](#documentación)
-14. [Agradecimientos](#agradecimientos)
-15. [Autor](#autor)
-16. [Licencia](#licencia)
+11. [Tuneo de prompts — la mayor palanca de calidad](#tuneo-de-prompts--la-mayor-palanca-de-calidad)
+12. [Almacenamiento y vector stores](#almacenamiento-y-vector-stores)
+13. [Benchmarks](#benchmarks)
+14. [Documentación](#documentación)
+15. [Agradecimientos](#agradecimientos)
+16. [Autor](#autor)
+17. [Licencia](#licencia)
 
 ---
 
@@ -127,6 +132,7 @@ El contrato es vinculante: **todo lo que funciona en modo base de conocimiento f
 | **Extracción en una sola pasada (modo KB)** | Entidades + relaciones + descripciones + 2–3 consultas de recuperación anticipadas en una sola llamada al LLM por chunk — significativamente menos round-trips que sistemas que corren pasos separados. | `grail/indexing/entities_relationships.py` |
 | **Consultas de recuperación en las entidades** | Cada entidad almacena 2–3 preguntas anticipadas en su texto de embedding. Mejora el matching translingüístico y por intención. | `grail/indexing/entities_relationships.py` |
 | **Relaciones tipadas** | Clasificación opcional por LLM de las aristas (`REGULATES`, `FUNDS`, …). Tres modos: deshabilitado, libre, vocabulario restringido. | `grail/config.py:IndexingConfig` |
+| **Prompts personalizables** | Los 10 prompts (`entity_relation`, `community_report`, `local_search`, …) son módulos Python override-ables. Tunealos para tu dominio — extracción más precisa, voz fijada, packs multilingüales. → [Guía de tuneo](https://grail-docs.vercel.app/guides/prompt-tuning) | `grail/prompts/builtin/` |
 | **Procedencia a nivel de archivo** | Cada unidad de texto retiene punteros hacia los archivos fuente. Las citas referencian documentos reales. | `grail/indexing/loader.py` |
 | **Seguimiento honesto de costos** | Distingue precios `complete` / `partial` / `undefined`. Nunca reporta un `$0.00` falso cuando el precio es desconocido. | `grail/llm/cost.py` |
 | **Envoltorio unificado `Reply`** | Cada método de `MemoryProject` devuelve `Reply(ok, data, warnings, next_steps, error)` — mismo contrato para el SDK y los scripts del skill. | `grail/memory/types.py` |
@@ -408,7 +414,7 @@ Cada método de `MemoryProject` retorna un envoltorio `Reply(ok, data, warnings,
 
 El SDK de memoria está diseñado para ser envuelto por skills (formato `SKILL.md`) que se ejecutan dentro de **Claude Code**, **OpenAI Codex**, **OpenCode** o cualquier otro framework que soporte la convención estándar de skills. Las rutas de descubrimiento difieren por framework; el cuerpo del skill es portable.
 
-Ver [`docs/python_api.md`](docs/python_api.md), el ejemplo ejecutable [`examples/quickstart/quickstart.py`](examples/quickstart/quickstart.py), y la referencia canónica de incrustación en [`grail/apps/chat/server.py`](grail/apps/chat/server.py).
+Ver la [referencia del SDK de Python](https://grail-docs.vercel.app/reference/python-sdk), el ejemplo ejecutable [`examples/quickstart/quickstart.py`](examples/quickstart/quickstart.py) y la referencia canónica de integración en [`grail/apps/chat/server.py`](grail/apps/chat/server.py).
 
 ---
 
@@ -625,7 +631,42 @@ Comandos de introspección para artefactos, configuración resuelta y el registr
 
 **Tip de forma de consulta para `local` / `cascade`:** estructura como `[QUIÉN lo hace] + [QUÉ es el proceso] + [TÉRMINOS ESPECÍFICOS de las descripciones de entidad]`. Esto matchea con embeddings de entidad ~3× mejor que consultas solo de palabras clave.
 
-Detalles completos: [`docs/search_modes.md`](docs/search_modes.md).
+Detalles completos: [Modos de búsqueda](https://grail-docs.vercel.app/learn/search-modes).
+
+---
+
+## Tuneo de prompts — la mayor palanca de calidad
+
+GRAIL trae **10 prompts** (extracción de entidades, reportes de comunidad, síntesis de búsquedas, …) que son **generalistas por diseño**. Cubren texto narrativo, papers científicos, código y contratos legales razonablemente bien. Pero la diferencia entre **razonable** y **excelente** vive en los prompts.
+
+Si te tomas una tarde para tunear los dos o tres prompts críticos de tu dominio, vas a ver mejoras compuestas porque las ganancias se acumulan en cuatro capas en cascada:
+
+```
+prompts de extracción   →  mejor grafo
+                          ↓
+prompts de reportes     →  mejores reportes de comunidad
+                          ↓
+prompts de búsqueda     →  mejor contexto al LLM
+                          ↓
+prompts de síntesis     →  mejores respuestas finales
+```
+
+Una mejora del 20% en extracción no produce un 20% mejor en respuestas — produce algo más cercano al **60%**, porque cada capa amplifica la anterior.
+
+Los 10 prompts son **módulos Python override-ables**. Apunta un directorio custom desde `grail.yaml`:
+
+```yaml
+prompts:
+  custom_paths:
+    - ./my_prompts
+  strict: false   # true = tu pack debe traer los 10 prompts
+```
+
+Los archivos en `./my_prompts/<nombre>.py` ganan sobre el builtin del mismo nombre. Mezcla y combina: override solo los que tunees, el resto cae al builtin.
+
+**Objetivos de alto impacto:** `entity_relation` (extracción precisa, ejemplos específicos del dominio), `local_search` (fija la voz — legal, médica, técnica), `community_report` (mejor síntesis del modo `global`). Para deployments multilingual (español completo, portugués, francés) puedes shippear un pack localizado completo.
+
+➡️ **[Guía completa de tuneo de prompts en grail-docs.vercel.app](https://grail-docs.vercel.app/guides/prompt-tuning)** — ejemplos por dominio (médico, legal, multilingual), workflow iterativo con el cache de LLM, pitfalls comunes y punteros al contrato del parser de `entity_relation`.
 
 ---
 
@@ -643,7 +684,7 @@ Ambas capas son enchufables. Usá los defaults para arrancar hoy y cambialos cua
 
 Sobrescribe por corrida desde la CLI sin editar config: `grail index --vectorstore faiss|lancedb|chromadb` y el mismo flag en `grail query`. Backends propios se enchufan extendiendo `BaseVectorStore` en [`grail/vectorstores/base.py`](grail/vectorstores/base.py).
 
-Detalles: [`docs/vectorstores.md`](docs/vectorstores.md).
+Detalles: ver la [documentación oficial](https://grail-docs.vercel.app/).
 
 ### Backends de almacenamiento
 
@@ -654,7 +695,7 @@ Detalles: [`docs/vectorstores.md`](docs/vectorstores.md).
 
 S3 lee y escribe los mismos artefactos parquet + GraphML — el código de búsqueda es agnóstico al backend. Instala con el extra `s3`: `uv pip install -e ".[s3]"`. Backends propios implementan los siete métodos requeridos de `StorageBackend` en [`grail/storage/base.py`](grail/storage/base.py).
 
-Detalles: [`docs/storage.md`](docs/storage.md).
+Detalles: ver la [documentación oficial](https://grail-docs.vercel.app/).
 
 ### Endpoints de LLM
 
@@ -668,7 +709,7 @@ endpoints:
     requires_key: false
 ```
 
-Detalles: [`docs/llm.md`](docs/llm.md).
+Detalles: [Seguimiento honesto de costos](https://grail-docs.vercel.app/learn/cost-tracking).
 
 ---
 
@@ -713,34 +754,63 @@ Reporte completo y detalle por pregunta: [`benchmarks/results/`](benchmarks/resu
 - **[GraphRAG-Bench](https://arxiv.org/abs/2506.05690)** — 4.072 preguntas, dominios Médico + Novela, 4 niveles de dificultad.
 - **[LongMemEval](https://arxiv.org/abs/2410.10813)** — 500 preguntas sobre memoria de sesiones de chat; rastreado bajo modo memoria.
 
-Ver [`docs/benchmarks.md`](docs/benchmarks.md).
+Ver el [roadmap de benchmarks](https://grail-docs.vercel.app/).
 
 ---
 
 ## Documentación
 
-| Tema | Archivo |
-|---|---|
-| Inicio | [`docs/getting-started.md`](docs/getting-started.md) |
-| API de Python | [`docs/python_api.md`](docs/python_api.md) |
-| Glosario de configuración | [`docs/glossary.md`](docs/glossary.md) |
-| Modos de búsqueda | [`docs/search_modes.md`](docs/search_modes.md) |
-| Pipeline de indexación | [`docs/indexing.md`](docs/indexing.md) |
-| Actualizaciones incrementales | [`docs/incremental_pipeline.md`](docs/incremental_pipeline.md) |
-| Capa de consulta | [`docs/query.md`](docs/query.md) |
-| Personalización de prompts | [`docs/prompt_customization.md`](docs/prompt_customization.md) |
-| Internals de prompts | [`docs/prompts.md`](docs/prompts.md) |
-| LLM y seguimiento de costos | [`docs/llm.md`](docs/llm.md) |
-| Reranker | [`docs/reranker.md`](docs/reranker.md) |
-| Vector stores | [`docs/vectorstores.md`](docs/vectorstores.md) |
-| Backends de almacenamiento | [`docs/storage.md`](docs/storage.md) |
-| Preprocesamiento (PDF/DOCX) | [`docs/preprocessing.md`](docs/preprocessing.md) |
-| Visualización | [`docs/viz.md`](docs/viz.md) |
-| UIs de chat | [`docs/cli_chat.md`](docs/cli_chat.md) |
-| Benchmarks | [`docs/benchmarks.md`](docs/benchmarks.md) |
-| Comparación vs alternativas | [`docs/comparison.md`](docs/comparison.md) |
+> 📖 **La documentación oficial vive en [grail-docs.vercel.app](https://grail-docs.vercel.app/)** — bilingüe (ES + EN), con tutoriales guiados, conceptos explicados con analogías, referencia completa de CLI/SDK y recetas listas para copiar.
 
-Un sitio Docusaurus está en desarrollo; este README y los archivos de arriba son la fuente de verdad actual.
+### Aprende
+
+| Tema | Link |
+|---|---|
+| ¿Qué es GRAIL? | [grail-docs.vercel.app/learn/what-is-grail](https://grail-docs.vercel.app/learn/what-is-grail) |
+| Los dos modos | [/learn/two-modes](https://grail-docs.vercel.app/learn/two-modes) |
+| Grafos de conocimiento en 5 minutos | [/learn/knowledge-graphs-in-5-min](https://grail-docs.vercel.app/learn/knowledge-graphs-in-5-min) |
+| Los seis modos de búsqueda | [/learn/search-modes](https://grail-docs.vercel.app/learn/search-modes) |
+| Cascade en profundidad | [/learn/cascade](https://grail-docs.vercel.app/learn/cascade) |
+| Comunidades y Leiden | [/learn/communities-leiden](https://grail-docs.vercel.app/learn/communities-leiden) |
+| Modelo de memoria | [/learn/memory-model](https://grail-docs.vercel.app/learn/memory-model) |
+| Seguimiento honesto de costos | [/learn/cost-tracking](https://grail-docs.vercel.app/learn/cost-tracking) |
+
+### Empieza
+
+| Tema | Link |
+|---|---|
+| Instalar GRAIL | [/start/install](https://grail-docs.vercel.app/start/install) |
+| Quickstart base de conocimiento | [/start/kb-quickstart](https://grail-docs.vercel.app/start/kb-quickstart) |
+| Quickstart memoria | [/start/memory-quickstart](https://grail-docs.vercel.app/start/memory-quickstart) |
+| Quickstart skill | [/start/skill-quickstart](https://grail-docs.vercel.app/start/skill-quickstart) |
+
+### Guías
+
+| Tema | Link |
+|---|---|
+| Chat web | [/guides/web-chat](https://grail-docs.vercel.app/guides/web-chat) |
+| Chat de terminal (CLI) | [/guides/cli-chat](https://grail-docs.vercel.app/guides/cli-chat) |
+| **Tunear prompts para tu dominio** ⭐ | [/guides/prompt-tuning](https://grail-docs.vercel.app/guides/prompt-tuning) |
+| Optimizar costos de indexación | [/guides/cost-optimization](https://grail-docs.vercel.app/guides/cost-optimization) |
+| Trazar consultas para debug | [/guides/query-tracing](https://grail-docs.vercel.app/guides/query-tracing) |
+| Visualizar el grafo | [/guides/visualization](https://grail-docs.vercel.app/guides/visualization) |
+
+### Referencia
+
+| Tema | Link |
+|---|---|
+| Referencia CLI | [/reference/cli](https://grail-docs.vercel.app/reference/cli) |
+| SDK de Python | [/reference/python-sdk](https://grail-docs.vercel.app/reference/python-sdk) |
+
+### Recetario
+
+| Tema | Link |
+|---|---|
+| Bot Q&A sobre PDFs | [/cookbook/pdf-corpus-qa-bot](https://grail-docs.vercel.app/cookbook/pdf-corpus-qa-bot) |
+
+### Notas internas / contribuidores (deprecadas para usuarios finales)
+
+La carpeta [`docs/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/docs) dentro del repo se mantiene como notas técnicas para contribuidores — arquitectura, decisiones de diseño, internals de módulos. **No son documentación para usuarios finales** y pueden quedar desactualizadas respecto al sitio público — siempre usa [grail-docs.vercel.app](https://grail-docs.vercel.app/) como fuente de verdad de uso.
 
 ---
 

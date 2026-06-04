@@ -1,0 +1,198 @@
+---
+title: Chat de terminal (CLI)
+description: El chat en terminal de GRAIL (Textual TUI) — modo agéntico interactivo, sesiones persistentes en SQLite, slash commands y atajos de teclado.
+sidebar_position: 5
+---
+
+# Chat de terminal (CLI)
+
+Si vives en la terminal y no quieres abrir un navegador, GRAIL trae un **chat TUI** completo (Textual). Streaming, render de markdown, sesiones persistentes en SQLite y slash commands.
+
+<img
+  src="/img/screenshots/cli-chat-welcome.png"
+  alt="Pantalla de bienvenida del chat CLI de GRAIL en agent mode"
+  style={{ width: "100%", borderRadius: 8, border: "1px solid var(--grail-line)" }}
+/>
+
+## Levantarlo
+
+```bash
+uv run grail chat ./mi-proyecto
+```
+
+Abre el chat conectado a tu proyecto indexado. Si ya tienes sesiones anteriores en ese proyecto, te pregunta si quieres retomar una.
+
+**Flags útiles:**
+
+| Flag | Default | Para qué |
+|---|---|---|
+| `--mode`, `-m` | `agent` | Modo inicial: `agent` \| `local` \| `cascade` \| `global` \| `document`. |
+| `--session`, `-s` | (nueva) | Retoma una sesión existente por prefijo de ID. También puedes usar `/resume` desde adentro. |
+| `--db` | `<proyecto>/.grail/chat.db` | Override de la BD SQLite donde se guardan las sesiones. |
+
+## Lo que ves al abrir
+
+### Header
+
+```
+ ██████╗ ██████╗  █████╗ ██╗██╗     Graph RAG with Advanced Integration and Learning
+██╔════╝ ██╔══██╗██╔══██╗██║██║
+██║  ███╗██████╔╝███████║██║██║
+██║   ██║██╔══██╗██╔══██║██║██║
+╚██████╔╝██║  ██║██║  ██║██║███████╗
+ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝
+
+GRAIL · benchmark_laws · mode: agent · tools: L C G D · cost: — · mouse: moves=1
+```
+
+La barra de estado siempre visible te muestra:
+
+- **Proyecto activo** (`benchmark_laws`)
+- **Modo actual** (`agent`)
+- **Herramientas disponibles** para el agente (`L C G D` = local, cascade, global, document)
+- **Costo acumulado** en la sesión (USD)
+- **Estado del mouse** — si tu terminal reporta scroll/clicks
+
+### Pantalla de bienvenida
+
+```
+Connected to benchmark_laws · mode: agent · session (new session): da18076c — New Chat
+
+Type your question below. Use /help for commands. Type /resume to list past chats
+and pick one. Scroll: mouse wheel · PageUp/PageDown · Shift+↑/↓ · Ctrl+End ·
+Focus chat: Esc · Focus input: Tab (or just start typing) · Select text: hold
+Shift while dragging.
+
+⚠ Warp detected. If the mouse wheel doesn't scroll the chat, open
+Settings → Features → Terminal and enable Mouse Reporting + Scroll Reporting.
+Keyboard shortcuts (PageUp/PageDown, Esc + wheel) work regardless.
+```
+
+Si usas **Warp** u otra terminal con mouse reporting opcional, el TUI te avisa cómo activarlo.
+
+## Slash commands
+
+Escribe `/` para ver el listado completo. Los principales:
+
+| Comando | Para qué |
+|---|---|
+| `/help` | Lista todos los comandos |
+| `/resume` | Lista sesiones anteriores y permite cambiar a una |
+| `/new` | Inicia sesión nueva sin salir del chat |
+| `/mode <local\|cascade\|global\|document\|agent>` | Cambia el modo de búsqueda al vuelo |
+| `/rerank on\|off` | Activa/desactiva el reranker |
+| `/clear` | Limpia la pantalla (no borra la sesión) |
+| `/quit` (o `Ctrl+C`) | Sale del chat |
+
+## Atajos de teclado
+
+Pensados para mantener las manos en el teclado:
+
+| Atajo | Acción |
+|---|---|
+| `Enter` | Enviar mensaje |
+| `Shift+Enter` | Salto de línea en el input |
+| `Tab` | Mover foco al input (o simplemente empieza a escribir) |
+| `Esc` | Mover foco al chat para hacer scroll |
+| `PageUp` / `PageDown` | Scroll por página |
+| `Shift+↑` / `Shift+↓` | Scroll una línea |
+| `Ctrl+End` | Saltar al último mensaje |
+| Mouse wheel | Scroll (si tu terminal lo reporta) |
+| Shift + arrastre | Seleccionar texto (para copiar) |
+
+## Cambiar de modo sin salir
+
+Durante el chat, si necesitas cambiar de modo:
+
+```
+/mode cascade
+```
+
+El modo cambia para los próximos mensajes. El historial anterior se mantiene.
+
+También puedes cambiar el reranker:
+
+```
+/rerank on
+/rerank off
+```
+
+## Sesiones persistentes
+
+Cada chat se guarda automáticamente en SQLite (`<proyecto>/.grail/chat.db`). Esto significa:
+
+- Cerrar la terminal **no** pierde el chat.
+- `grail chat mi-proyecto --session da18076c` retoma esa sesión por su prefijo de ID.
+- `grail chat mi-proyecto` abre el selector si hay sesiones previas.
+- Cada sesión guarda preguntas, respuestas, herramientas usadas por el agente y costo por pregunta.
+
+## Ver costo en vivo
+
+La barra de estado muestra el costo acumulado en USD. Cuando preguntas algo, ves cómo sube en tiempo real a medida que el agente itera. Si presupuestas un sesión, este número es la fuente de verdad.
+
+```
+GRAIL · benchmark_laws · mode: agent · tools: L C G D · cost: $0.0123 · mouse: moves=1
+```
+
+Después de cada respuesta verás también:
+
+```
+sources: 3 archivos · 5 chunks · 2 entidades · agent: 3 iteraciones · LLM: 4 llamadas · 0.012 USD
+```
+
+## Ejemplo: agente sobre el corpus quickstart
+
+```bash
+uv run grail query examples/quickstart "What are the latest advancements in treating glioblastoma?" --mode agent
+
+ ██████╗ ██████╗  █████╗ ██╗██╗
+██╔════╝ ██╔══██╗██╔══██╗██║██║
+██║  ███╗██████╔╝███████║██║██║
+██║   ██║██╔══██╗██╔══██║██║██║
+╚██████╔╝██║  ██║██║  ██║██║███████╗
+ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝
+  Graph RAG with Advanced Integration and Learning  v0.1.0
+
+╭─ QUERY ─────────────────────────────────────────────────────────────╮
+│                                                                     │
+│   Project         quickstart                                        │
+│   Mode            AGENT                                             │
+│   LLM             deepinfra · Qwen/Qwen3.6-35B-A3B                  │
+│   Reranker        ON · deepinfra · Qwen/Qwen3-Reranker-0.6B         │
+│   Question        What are the latest advancements in treating      │
+│                   glioblastoma?                                     │
+│                                                                     │
+╰─────────────────────────────────────────────────────────────────────╯
+
+  ◆  Loading indexed artifacts…
+     ✓ Loaded 529 entities, 541 relationships, 2 community reports
+  ◆  Starting agent loop (max 5 iterations)…
+  ◆  Iteration 1/5 — reasoning…
+  ◆  Calling tool: cascade_search(query='latest advancements treatments glioblastoma')
+  ◆  Embedding query…
+  ◆  Finding top-10 entities…
+  ◆  Scoring chunks with BM25 + cosine…
+  ◆  Rescued 5 chunks via text matching
+  ◆  Building context window…
+     ✓ Context: 0 entities, 0 relationships, 2 communities, 3 source chunks (5 rescued)
+  ◆  Iteration 2/5 — reasoning…
+  ◆  Calling tool: cascade_search(query='glioblastoma GBM treatment advances immunotherapy targeted therapy 2024')
+  …
+```
+
+El mismo formato lo verás en `grail chat` cuando el agente llama herramientas — el detalle paso a paso te deja **auditar visualmente** qué hizo el sistema antes de responder.
+
+## Si algo se ve raro
+
+| Síntoma | Probable causa | Solución |
+|---|---|---|
+| El mouse wheel no hace scroll | Tu terminal no reporta mouse | Usa PageUp/PageDown o activa mouse reporting (Warp: Settings → Features → Terminal) |
+| Colores raros / caracteres ASCII rotos | Terminal no soporta UTF-8 o ANSI completo | Cambia a iTerm2, Alacritty o Warp |
+| `/resume` no muestra mis sesiones viejas | Apuntas a un proyecto distinto | Confirma con `grail status ./mi-proyecto` que es el mismo path |
+| Sale instantáneamente con error | Falta indexar | Corre `grail index ./mi-proyecto` antes |
+
+## Siguiente paso
+
+- [Chat web](/guides/web-chat) — la misma funcionalidad en navegador, multiplataforma, con sidebar de chats.
+- [Modos de búsqueda](/learn/search-modes) — qué modo elegir para qué pregunta.
+- [Referencia CLI completa](/reference/cli) — todos los flags de `grail chat`.
