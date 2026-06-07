@@ -1,0 +1,111 @@
+name: "09 · Visual app"
+description: "Propose changes to or new visual surfaces — chat web UI, terminal TUI, dashboards, graph viz."
+title: "[visual-app] <change>"
+labels:
+  - "category:visual-apps"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing changes to **visual apps** — chat UI, TUI, dashboards, graph visualisations.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options:
+        - "Web chat (`grail/apps/chat/`)"
+        - "Terminal TUI (`grail/apps/cli_chat/`)"
+        - "Graph viz (`grail viz`)"
+        - "Docusaurus docs site (`docs-site/`)"
+        - "New app"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: change-type
+    attributes:
+      label: Type of change
+      options:
+        - "New feature"
+        - "UX improvement"
+        - "Bug fix"
+        - "Accessibility improvement"
+        - "Internationalisation (i18n)"
+        - "Performance"
+        - "Refactor"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the change
+      description: What does the user see today, and what should they see after?
+    validations:
+      required: true
+
+  - type: textarea
+    id: frontend-stack
+    attributes:
+      label: Frontend stack impact (web only)
+      description: New React components? Routes? Hooks? Third-party packages?
+
+  - type: textarea
+    id: backend-api
+    attributes:
+      label: Backend API changes
+      description: Any new FastAPI endpoints or changes to existing ones? Breaking?
+
+  - type: dropdown
+    id: i18n
+    attributes:
+      label: i18n impact
+      options:
+        - "No new strings"
+        - "New strings — covered by existing ES + EN setup"
+        - "Needs locale infrastructure changes"
+
+  - type: dropdown
+    id: responsive
+    attributes:
+      label: Mobile / responsive
+      options:
+        - "Works on mobile out of the box"
+        - "Mobile improvements included"
+        - "Desktop-only (acceptable for this feature)"
+        - "N/A (TUI / CLI)"
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / screenshots
+      description: Drag images here, or link to a Figma / sketch.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Implementation in the relevant `grail/apps/` or `docs-site/` directory
+        - [ ] Frontend `dist/` rebuilt (web) / no broken layouts (TUI)
+        - [ ] Strings localised (ES + EN) where applicable
+        - [ ] Screenshots updated in docs guide if user-visible
+        - [ ] Manual test on at least one each: desktop browser, mobile (web), iTerm/Warp/Alacritty (TUI)
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

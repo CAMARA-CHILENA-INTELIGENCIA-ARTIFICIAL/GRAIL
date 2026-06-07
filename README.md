@@ -47,9 +47,10 @@
 12. [Storage & vector backends](#storage--vector-backends)
 13. [Benchmarks](#benchmarks)
 14. [Documentation](#documentation)
-15. [Acknowledgements](#acknowledgements)
-16. [Author](#author)
-17. [License](#license)
+15. [Contributing](#contributing)
+16. [Acknowledgements](#acknowledgements)
+17. [Author](#author)
+18. [License](#license)
 
 ---
 
@@ -269,7 +270,7 @@ uv run grail init ./my-kb --name my-kb --template low_cost_setup
 uv run grail index ./my-kb
 ```
 
-> 📸 *Place `assets/indexing.png` here — terminal output from the four-step indexing run.*
+> 👉 Full walkthrough with screenshots and troubleshooting: [KB quickstart on the docs site](https://grail-docs.vercel.app/start/kb-quickstart).
 
 ```bash
 # 4. Query — six modes
@@ -284,8 +285,7 @@ uv run grail chat ./my-kb              # Textual TUI
 uv run grail ui   ./my-kb              # FastAPI + React, http://127.0.0.1:8765
 ```
 
-> 📸 *Place `assets/query.png` here — formatted answer with cited context.*
-> 📸 *Place `assets/chat_ui.png` here — web chat with streaming responses.*
+> 👉 See [the web chat guide](https://grail-docs.vercel.app/guides/web-chat) and [the terminal chat guide](https://grail-docs.vercel.app/guides/cli-chat) for screenshots, slash commands, keyboard shortcuts and per-feature walkthroughs.
 
 ### Agentic memory mode
 
@@ -311,7 +311,7 @@ uv run grail proposals list  ./my-mem
 uv run grail proposals apply ./my-mem --accept <proposal_id>
 ```
 
-> 📸 *Place `assets/memory_consolidate.png` here — proposals listing output.*
+> 👉 Full memory workflow — observations, recall, consolidate, propose / accept — with examples: [Memory quickstart on the docs site](https://grail-docs.vercel.app/start/memory-quickstart).
 
 ---
 
@@ -745,7 +745,7 @@ Where the advantage comes from:
 uv run python benchmarks/run_benchmark.py
 ```
 
-> 📸 *Place `assets/benchmark_chart.png` here — bar chart of GRAIL vs RAG by category.*
+> 👉 Methodology, per-question breakdown and reproduction notes: [`benchmarks/results/`](benchmarks/results/). A bar-chart visualisation of these numbers will land on the docs site once generated.
 
 Full report and per-question detail: [`benchmarks/results/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/benchmarks/results).
 
@@ -811,6 +811,34 @@ See the [Benchmarks roadmap](https://grail-docs.vercel.app/).
 ### Contributor / internal notes (deprecated for end users)
 
 The in-repo [`docs/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/docs) folder is kept for contributors as technical notes on architecture, design decisions, and module internals. **These are not user-facing documentation** and may drift from the public site — always prefer [grail-docs.vercel.app](https://grail-docs.vercel.app/) for usage docs.
+
+---
+
+## Contributing
+
+GRAIL accepts contributions across **9 well-defined categories** under a two-step flow:
+
+1. **Open an issue** in the matching category template (the template asks the right questions up front).
+2. **Wait for `status:approved`** from the team.
+3. **Open a PR** that references the approved issue.
+
+| # | Category | What kind of change |
+|---|---|---|
+| 01 | Inference providers | New LLM endpoint (Fireworks, Hugging Face, custom OpenAI-compat) |
+| 02 | Multimodal capabilities | Vision, audio, video — new functionality |
+| 03 | Agentic logic | New agent tool, system-prompt update, tool-selection heuristics |
+| 04 | Search methods | New search mode beyond the existing 6 |
+| 05 | Indexing methods | New chunker, extractor, community algorithm, report generator |
+| 06 | Vector stores | New `BaseVectorStore` backend |
+| 07 | Cloud integrations | New `StorageBackend`, deploy target, secrets vault |
+| 08 | Library additions | New Python dependency — runtime, optional extra, dev-only |
+| 09 | Visual apps | Chat web UI, terminal TUI, dashboards, graph viz |
+
+**For open-ended design questions or ideas** that don't fit a category, use [GitHub Discussions](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/discussions).
+
+**No PR without an approved issue.** This rule saves you time — we want to give design feedback before you write code, not after.
+
+📖 **Full contribution guide:** [`CONTRIBUTING.md`](CONTRIBUTING.md) — covers local setup, code conventions, testing, commit style, dev-prompt convention, and label taxonomy.
 
 ---
 

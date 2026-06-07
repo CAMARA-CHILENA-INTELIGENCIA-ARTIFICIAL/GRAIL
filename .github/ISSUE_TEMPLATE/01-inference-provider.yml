@@ -1,0 +1,113 @@
+name: "01 · Inference provider"
+description: "Add a new LLM inference provider — OpenAI-compatible endpoint, pricing, auth."
+title: "[inference-provider] <provider name>"
+labels:
+  - "category:inference-providers"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **inference provider**.
+
+        > ⚠️ **This issue must receive the `status:approved` label from a maintainer before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md) for the full flow.
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider name
+      description: Display name as it should appear in `endpoints.yaml`.
+      placeholder: "e.g. Fireworks AI"
+    validations:
+      required: true
+
+  - type: input
+    id: provider-url
+    attributes:
+      label: Provider homepage
+      placeholder: "https://fireworks.ai"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: openai-compatible
+    attributes:
+      label: OpenAI-compatible API?
+      description: GRAIL's endpoint adapter assumes OpenAI-style chat completions. Non-compatible providers need a custom client.
+      options:
+        - "Yes — drop-in compatible"
+        - "Partially — needs minor adapter"
+        - "No — needs custom client"
+    validations:
+      required: true
+
+  - type: input
+    id: auth-env
+    attributes:
+      label: Auth — env var name
+      placeholder: "FIREWORKS_API_KEY"
+    validations:
+      required: true
+
+  - type: textarea
+    id: models
+    attributes:
+      label: Models you intend to support
+      description: List the model IDs as the provider exposes them.
+      placeholder: |
+        - accounts/fireworks/models/llama-v3-70b-instruct
+        - accounts/fireworks/models/mixtral-8x22b-instruct
+    validations:
+      required: true
+
+  - type: textarea
+    id: pricing
+    attributes:
+      label: Pricing for the price book
+      description: |
+        USD per 1M tokens. Format matches `LLMConfig.extra_pricing`:
+        `"endpoint|model": [prompt_per_1M, completion_per_1M]`
+      placeholder: |
+        "fireworks|accounts/fireworks/models/llama-v3-70b-instruct": [0.90, 0.90]
+        "fireworks|accounts/fireworks/models/mixtral-8x22b-instruct": [1.20, 1.20]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: streaming
+    attributes:
+      label: Streaming support?
+      options:
+        - "Yes"
+        - "No"
+        - "Unknown — needs investigation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+      description: What use case does this unlock? Cheaper inference? Specific model unavailable elsewhere? Geographic / compliance reasons?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will we know this is done?
+      value: |
+        - [ ] Entry added to `configs/endpoints.yaml`
+        - [ ] Pricing added to the price book (or `extra_pricing` documented)
+        - [ ] Smoke test against at least one model works end-to-end (index a small corpus)
+        - [ ] README endpoint list updated (in both ES + EN)
+        - [ ] Docs site endpoints reference updated if listed there
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review
+      placeholder: "Anything you'd like the team's input on before starting the PR."

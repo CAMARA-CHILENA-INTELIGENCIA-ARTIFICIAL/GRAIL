@@ -1,0 +1,113 @@
+name: "08 · Library addition"
+description: "Add a new Python dependency — runtime, optional extra, or dev tooling."
+title: "[library] <lib name>"
+labels:
+  - "category:library-addition"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **Python dependency**. We keep the core install lean and push optional integrations into extras.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: input
+    id: lib-name
+    attributes:
+      label: Library name + version pin
+      placeholder: "pyarrow>=15.0.0,<17.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: lib-url
+    attributes:
+      label: Library homepage / repo
+      placeholder: "https://github.com/apache/arrow"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Install tier
+      options:
+        - "Core dependency (always installed)"
+        - "Optional extra — a new `[extras]` group"
+        - "Optional extra — fits an existing group (e.g. `[s3]`, `[ui]`, `[dev]`)"
+        - "Dev-only dependency"
+    validations:
+      required: true
+
+  - type: input
+    id: extras-group
+    attributes:
+      label: Extras group name (if optional)
+      placeholder: "[gcs]"
+
+  - type: textarea
+    id: why-needed
+    attributes:
+      label: Why is this needed?
+      description: Which feature or PR needs it? Why can't we use stdlib or an existing dep?
+    validations:
+      required: true
+
+  - type: input
+    id: license
+    attributes:
+      label: License
+      placeholder: "Apache-2.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: license-compat
+    attributes:
+      label: License compatibility with GRAIL (MIT)
+      options:
+        - "Yes — MIT/Apache/BSD-class"
+        - "No — copyleft (LGPL, GPL, AGPL)"
+        - "Unclear — needs review"
+    validations:
+      required: true
+
+  - type: textarea
+    id: size-impact
+    attributes:
+      label: Bundle / install impact
+      description: Disk footprint, transitive dependencies, native compilation requirements?
+      placeholder: "~50 MB, pure Python, no native deps"
+
+  - type: textarea
+    id: maintenance
+    attributes:
+      label: Maintenance signals
+      description: Last release date? Active maintainers? Security record? GitHub stars?
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you look at? Why was this chosen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Added to `pyproject.toml` with version pin
+        - [ ] If extra: documented in README install section (ES + EN)
+        - [ ] If extra: documented in `docs-site/docs/start/install.mdx` (ES + EN)
+        - [ ] Lockfile (`uv.lock`) regenerated and committed
+        - [ ] CI tests pass with and without the optional extra
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

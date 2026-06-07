@@ -1,0 +1,98 @@
+name: "02 · Multimodal capability"
+description: "Propose a new modality — vision, audio, video — as new functionality. GRAIL is currently text-only."
+title: "[multimodal] <modality / use case>"
+labels:
+  - "category:multimodal"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a **multimodal capability**. GRAIL is currently text-only — any multimodal work is **new functionality** and needs a clear design story before code lands.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: dropdown
+    id: modality
+    attributes:
+      label: Modality
+      options:
+        - "Vision (images, PDF pages as images, screenshots)"
+        - "Audio (transcription, embeddings)"
+        - "Video (frame extraction, scene detection)"
+        - "Mixed (e.g. PDF with embedded charts)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: input-source
+    attributes:
+      label: Input source
+      description: Where do the assets come from? File formats, sizes, typical batch?
+      placeholder: "PDF pages as PIL images, ~1-50 pages per document, batch of 50-500 documents"
+    validations:
+      required: true
+
+  - type: textarea
+    id: models
+    attributes:
+      label: Models / providers you'd use
+      description: Which vision/audio/multimodal models? Same providers as text or new ones?
+      placeholder: |
+        - Vision: gpt-4o-mini, claude-3-5-sonnet, llava-1.5
+        - Audio: openai/whisper-large-v3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pipeline-stage
+    attributes:
+      label: Where in the pipeline does this live?
+      options:
+        - "Preprocessing (extract text/captions from non-text inputs)"
+        - "Indexing (multimodal embeddings stored alongside text)"
+        - "Search (multimodal queries against the index)"
+        - "Multiple stages"
+    validations:
+      required: true
+
+  - type: textarea
+    id: schema-impact
+    attributes:
+      label: Schema impact
+      description: Does this require new parquet columns? New text-unit metadata? Image/audio path tracking?
+      placeholder: "Yes — `text_units` gains an `image_paths: list[str]` column and a `modality: str` column"
+    validations:
+      required: true
+
+  - type: textarea
+    id: re-index
+    attributes:
+      label: Re-index requirement
+      description: Does this change require re-indexing existing projects? Can existing projects upgrade without re-indexing?
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+      description: What use case does this unlock? Which existing GRAIL feature falls short today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Design doc in `dev_prompts/` for cross-session handoff
+        - [ ] Unit tests for the new path
+        - [ ] At least one end-to-end example in `examples/`
+        - [ ] Docs site page under `/guides/` or `/learn/` (ES + EN)
+        - [ ] README "Why GRAIL" table updated if user-visible
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

@@ -1,0 +1,92 @@
+name: "03 · Agentic logic"
+description: "Add or modify agent tools, system prompts, iteration budget, or tool-selection logic."
+title: "[agentic-logic] <change>"
+labels:
+  - "category:agentic-logic"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing changes to **agentic logic** — agent tools, system prompts, iteration budget, tool-selection behaviour.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: dropdown
+    id: change-type
+    attributes:
+      label: Type of change
+      options:
+        - "New agent tool (in addition to local/cascade/global/document)"
+        - "Modify existing tool signature or behaviour"
+        - "Update the AGENT_SYSTEM_PROMPT"
+        - "Change iteration budget defaults"
+        - "Change tool-selection heuristics"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: tool-name
+    attributes:
+      label: Tool name (if new tool)
+      placeholder: "e.g. structured_query"
+
+  - type: textarea
+    id: signature
+    attributes:
+      label: Tool signature
+      description: Function signature with arg types and return shape.
+      placeholder: |
+        async def structured_query(
+            entity_name: str,
+            relation_type: str | None = None,
+        ) -> list[Relationship]
+      render: python
+
+  - type: textarea
+    id: relation-to-modes
+    attributes:
+      label: How does this relate to the existing 6 search modes?
+      placeholder: "Sits between local and cascade — uses the entity graph but skips text rescue. Cheaper than cascade for structural questions."
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt-impact
+    attributes:
+      label: System-prompt update needed?
+      description: Does the agent need new instructions on when to call this tool? Show the diff if you have one.
+
+  - type: textarea
+    id: iteration-budget
+    attributes:
+      label: Iteration budget impact
+      description: Does this tool typically resolve a question in fewer iterations? Or trigger more?
+      placeholder: "Reduces avg iterations for structural questions from 3 → 1"
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+      description: Which class of questions does GRAIL handle poorly today that this would fix?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Tool implementation in `grail/query/agent.py` (or new file)
+        - [ ] System prompt updated (if applicable)
+        - [ ] Unit tests covering happy path + edge cases
+        - [ ] Benchmark delta measured against `benchmarks/simple_benchmark/`
+        - [ ] Docs updated: `/learn/search-modes` and any affected guides
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

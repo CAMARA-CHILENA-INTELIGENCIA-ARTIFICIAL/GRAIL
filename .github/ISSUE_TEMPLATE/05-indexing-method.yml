@@ -1,0 +1,99 @@
+name: "05 · Indexing method"
+description: "Propose a new indexer, chunker, entity extractor, community algorithm, or report generator."
+title: "[indexing-method] <change>"
+labels:
+  - "category:indexing-methods"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a change to **indexing**. This is the most schema-sensitive part of GRAIL — please be precise about parquet impact.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Pipeline stage affected
+      options:
+        - "Chunking (FileLoader)"
+        - "Entity + relationship extraction (single-pass LLM)"
+        - "Entity deduplication"
+        - "Community detection (Leiden / alternative)"
+        - "Community report generation"
+        - "Embedding step"
+        - "Multiple stages"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-changes
+    attributes:
+      label: What changes about this stage?
+      description: Concretely — new algorithm? Different inputs? Different outputs?
+    validations:
+      required: true
+
+  - type: textarea
+    id: schema-impact
+    attributes:
+      label: Schema impact
+      description: |
+        Which parquet files change? New columns? Renamed columns? Deprecated columns?
+        List exact column changes for `final_entities`, `final_relationships`, `final_text_units`, `final_communities`, `final_community_reports`.
+      placeholder: |
+        `final_entities`: add column `confidence: float`
+        `final_text_units`: no change
+    validations:
+      required: true
+
+  - type: dropdown
+    id: re-index-required
+    attributes:
+      label: Does this require re-indexing existing projects?
+      options:
+        - "Yes — schema-breaking"
+        - "No — additive, existing projects work as-is"
+        - "Optional — works with existing artefacts but quality improves after re-index"
+    validations:
+      required: true
+
+  - type: textarea
+    id: incremental-impact
+    attributes:
+      label: Impact on incremental ops (`append`/`edit`/`delete`)
+      description: Does this change how incremental updates work? Any new edge cases?
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance / cost profile
+      description: How does this compare to the current implementation in CPU, RAM, and LLM calls?
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Implementation under `grail/indexing/`
+        - [ ] Schema migration tested with existing fixtures
+        - [ ] Incremental ops (`append`/`edit`/`delete`) tested if affected
+        - [ ] Benchmark deltas measured
+        - [ ] Cost deltas measured (LLM calls per chunk)
+        - [ ] Docs at `/learn/` or `/guides/` updated (ES + EN)
+        - [ ] Migration notes if schema-breaking
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

@@ -47,9 +47,10 @@
 12. [Almacenamiento y vector stores](#almacenamiento-y-vector-stores)
 13. [Benchmarks](#benchmarks)
 14. [Documentación](#documentación)
-15. [Agradecimientos](#agradecimientos)
-16. [Autor](#autor)
-17. [Licencia](#licencia)
+15. [Contribuir](#contribuir)
+16. [Agradecimientos](#agradecimientos)
+17. [Autor](#autor)
+18. [Licencia](#licencia)
 
 ---
 
@@ -269,7 +270,7 @@ uv run grail init ./my-kb --name my-kb --template low_cost_setup
 uv run grail index ./my-kb
 ```
 
-> 📸 *Coloca `assets/indexing.png` aquí — salida en terminal de la corrida de indexación en cuatro pasos.*
+> 👉 Walkthrough completo con capturas y resolución de problemas: [Quickstart de base de conocimiento](https://grail-docs.vercel.app/start/kb-quickstart).
 
 ```bash
 # 4. Consulta — seis modos
@@ -284,8 +285,7 @@ uv run grail chat ./my-kb              # TUI en Textual
 uv run grail ui   ./my-kb              # FastAPI + React, http://127.0.0.1:8765
 ```
 
-> 📸 *Coloca `assets/query.png` aquí — respuesta formateada con contexto citado.*
-> 📸 *Coloca `assets/chat_ui.png` aquí — chat web con respuestas en streaming.*
+> 👉 Ver la [guía del chat web](https://grail-docs.vercel.app/guides/web-chat) y la [guía del chat de terminal](https://grail-docs.vercel.app/guides/cli-chat) para capturas, slash commands, atajos de teclado y walkthroughs por feature.
 
 ### Modo memoria agéntica
 
@@ -311,7 +311,7 @@ uv run grail proposals list  ./my-mem
 uv run grail proposals apply ./my-mem --accept <proposal_id>
 ```
 
-> 📸 *Coloca `assets/memory_consolidate.png` aquí — listado de propuestas en terminal.*
+> 👉 Workflow completo de memoria — observaciones, recall, consolidate, propose / accept — con ejemplos: [Quickstart de memoria](https://grail-docs.vercel.app/start/memory-quickstart).
 
 ---
 
@@ -745,7 +745,7 @@ De dónde viene la ventaja:
 uv run python benchmarks/run_benchmark.py
 ```
 
-> 📸 *Coloca `assets/benchmark_chart.png` aquí — gráfico de barras GRAIL vs RAG por categoría.*
+> 👉 Metodología, desglose por pregunta y notas de reproducción: [`benchmarks/results/`](benchmarks/results/). Una visualización en gráfico de barras de estos números llegará al sitio de docs cuando se genere.
 
 Reporte completo y detalle por pregunta: [`benchmarks/results/`](benchmarks/results/).
 
@@ -811,6 +811,34 @@ Ver el [roadmap de benchmarks](https://grail-docs.vercel.app/).
 ### Notas internas / contribuidores (deprecadas para usuarios finales)
 
 La carpeta [`docs/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/docs) dentro del repo se mantiene como notas técnicas para contribuidores — arquitectura, decisiones de diseño, internals de módulos. **No son documentación para usuarios finales** y pueden quedar desactualizadas respecto al sitio público — siempre usa [grail-docs.vercel.app](https://grail-docs.vercel.app/) como fuente de verdad de uso.
+
+---
+
+## Contribuir
+
+GRAIL acepta contribuciones en **9 categorías bien definidas** bajo un flujo de dos pasos:
+
+1. **Abre un issue** en la plantilla de la categoría que corresponde (la plantilla pregunta lo que importa desde el inicio).
+2. **Espera el label `status:approved`** del equipo.
+3. **Abre un PR** que referencie el issue aprobado.
+
+| # | Categoría | Qué tipo de cambio |
+|---|---|---|
+| 01 | Proveedores de inferencia | Nuevo endpoint LLM (Fireworks, Hugging Face, OpenAI-compat custom) |
+| 02 | Capacidades multimodales | Visión, audio, video — funcionalidad nueva |
+| 03 | Lógica agéntica | Nueva tool de agente, update del system prompt, heurísticas de selección de tools |
+| 04 | Métodos de búsqueda | Nuevo modo más allá de los 6 actuales |
+| 05 | Métodos de indexación | Nuevo chunker, extractor, algoritmo de comunidades, generador de reportes |
+| 06 | Vector stores | Nuevo backend `BaseVectorStore` |
+| 07 | Integraciones cloud | Nuevo `StorageBackend`, target de deploy, vault de secretos |
+| 08 | Agregar librerías | Nueva dependencia Python — runtime, extra opcional, dev-only |
+| 09 | Apps visuales | UI web de chat, TUI de terminal, dashboards, viz del grafo |
+
+**Para preguntas de diseño abiertas o ideas** que no calzan en una categoría, usa [GitHub Discussions](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/discussions).
+
+**Sin PR sin issue aprobado.** Esta regla te ahorra tiempo a ti — queremos darte feedback de diseño antes de que escribas código, no después.
+
+📖 **Guía completa de contribución:** [`CONTRIBUTING.md`](CONTRIBUTING.md) — cubre setup local, convenciones de código, testing, estilo de commits, convención de dev-prompts y taxonomía de labels.
 
 ---
 

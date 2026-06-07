@@ -1,0 +1,120 @@
+name: "06 · Vector store"
+description: "Add a new vector store backend — Qdrant, Weaviate, Milvus, Pinecone, etc."
+title: "[vector-store] <store name>"
+labels:
+  - "category:vector-stores"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **vector store backend**. GRAIL has 3 today (FAISS, LanceDB, ChromaDB) — a new one must implement `BaseVectorStore`.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: input
+    id: store-name
+    attributes:
+      label: Store name
+      placeholder: "e.g. Qdrant"
+    validations:
+      required: true
+
+  - type: input
+    id: lib-name
+    attributes:
+      label: Python library + version pin
+      placeholder: "qdrant-client>=1.7.0,<2.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment model
+      options:
+        - "On-disk (embedded, no service)"
+        - "In-memory (no persistence)"
+        - "Network (separate service / managed)"
+        - "Both embedded and network modes"
+    validations:
+      required: true
+
+  - type: textarea
+    id: distance-metrics
+    attributes:
+      label: Distance metrics supported
+      description: GRAIL defaults to cosine. List supported metrics.
+      placeholder: "cosine, dot product, Euclidean (L2)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: normalization
+    attributes:
+      label: L2 normalization handling
+      description: |
+        FAISS requires L2-normalized vectors for cosine via `IndexFlatIP`. Does this store handle normalization internally, or does the caller need to normalize?
+      options:
+        - "Internal — store handles it"
+        - "External — caller must normalize before write"
+        - "Configurable"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: incremental
+    attributes:
+      label: Incremental writes
+      options:
+        - "Yes — supports add/update/delete by ID"
+        - "Yes — additive only (no in-place update)"
+        - "No — requires full rebuild on change"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scale-profile
+    attributes:
+      label: Performance profile
+      description: |
+        Index time / query latency / RAM usage at 100K, 1M, 10M vectors. Reference benchmarks if you have them.
+      placeholder: |
+        At 1M vectors (1024-d):
+        - Index build: ~30s
+        - Query latency (p95): ~3ms
+        - RAM: ~5 GB
+
+  - type: textarea
+    id: metadata-filtering
+    attributes:
+      label: Metadata filtering
+      description: Does this store support filtering by attribute (e.g., type=PERSON) at query time? Native or post-filter?
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+      description: What use case does this unlock vs FAISS / LanceDB / ChromaDB?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Implementation in `grail/vectorstores/<name>.py` subclasses `BaseVectorStore`
+        - [ ] All 7 abstract methods implemented (`connect`, `load_documents`, `similarity_search_by_vector`, etc.)
+        - [ ] Optional install extra in `pyproject.toml` (e.g. `[qdrant]`)
+        - [ ] Unit tests against a real (in-process / Docker) instance
+        - [ ] Documented in `docs-site/docs/learn/` (vectorstores page) — ES + EN
+        - [ ] README "Storage & vector backends" table updated (ES + EN)
+        - [ ] CLI `--vectorstore <name>` flag works
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

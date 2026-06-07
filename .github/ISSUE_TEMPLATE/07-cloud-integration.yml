@@ -1,0 +1,102 @@
+name: "07 · Cloud integration"
+description: "Add a new storage backend (GCS, Azure Blob), deploy target (modal, fly.io), or cloud service."
+title: "[cloud-integration] <service>"
+labels:
+  - "category:cloud-integrations"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **cloud integration**.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: input
+    id: service
+    attributes:
+      label: Service
+      placeholder: "e.g. Google Cloud Storage"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: integration-type
+    attributes:
+      label: Integration type
+      options:
+        - "Storage backend (subclass of StorageBackend)"
+        - "Secrets / vault integration"
+        - "Deployment target (Modal, fly.io, Cloud Run, etc.)"
+        - "Monitoring / observability sink"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: lib-name
+    attributes:
+      label: Python library + version pin (if applicable)
+      placeholder: "google-cloud-storage>=2.10.0,<3.0.0"
+
+  - type: dropdown
+    id: auth
+    attributes:
+      label: Auth model
+      options:
+        - "IAM role (recommended, no key in repo)"
+        - "Service account key (file path)"
+        - "API key (env var)"
+        - "Workload identity / federation"
+        - "Multiple modes supported"
+    validations:
+      required: true
+
+  - type: textarea
+    id: required-env
+    attributes:
+      label: Required environment variables
+      description: List the env vars users must set.
+      placeholder: |
+        GOOGLE_APPLICATION_CREDENTIALS — path to service account JSON
+        GCS_BUCKET — target bucket name
+
+  - type: textarea
+    id: cost
+    attributes:
+      label: Cost considerations
+      description: |
+        Indexing writes lots of small parquet files. Are there per-operation costs (PUT/GET)? Egress charges? Storage class implications?
+
+  - type: textarea
+    id: regions
+    attributes:
+      label: Regional availability
+      description: Any regions where this isn't available? Compliance considerations?
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Implementation under `grail/storage/` or `grail/cloud/`
+        - [ ] All 7 `StorageBackend` methods implemented (if storage)
+        - [ ] Optional install extra in `pyproject.toml`
+        - [ ] Integration test against a real bucket (or mock at minimum)
+        - [ ] Env var docs in `.env.example`
+        - [ ] Docs page under `/guides/` (ES + EN)
+        - [ ] README "Storage & vector backends" table updated if storage (ES + EN)
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

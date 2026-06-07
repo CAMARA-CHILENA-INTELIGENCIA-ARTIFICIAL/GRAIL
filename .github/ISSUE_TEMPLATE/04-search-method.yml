@@ -1,0 +1,110 @@
+name: "04 · Search method"
+description: "Propose a new search mode beyond the existing 6 (local · cascade · global · document · agent · recall)."
+title: "[search-method] <method name>"
+labels:
+  - "category:search-methods"
+  - "status:proposed"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **search method**. GRAIL has 6 modes today; a new mode must justify its existence against the existing set.
+
+        > ⚠️ **This issue must receive the `status:approved` label before any PR is opened.** See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md).
+
+  - type: input
+    id: method-name
+    attributes:
+      label: Method name
+      description: One-word name that fits with `local`, `cascade`, `global`, etc.
+      placeholder: "e.g. semantic-hop"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-it-does
+    attributes:
+      label: What does it do?
+      description: One paragraph explaining the retrieval strategy.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-not-existing
+    attributes:
+      label: Why don't the existing 6 modes cover this?
+      description: Be specific. Which existing mode is closest, and why is it insufficient?
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-path
+    attributes:
+      label: Implementation path
+      description: Which files under `grail/query/`? Existing primitives you'd reuse?
+      placeholder: |
+        New file: `grail/query/semantic_hop_search.py`
+        Reuses: `retrieval.load_artifacts_for_search`, `LocalSearch.embed_query`
+    validations:
+      required: true
+
+  - type: textarea
+    id: integration
+    attributes:
+      label: Integration with `GRAIL.search()`
+      description: Will this be a new value for `mode=`? Or a separate method?
+      placeholder: "Adds `mode='semantic-hop'` to `GRAIL.search()`"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: llm-cost
+    attributes:
+      label: Cost characteristics
+      options:
+        - "Zero LLM calls (like recall)"
+        - "1 LLM call per query (like local/cascade)"
+        - "Multiple LLM calls (like global, agent)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: benchmark-delta
+    attributes:
+      label: Expected benchmark delta
+      description: |
+        Which question categories should improve? By how much? Reference the categories in `benchmarks/simple_benchmark/`.
+      placeholder: |
+        Single-fact: ~ no change
+        Cross-source: +0.3 / 5
+        Comparative: +0.5 / 5
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why this matters
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Implementation under `grail/query/`
+        - [ ] Wired into `GRAIL.search()` and `MemoryProject.recall()` if applicable
+        - [ ] CLI flag `--mode <name>` works end-to-end
+        - [ ] Unit tests
+        - [ ] Benchmark run against `benchmarks/simple_benchmark/` with results in PR
+        - [ ] Docs page at `/learn/<method-name>` with analogy + when-to-use (ES + EN)
+        - [ ] `/learn/search-modes` table updated (ES + EN)
+        - [ ] README "Search modes" table updated (ES + EN)
+    validations:
+      required: true
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the maintainer review

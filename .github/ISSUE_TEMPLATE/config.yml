@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Ideas, questions, design discussions
+    url: https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/discussions
+    about: For open-ended ideas, questions, or design discussions — anything that doesn't fit one of the 9 category templates — please use GitHub Discussions.
+  - name: 📖 Documentation
+    url: https://grail-docs.vercel.app/
+    about: Check the official documentation before opening an issue. Many questions are answered there.
