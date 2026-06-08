@@ -838,7 +838,7 @@ GRAIL acepta contribuciones en **9 categorías bien definidas** bajo un flujo de
 
 **Sin PR sin issue aprobado.** Esta regla te ahorra tiempo a ti — queremos darte feedback de diseño antes de que escribas código, no después.
 
-📖 **Guía completa de contribución:** [`CONTRIBUTING.md`](CONTRIBUTING.md) — cubre setup local, convenciones de código, testing, estilo de commits, convención de dev-prompts y taxonomía de labels.
+📖 **Guía completa de contribución:** [`CONTRIBUTING.es.md`](CONTRIBUTING.es.md) — cubre setup local, convenciones de código, testing, estilo de commits, convención de dev-prompts y taxonomía de labels.
 
 ---
 

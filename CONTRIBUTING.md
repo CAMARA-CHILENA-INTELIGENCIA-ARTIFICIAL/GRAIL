@@ -1,5 +1,7 @@
 # Contributing to GRAIL
 
+> 🇪🇸 Léelo en [español](CONTRIBUTING.es.md).
+
 Thank you for your interest in contributing to GRAIL. This is an open-source framework developed under the [Cámara Chilena de Inteligencia Artificial](https://cchia.cl) commission, stewarded by [Nirvai](https://nirvana-ai.com). We welcome contributions across nine well-defined categories — each with a structured proposal-to-merge flow.
 
 ## TL;DR
