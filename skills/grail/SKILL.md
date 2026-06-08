@@ -116,6 +116,26 @@ python scripts/memory/list_proposals.py --project <ref>
 python scripts/memory/apply_proposal.py --project <ref> --id <prefix> --accept|--reject
 ```
 
+### When the user wants to see / visualize the graph
+
+For "show me the graph", "visualize this KB", "export the graph as HTML":
+
+```bash
+python scripts/viz.py --project <ref> [--output graph.html] [--max-entities N]
+```
+
+This writes a single self-contained HTML file (D3 viewer — entity search,
+layer toggles, colouring by community or type) and returns its path in
+`data.html_path`. Tell the user where it was written and that it opens
+offline in any browser.
+
+**Dependency feedback.** The viewer inlines a prebuilt renderer bundle. If
+it's missing, the script returns `ok: false` with `next_steps` — relay
+those to the user verbatim (they'll need to either reinstall `graphgrail`
+from PyPI or build the bundle with `npm install && npm run build`). Don't
+improvise around a missing-bundle error; ask the user to install what the
+`next_steps` name, then retry.
+
 ## First-time install — venv strongly recommended
 
 `setup.sh` will pip-install `graphgrail` on first use. Run it against a
