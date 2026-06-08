@@ -19,7 +19,6 @@ from grail.viz.colors import (
     hash_color,
 )
 from grail.viz.exporter import build_sigma_graph
-from grail.viz.layout import compute_community_layout, compute_layout
 from grail.viz.template import render_html
 
 
@@ -153,83 +152,6 @@ class TestColors:
         assert hash_color("abc") != hash_color("xyz")
 
 
-# ── layout.py ──────────────────────────────────────────────────────────
-
-
-class TestLayout:
-    def test_empty_graph(self):
-        import networkx as nx
-        assert compute_layout(nx.Graph()) == {}
-
-    def test_seed_determinism(self):
-        import networkx as nx
-        G = nx.Graph()
-        G.add_edges_from([("A", "B"), ("B", "C"), ("C", "A"), ("D", "A")])
-        pos1 = compute_layout(G, seed=7, iterations=50)
-        pos2 = compute_layout(G, seed=7, iterations=50)
-        for node in pos1:
-            assert pos1[node] == pos2[node], f"Layout for {node} not deterministic"
-
-    def test_scale_applied(self):
-        import networkx as nx
-        G = nx.Graph()
-        G.add_edges_from([("A", "B"), ("B", "C")])
-        pos = compute_layout(G, seed=1, iterations=50, scale=500.0)
-        # Spring layout outputs in roughly [-1, 1]; scale 500 → [-500, 500]
-        for x, y in pos.values():
-            assert -1000 < x < 1000 and -1000 < y < 1000
-
-    def test_community_layout_separates_clusters(self):
-        """Nodes in different communities should land far apart on the canvas."""
-        import math
-        import networkx as nx
-        G = nx.Graph()
-        # Two well-connected communities with no edges between them.
-        for src, tgt in [("A", "B"), ("B", "C"), ("C", "A"),
-                         ("X", "Y"), ("Y", "Z"), ("Z", "X")]:
-            G.add_edge(src, tgt)
-        communities = {"A": "0", "B": "0", "C": "0", "X": "1", "Y": "1", "Z": "1"}
-        pos = compute_community_layout(G, communities, seed=1, iterations=50)
-
-        # Compute community centroids.
-        c0 = [pos[n] for n in ("A", "B", "C")]
-        c1 = [pos[n] for n in ("X", "Y", "Z")]
-        cent0 = (sum(p[0] for p in c0) / 3, sum(p[1] for p in c0) / 3)
-        cent1 = (sum(p[0] for p in c1) / 3, sum(p[1] for p in c1) / 3)
-        between = math.hypot(cent0[0] - cent1[0], cent0[1] - cent1[1])
-
-        # Max distance within a community.
-        within = max(
-            math.hypot(c0[i][0] - c0[j][0], c0[i][1] - c0[j][1])
-            for i in range(3) for j in range(i + 1, 3)
-        )
-        assert between > 3 * within, (
-            f"Communities should sit far apart; got between={between:.0f}, within={within:.0f}"
-        )
-
-    def test_community_layout_isolated_nodes_inside_cluster(self):
-        """Pure-isolate communities still produce coherent positions (no NaNs, all close)."""
-        import math
-        import networkx as nx
-        G = nx.Graph()
-        for n in ("a", "b", "c", "d", "e"):
-            G.add_node(n)
-        communities = {n: "iso" for n in G.nodes()}
-        pos = compute_community_layout(G, communities, seed=1)
-        # All positions finite and within ~200 of each other (small inner ring).
-        for n, (x, y) in pos.items():
-            assert math.isfinite(x) and math.isfinite(y), f"{n}: NaN position"
-        max_spread = max(
-            math.hypot(pos[a][0] - pos[b][0], pos[a][1] - pos[b][1])
-            for a in pos for b in pos if a != b
-        )
-        assert max_spread < 500, f"Isolated cluster should be compact; spread={max_spread:.0f}"
-
-    def test_community_layout_empty_graph(self):
-        import networkx as nx
-        assert compute_community_layout(nx.Graph(), {}) == {}
-
-
 # ── exporter.py ────────────────────────────────────────────────────────
 
 
@@ -280,8 +202,9 @@ class TestExporter:
 
     def test_entity_attribute_completeness(self):
         sigma = self._full()
+        # No x/y — the D3 force simulation computes positions in the browser.
         required = {
-            "label", "x", "y", "size", "color",
+            "label", "size", "color",
             "typeColor", "communityColor",
             "_kind", "_type", "_community", "_degree", "_description", "_documents",
         }
@@ -380,12 +303,13 @@ class TestTemplate:
             project_name="proj",
             run_id="2026-05-20-abc",
         )
-        # Sanity-check the structural pieces.
+        # Sanity-check the structural pieces of the D3 viewer.
         assert html.startswith("<!doctype html>")
         assert "</html>" in html
-        assert "Sigma" in html or "sigma" in html
-        assert "graphology" in html
-        assert "forceAtlas2" in html.lower() or "forceatlas2" in html.lower()
+        # The renderer is mounted from the inlined UMD bundle.
+        assert "GrailViz" in html
+        assert "__GRAIL_VIZ_PAYLOAD__" in html
+        assert 'id="grail-viz-payload"' in html
 
     def test_data_embedded_and_parseable(self):
         sigma = build_sigma_graph(
@@ -395,8 +319,11 @@ class TestTemplate:
             reports_df=_reports(),
         )
         html = render_html(sigma.to_dict(), title="Test", project_name="proj", run_id="run-1")
-        m = re.search(r"const GRAPH_DATA = ({.*?});", html, re.DOTALL)
-        assert m, "Embedded GRAPH_DATA block not found"
+        m = re.search(
+            r'<script id="grail-viz-payload" type="application/json">(.*?)</script>',
+            html, re.DOTALL,
+        )
+        assert m, "Embedded grail-viz-payload block not found"
         data = json.loads(m.group(1))
         # 4 entities + 2 docs + 2 chunks + 2 communities + 3 findings.
         assert len(data["nodes"]) == 13
@@ -422,4 +349,4 @@ class TestTemplate:
         sigma = build_sigma_graph(ents, _relationships(), _nodes(), _documents())
         html = render_html(sigma.to_dict(), title="t", project_name="p", run_id="r")
         # Just ensure render succeeds without raising.
-        assert "GRAPH_DATA" in html
+        assert "__GRAIL_VIZ_PAYLOAD__" in html

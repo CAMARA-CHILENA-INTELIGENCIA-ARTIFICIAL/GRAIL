@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 # and the CLI binary stays ``grail`` — only the ``pip install`` /
 # ``uv add`` line uses the distribution name.
 name = "graphgrail"
-version = "0.1.3"
+version = "0.1.4"
 description = "Graph RAG with Advanced Integration and Learning — an open-source GraphRAG library with incremental updates, file-level provenance, and pluggable LLM/storage backends."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"

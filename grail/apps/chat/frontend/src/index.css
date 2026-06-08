@@ -152,6 +152,42 @@ textarea { field-sizing: content; }
 }
 .sb-collapse:hover { background: var(--surface-2); color: var(--text-secondary); }
 
+/* current-project chip — sits between the wordmark and "New chat" */
+.sb-project {
+  margin: 0 12px 10px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 11px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  cursor: default;
+}
+.sb-project .icon {
+  width: 22px; height: 22px; flex: 0 0 auto; border-radius: var(--r-xs);
+  display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-bright);
+}
+.sb-project .info { min-width: 0; flex: 1 1 auto; }
+.sb-project .label {
+  display: block; font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary);
+}
+.sb-project .name {
+  display: block; font-size: 12.5px; font-weight: 500; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app-shell.collapsed .sb-project { display: none; }
+
+/* compact welcome chip */
+.welcome .project-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: -14px 0 24px;
+  padding: 5px 12px; border-radius: 99px;
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+.welcome .project-chip b { color: var(--text-secondary); font-weight: 500; }
+.welcome .project-chip svg { color: var(--accent); }
+
 .sb-new {
   margin: 2px 12px 6px;
   display: flex; align-items: center; gap: 9px;
@@ -753,9 +789,294 @@ textarea { field-sizing: content; }
   .stream { padding: 24px 14px 30px; }
 }
 
+/* ============================================================
+   Tool-call cards (agent mode streamed XML tags)
+   ============================================================ */
+
+.tool-call {
+  margin: 6px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  overflow: hidden;
+  font-size: 12.5px;
+}
+.tool-call.pending {
+  border-color: var(--accent-bright, #d6ad6b);
+  background: linear-gradient(0deg, var(--surface-1), var(--surface-1)),
+    linear-gradient(90deg, transparent 0%, rgba(214, 173, 107, 0.08) 50%, transparent 100%);
+}
+.tool-call-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+}
+.tool-call-head:hover { background: var(--surface-2); }
+.tool-call-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--accent-bright, #d6ad6b);
+  flex: none;
+}
+.tool-call-spin { animation: tool-spin 0.9s linear infinite; }
+@keyframes tool-spin { to { transform: rotate(360deg); } }
+.tool-call-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: none;
+}
+.tool-call-summary {
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-call-status {
+  color: var(--accent-bright, #d6ad6b);
+  font-size: 11px;
+  font-weight: 600;
+  flex: none;
+}
+.tool-call-chevron {
+  flex: none;
+  color: var(--text-tertiary);
+  transition: transform 120ms var(--ease);
+}
+.tool-call-chevron.open { transform: rotate(90deg); }
+.tool-call-args {
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+}
+
 /* keep responsive sidebar hidden on small */
 @media (max-width: 720px) {
   .sidebar { position: absolute; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s var(--ease); }
   .app-shell.mobile-open .sidebar { transform: translateX(0); }
   .mobile-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 1; }
+}
+
+/* ============================================================
+   Sidebar view switch (Chat / Graph)
+   ============================================================ */
+
+.sb-views {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  margin: 6px 12px 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+.sb-view-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-sm) - 2px);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+.sb-view-pill:hover { color: var(--text-primary); }
+.sb-view-pill.active {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.sb-rail-views {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  align-items: center;
+}
+.sb-rail-views .pip-btn {
+  width: 28px; height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.sb-rail-views .pip-btn:hover { color: var(--text-primary); background: var(--surface-2); }
+.sb-rail-views .pip-btn.active {
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border-color: var(--border-subtle);
+}
+
+/* ============================================================
+   Knowledge-graph view (embedded D3 renderer)
+   ============================================================ */
+
+.kg-shell {
+  /* Pin to .stream-wrap (position: relative) so flex children get a
+     definite height to grow into, even though the parent is scrollable. */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+.kg-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.kg-title-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.kg-project {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kg-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 120ms var(--ease), border-color 120ms var(--ease);
+}
+.kg-refresh:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.kg-refresh:disabled { opacity: 0.6; cursor: progress; }
+.kg-refresh .spin { animation: kg-spin 0.9s linear infinite; }
+@keyframes kg-spin { to { transform: rotate(360deg); } }
+
+.kg-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.kg-banner-text { flex: 1; }
+.kg-banner-actions { display: inline-flex; gap: 6px; }
+.kg-banner button {
+  background: transparent;
+  color: var(--accent-bright, #d6ad6b);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 3px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.kg-banner button:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--accent-bright, #d6ad6b);
+}
+.kg-banner button:disabled { opacity: 0.5; cursor: progress; }
+
+.kg-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  flex: 1;
+  min-height: 0;
+}
+.kg-canvas-wrap {
+  position: relative;
+  background: #0b0d12;
+  overflow: hidden;
+}
+.kg-canvas {
+  position: absolute;
+  inset: 0;
+}
+.kg-sidebar {
+  overflow-y: auto;
+  background: #131722;
+  border-left: 1px solid var(--border-subtle);
+}
+.kg-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  pointer-events: none;
+}
+.kg-status-error { color: var(--accent-warm, #d6ad6b); }
+.kg-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-bright, #d6ad6b);
+  animation: kg-spin 0.8s linear infinite;
+}
+
+@media (max-width: 720px) {
+  .kg-body { grid-template-columns: 1fr; }
+  .kg-sidebar {
+    max-height: 38vh;
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+  }
 }

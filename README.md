@@ -612,6 +612,12 @@ grail export-neo4j <project_dir> [--uri URI] [--username USER] [--password PW]
                                  [--batch-size N]
 ```
 
+`grail viz` writes a single self-contained `graph.html` — a D3-powered interactive viewer with entity search, layer toggles, and colouring by community or entity type. Opens offline, no server required.
+
+<p align="center">
+  <img src="https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/raw/master/assets/graph_viz.png" alt="GRAIL knowledge graph viewer — D3 force layout with stats panel, entity search, layer toggles, and colouring by community or entity type" width="900">
+</p>
+
 ### `grail status` / `grail config show` / `grail prompt list` / `grail prompt show`
 
 Introspection commands for artefacts, resolved config, and the prompt registry.

@@ -30,6 +30,34 @@ from grail.vectorstores import BaseVectorStore
 
 log = logging.getLogger(__name__)
 
+
+async def _emit_tool_call_tag(name: str, args: dict[str, Any]) -> None:
+    """Push a `<tool_call>` block to the active stream callback, if any.
+
+    The block is a self-contained XML chunk that chat frontends parse out
+    and render as a styled card. We deliberately use a multi-line shape so
+    that markdown renderers leave the inner JSON alone:
+
+        <tool_call name="cascade_search">
+        {"query":"What is Law 21250?"}
+        </tool_call>
+
+    Emission is fire-and-forget; if no callback is set (CLI, tests, etc.)
+    we skip silently.
+    """
+    from grail.llm.wrapper import _stream_callback_var
+
+    cb = _stream_callback_var.get(None)
+    if cb is None:
+        return
+    safe_name = (name or "unknown").replace('"', "&quot;")
+    args_json = json.dumps(args or {}, ensure_ascii=False)
+    tag = f"\n<tool_call name=\"{safe_name}\">\n{args_json}\n</tool_call>\n\n"
+    try:
+        await cb(tag)
+    except Exception:  # pragma: no cover — never let stream errors break the agent
+        log.debug("Stream callback raised while emitting tool_call tag", exc_info=True)
+
 AGENT_SYSTEM_PROMPT = """\
 <role>
 You are a knowledge-graph research assistant powered by GRAIL. You answer \
@@ -359,6 +387,10 @@ class AgentSearch:
 
                 args_display = ", ".join(f"{k}={v!r}" for k, v in args.items())
                 self.reporter.info(f"Calling tool: {fn_name}({args_display})")
+                # Emit the tool-call XML to the active stream so chat clients
+                # render the call as it executes. The same callback receives
+                # the final answer text — the tags interleave naturally.
+                await _emit_tool_call_tag(fn_name, args)
                 tool_result = await self._execute_tool(fn_name, args, artifacts)
                 total_llm_calls += tool_result.llm_calls
                 self.reporter.success(f"{fn_name} returned ({tool_result.llm_calls} LLM calls)")

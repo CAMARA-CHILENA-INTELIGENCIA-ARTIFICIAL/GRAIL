@@ -1,0 +1,6 @@
+node_modules/
+*.tsbuildinfo
+.vite/
+# Sourcemaps aren't loaded at runtime (the HTML inlines only .umd.cjs + .css)
+# and the Python wheel ships this dir verbatim — keep them out of the repo.
+dist/*.map

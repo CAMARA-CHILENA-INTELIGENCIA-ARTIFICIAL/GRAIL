@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Workflow, LocateFixed, Globe, Star, Layers, UserSearch, GitCompare } from "lucide-react";
+import { Workflow, LocateFixed, Globe, Star, Layers, UserSearch, GitCompare, Database } from "lucide-react";
 import { useChatStore, type SearchMode } from "../lib/store";
 import { useT } from "../lib/i18n";
 import type { StringKey } from "../lib/i18n";
@@ -41,7 +41,7 @@ const SAMPLE_PROMPTS: { icon: typeof Layers; key: StringKey }[] = [
 ];
 
 export default function WelcomeView() {
-  const { currentMode, setMode, setUseRerankerMode, setDraftInput } = useChatStore();
+  const { currentMode, setMode, setUseRerankerMode, setDraftInput, config } = useChatStore();
   const t = useT();
 
   function handleCardClick(mode: SearchMode) {
@@ -81,6 +81,19 @@ export default function WelcomeView() {
       >
         {t("welcome.sub")}
       </motion.p>
+
+      {config?.project_name && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease, delay: 0.18 }}
+          className="project-chip"
+          title={config.project_path || config.project_name}
+        >
+          <Database size={12} />
+          {t("welcome.connectedTo")} <b>{config.project_name}</b>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

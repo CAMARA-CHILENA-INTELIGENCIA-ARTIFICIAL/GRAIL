@@ -9,12 +9,13 @@ import ChatView from "./ChatView";
 import ChatInput from "./ChatInput";
 import InfoPanel from "./InfoPanel";
 import GraphMotif from "./GraphMotif";
+import KnowledgeGraphView from "./KnowledgeGraphView";
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { activeSessionId, createSession, loadSessions } = useSessionStore();
-  const { currentMode, sendMessage, statusText } = useChatStore();
+  const { currentMode, sendMessage, statusText, viewMode } = useChatStore();
   const t = useT();
   const streamRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +32,8 @@ export default function Layout() {
     sendMessage(message, sid);
   }
 
-  const showMotif = !activeSessionId;
+  const showMotif = !activeSessionId && viewMode === "chat";
+  const isGraphView = viewMode === "graph";
 
   return (
     <div className={`app-shell ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
@@ -56,7 +58,7 @@ export default function Layout() {
       />
 
       <main className="main">
-        <div className={`statusbar ${statusText ? "show" : ""}`}>
+        <div className={`statusbar ${statusText && !isGraphView ? "show" : ""}`}>
           <div className="inner">
             <div className="spinner" />
             <div className="stxt">{statusText || ""}</div>
@@ -65,7 +67,9 @@ export default function Layout() {
 
         <div className="stream-wrap" ref={streamRef}>
           <AnimatePresence mode="wait">
-            {activeSessionId ? (
+            {isGraphView ? (
+              <KnowledgeGraphView key="graph" />
+            ) : activeSessionId ? (
               <motion.div
                 key="chat"
                 initial={{ opacity: 0 }}
@@ -90,17 +94,19 @@ export default function Layout() {
           </AnimatePresence>
         </div>
 
-        <div className="composer-wrap">
-          <div className="composer-inner">
-            <ChatInput onSend={handleSend} />
-            <div className="composer-hint">
-              <span>{t(modeHintKey(currentMode))}</span>
-              <span>
-                <kbd>↵</kbd> {t("composer.send")} &nbsp;·&nbsp; <kbd>⇧↵</kbd> {t("composer.newline")}
-              </span>
+        {!isGraphView && (
+          <div className="composer-wrap">
+            <div className="composer-inner">
+              <ChatInput onSend={handleSend} />
+              <div className="composer-hint">
+                <span>{t(modeHintKey(currentMode))}</span>
+                <span>
+                  <kbd>↵</kbd> {t("composer.send")} &nbsp;·&nbsp; <kbd>⇧↵</kbd> {t("composer.newline")}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
 
       <InfoPanel />

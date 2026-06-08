@@ -1,0 +1,48 @@
+{
+  "nodes": [
+    {"key": "e1", "attributes": {"label": "Alice", "size": 14, "color": "#1f77b4", "typeColor": "#1f77b4", "communityColor": "#1f77b4", "_kind": "entity", "_type": "PERSON", "_community": "c1", "_degree": 3, "_description": "A senior researcher who leads the oncology working group.", "_documents": ["report.pdf"]}},
+    {"key": "e2", "attributes": {"label": "Bob", "size": 11, "color": "#1f77b4", "typeColor": "#1f77b4", "communityColor": "#1f77b4", "_kind": "entity", "_type": "PERSON", "_community": "c1", "_degree": 2, "_description": "Co-investigator on the early-detection protocol."}},
+    {"key": "e3", "attributes": {"label": "Carol", "size": 9, "color": "#1f77b4", "typeColor": "#1f77b4", "communityColor": "#1f77b4", "_kind": "entity", "_type": "PERSON", "_community": "c1", "_degree": 2}},
+    {"key": "e4", "attributes": {"label": "Acme Corp", "size": 16, "color": "#ff7f0e", "typeColor": "#ff7f0e", "communityColor": "#ff7f0e", "_kind": "entity", "_type": "ORGANIZATION", "_community": "c2", "_degree": 4, "_description": "Sponsor organisation for the trial."}},
+    {"key": "e5", "attributes": {"label": "Wonderland Initiative", "size": 12, "color": "#ff7f0e", "typeColor": "#ff7f0e", "communityColor": "#ff7f0e", "_kind": "entity", "_type": "ORGANIZATION", "_community": "c2", "_degree": 3}},
+    {"key": "e6", "attributes": {"label": "Law 21250", "size": 13, "color": "#2ca02c", "typeColor": "#2ca02c", "communityColor": "#2ca02c", "_kind": "entity", "_type": "LAW", "_community": "c3", "_degree": 3, "_description": "Chilean oncology coverage law (2020)."}},
+    {"key": "e7", "attributes": {"label": "Orphan node", "size": 6, "color": "#9aa5b1", "typeColor": "#9aa5b1", "communityColor": "#9aa5b1", "_kind": "entity", "_type": "CONCEPT", "_community": "", "_degree": 0, "_description": "An entity with no relationships."}},
+    {"key": "comm:c1", "attributes": {"label": "Community 1: Research team", "size": 18, "color": "#1f77b4", "typeColor": "#1f77b4", "communityColor": "#1f77b4", "_kind": "community", "_community_id": "c1", "_level": 0, "_size": 3, "_rank": 0.82, "_title": "Research team", "_summary": "Investigators on the early-detection arm.", "_n_findings": 1}},
+    {"key": "comm:c2", "attributes": {"label": "Community 2: Sponsors", "size": 16, "color": "#ff7f0e", "typeColor": "#ff7f0e", "communityColor": "#ff7f0e", "_kind": "community", "_community_id": "c2", "_level": 0, "_size": 2, "_rank": 0.7, "_title": "Sponsors", "_summary": "Funders and supporting orgs.", "_n_findings": 0}},
+    {"key": "doc:d1", "attributes": {"label": "report.pdf", "size": 12, "color": "#7aa2f7", "typeColor": "#7aa2f7", "communityColor": "#7aa2f7", "_kind": "document", "_title": "report.pdf", "_path": "input/report.pdf", "_n_text_units": 4, "_doc_id": "d1"}},
+    {"key": "find:c1:0", "attributes": {"label": "Early-screening recommendation", "size": 5, "color": "#1f77b4", "typeColor": "#e0af68", "communityColor": "#1f77b4", "_kind": "finding", "_summary": "Early-screening recommendation", "_explanation": "Patients in the cohort showed measurable benefit when screening began before age 40.", "_community_id": "c1"}}
+  ],
+  "edges": [
+    {"key": "r1", "source": "e1", "target": "e2", "attributes": {"size": 2.0, "color": "#5b6478", "_kind": "RELATED", "label": "collaborates with", "_description": "Alice and Bob collaborate on the screening protocol.", "_weight": 2.5, "_rank": 0.6}},
+    {"key": "r2", "source": "e1", "target": "e3", "attributes": {"size": 1.5, "color": "#5b6478", "_kind": "RELATED", "label": "mentors", "_weight": 1.5, "_rank": 0.5}},
+    {"key": "r3", "source": "e2", "target": "e3", "attributes": {"size": 1.0, "color": "#5b6478", "_kind": "RELATED", "label": "co-authors", "_weight": 1.0, "_rank": 0.4}},
+    {"key": "r4", "source": "e4", "target": "e5", "attributes": {"size": 2.5, "color": "#5b6478", "_kind": "RELATED", "label": "funds", "_weight": 3.0, "_rank": 0.7}},
+    {"key": "r5", "source": "e4", "target": "e1", "attributes": {"size": 1.0, "color": "#5b6478", "_kind": "RELATED", "label": "sponsors", "_weight": 1.0, "_rank": 0.5}},
+    {"key": "r6", "source": "e6", "target": "e4", "attributes": {"size": 1.5, "color": "#5b6478", "_kind": "RELATED", "label": "regulates", "_weight": 2.0, "_rank": 0.6}},
+    {"key": "r7", "source": "e6", "target": "e1", "attributes": {"size": 1.0, "color": "#5b6478", "_kind": "RELATED", "label": "applies to", "_weight": 1.0, "_rank": 0.4}},
+    {"key": "ic1", "source": "e1", "target": "comm:c1", "attributes": {"size": 0.6, "color": "#1f77b4aa", "_kind": "IN_COMMUNITY"}},
+    {"key": "ic2", "source": "e2", "target": "comm:c1", "attributes": {"size": 0.6, "color": "#1f77b4aa", "_kind": "IN_COMMUNITY"}},
+    {"key": "ic3", "source": "e3", "target": "comm:c1", "attributes": {"size": 0.6, "color": "#1f77b4aa", "_kind": "IN_COMMUNITY"}},
+    {"key": "ic4", "source": "e4", "target": "comm:c2", "attributes": {"size": 0.6, "color": "#ff7f0eaa", "_kind": "IN_COMMUNITY"}},
+    {"key": "ic5", "source": "e5", "target": "comm:c2", "attributes": {"size": 0.6, "color": "#ff7f0eaa", "_kind": "IN_COMMUNITY"}},
+    {"key": "hf1", "source": "comm:c1", "target": "find:c1:0", "attributes": {"size": 0.6, "color": "#1f77b4aa", "_kind": "HAS_FINDING"}},
+    {"key": "men1", "source": "doc:d1", "target": "e1", "attributes": {"size": 0.4, "color": "#7aa2f744", "_kind": "MENTIONS"}}
+  ],
+  "meta": {
+    "n_entities": 7,
+    "n_relationships": 7,
+    "n_communities": 2,
+    "n_documents": 1,
+    "n_chunks": 0,
+    "n_findings": 1,
+    "kind_counts": {"entity": 7, "community": 2, "document": 1, "chunk": 0, "finding": 1},
+    "edge_kind_counts": {"RELATED": 7, "IN_COMMUNITY": 5, "HAS_FINDING": 1, "MENTIONS": 1},
+    "kind_palette": {"entity": "#7c5cff", "document": "#7aa2f7", "chunk": "#9aa5b1", "community": "#bb9af7", "finding": "#e0af68"},
+    "type_palette": {"PERSON": "#1f77b4", "ORGANIZATION": "#ff7f0e", "LAW": "#2ca02c", "CONCEPT": "#9aa5b1"},
+    "type_counts": {"PERSON": 3, "ORGANIZATION": 2, "LAW": 1, "CONCEPT": 1},
+    "community_palette": {"c1": "#1f77b4", "c2": "#ff7f0e", "c3": "#2ca02c"},
+    "community_counts": {"c1": 3, "c2": 2, "c3": 1},
+    "default_visible_kinds": ["entity"],
+    "default_visible_edge_kinds": ["RELATED"]
+  }
+}

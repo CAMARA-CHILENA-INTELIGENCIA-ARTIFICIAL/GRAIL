@@ -15,7 +15,7 @@ import type { Message, SourceReference } from "../lib/store";
 import { useChatStore } from "../lib/store";
 import { useT } from "../lib/i18n";
 import { api } from "../lib/api";
-import MarkdownRenderer from "./MarkdownRenderer";
+import AssistantContent from "./AssistantContent";
 
 interface MessageBubbleProps {
   message: Message;
@@ -166,7 +166,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       </div>
       <div className="body">
         <div className="bubble-assistant">
-          <MarkdownRenderer content={message.content} />
+          <AssistantContent content={message.content} />
 
           {sources.length > 0 && (
             <div className="kfooter">
@@ -231,7 +231,7 @@ export function StreamingBubble({ content }: { content: string }) {
               <span className="dot" />
             </div>
           ) : (
-            <MarkdownRenderer content={content} />
+            <AssistantContent content={content} streaming />
           )}
         </div>
       </div>

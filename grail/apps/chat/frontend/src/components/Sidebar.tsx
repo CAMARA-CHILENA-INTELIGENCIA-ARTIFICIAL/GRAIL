@@ -10,6 +10,9 @@ import {
   PanelLeftOpen,
   BookOpen,
   Github,
+  Database,
+  MessageSquare,
+  Share2,
 } from "lucide-react";
 
 const DOCS_URL = "https://grail-docs.vercel.app/";
@@ -73,7 +76,7 @@ export default function Sidebar({
     deleteSession,
     setActiveSession,
   } = useSessionStore();
-  const { currentMode } = useChatStore();
+  const { currentMode, config, viewMode, setViewMode } = useChatStore();
   const { logout, user } = useAuthStore();
   const t = useT();
   const { lang, setLang } = useI18nStore();
@@ -91,6 +94,7 @@ export default function Sidebar({
   const isEmpty = sessions.length === 0;
 
   async function handleNew() {
+    setViewMode("chat");
     setActiveSession(null);
   }
 
@@ -108,10 +112,68 @@ export default function Sidebar({
         </button>
       </div>
 
+      {!collapsed && config?.project_name && (
+        <div className="sb-project" title={config.project_path || config.project_name}>
+          <span className="icon">
+            <Database size={13} />
+          </span>
+          <span className="info">
+            <span className="label">{t("sb.kbLabel")}</span>
+            <span className="name">{config.project_name}</span>
+          </span>
+        </div>
+      )}
+
       <button className="sb-new" onClick={handleNew}>
         <Plus size={15} />
         <span>{t("sb.newChat")}</span>
       </button>
+
+      {!collapsed && (
+        <div className="sb-views" role="tablist" aria-label={t("sb.viewSwitch")}>
+          <button
+            type="button"
+            role="tab"
+            className={`sb-view-pill ${viewMode === "chat" ? "active" : ""}`}
+            aria-pressed={viewMode === "chat"}
+            onClick={() => setViewMode("chat")}
+          >
+            <MessageSquare size={13} />
+            <span>{t("sb.viewChat")}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`sb-view-pill ${viewMode === "graph" ? "active" : ""}`}
+            aria-pressed={viewMode === "graph"}
+            onClick={() => setViewMode("graph")}
+          >
+            <Share2 size={13} />
+            <span>{t("sb.viewGraph")}</span>
+          </button>
+        </div>
+      )}
+
+      {collapsed && (
+        <div className="sb-rail-views">
+          <button
+            type="button"
+            className={`pip-btn ${viewMode === "chat" ? "active" : ""}`}
+            onClick={() => setViewMode("chat")}
+            title={t("sb.viewChat")}
+          >
+            <MessageSquare size={13} />
+          </button>
+          <button
+            type="button"
+            className={`pip-btn ${viewMode === "graph" ? "active" : ""}`}
+            onClick={() => setViewMode("graph")}
+            title={t("sb.viewGraph")}
+          >
+            <Share2 size={13} />
+          </button>
+        </div>
+      )}
 
       {collapsed && (
         <div className="sb-rail-sessions">

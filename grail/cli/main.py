@@ -25,7 +25,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 import yaml
@@ -1189,14 +1189,33 @@ def viz(
     layout_seed: int = typer.Option(
         42, "--seed", help="Layout seed — same value produces the same layout.",
     ),
-    layout_iterations: int = typer.Option(
-        200, "--iterations", help="Spring-layout iterations (more = tighter clusters, slower).",
+    alpha_decay: Optional[float] = typer.Option(
+        None, "--alpha-decay",
+        help="D3 force-simulation alpha decay (default 0.05). Lower = settles slower, prettier.",
+    ),
+    charge_strength: Optional[float] = typer.Option(
+        None, "--charge",
+        help="Charge force strength (default -3000). More negative = nodes repel harder.",
+    ),
+    link_distance: Optional[float] = typer.Option(
+        None, "--link-distance",
+        help="Target edge length in pixels (default 200). Larger = airier layout.",
+    ),
+    max_entities: Optional[int] = typer.Option(
+        None, "--max-entities",
+        help="Cap entities rendered. Keeps the top-N by degree. Empty / 0 = no cap.",
+    ),
+    layout_iterations: Optional[int] = typer.Option(
+        None, "--iterations",
+        help="[Deprecated] Ignored — D3's force simulation handles convergence on its own.",
     ),
 ) -> None:
-    """Render a standalone HTML graph viewer powered by Sigma.js.
+    """Render a standalone HTML graph viewer powered by D3.js.
 
-    The result is a single self-contained .html file you can share by email —
-    Sigma.js + Graphology load from CDN, all graph data is embedded inline.
+    The result is a single self-contained .html file that opens offline —
+    the renderer is inlined directly into the page. Build the renderer
+    bundle first if you've never run it: ``cd grail/viz/web && npm install
+    && npm run build``.
     """
     console = Console()
     _autoload_env(project_dir)
@@ -1209,13 +1228,22 @@ def viz(
         rprint(f"[red]Visualization module unavailable:[/red] {exc}")
         raise typer.Exit(1)
 
+    force_settings: dict[str, Any] = {"seed": layout_seed}
+    if alpha_decay is not None:
+        force_settings["alphaDecay"] = alpha_decay
+    if charge_strength is not None:
+        force_settings["chargeStrength"] = charge_strength
+    if link_distance is not None:
+        force_settings["linkDistance"] = link_distance
+
     config = _load(project_dir)
     try:
         out_path = build_visualization(
             project_dir=project_dir,
             output_path=output,
             config=config,
-            layout_seed=layout_seed,
+            force_settings=force_settings,
+            max_entities=max_entities,
             layout_iterations=layout_iterations,
         )
     except RuntimeError as exc:

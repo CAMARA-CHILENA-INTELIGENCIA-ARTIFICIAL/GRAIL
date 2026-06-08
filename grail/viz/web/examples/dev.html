@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GRAIL viz — dev fixture</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0b0d12; }
+    #app {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      height: 100vh;
+    }
+    #canvas { position: relative; overflow: hidden; }
+    #sidebar { overflow: auto; }
+  </style>
+</head>
+<body class="grail-viz">
+  <div id="app">
+    <div id="canvas"></div>
+    <div id="sidebar"></div>
+  </div>
+  <script type="module">
+    import { mount } from "/src/index.ts";
+    import payload from "./fixture.json" with { type: "json" };
+    mount(
+      document.getElementById("canvas"),
+      document.getElementById("sidebar"),
+      payload,
+    );
+  </script>
+</body>
+</html>

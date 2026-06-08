@@ -42,6 +42,7 @@ export type SearchMode = "local" | "cascade" | "global" | "agent";
 
 export interface AppConfig {
   project_name: string;
+  project_path?: string;
   modes: string[];
   has_reranker: boolean;
   version: string;
@@ -258,6 +259,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 // Chat Store
 // ---------------------------------------------------------------------------
 
+export type ViewMode = "chat" | "graph";
+
 interface ChatState {
   isStreaming: boolean;
   streamingContent: string;
@@ -269,11 +272,13 @@ interface ChatState {
   documents: IndexedDocument[];
   showInfo: boolean;
   draftInput: string | null;
+  viewMode: ViewMode;
   setMode: (mode: SearchMode) => void;
   setUseRerankerMode: (v: boolean) => void;
   setDocumentScope: (doc: string | null) => void;
   setShowInfo: (v: boolean) => void;
   setDraftInput: (v: string | null) => void;
+  setViewMode: (v: ViewMode) => void;
   loadConfig: () => Promise<void>;
   loadDocuments: () => Promise<void>;
   sendMessage: (content: string, sessionId: string) => Promise<void>;
@@ -290,12 +295,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
   documents: [],
   showInfo: false,
   draftInput: null,
+  viewMode: "chat",
 
   setMode: (mode) => set({ currentMode: mode }),
   setUseRerankerMode: (v) => set({ useRerankerMode: v }),
   setDocumentScope: (doc) => set({ documentScope: doc }),
   setShowInfo: (v) => set({ showInfo: v }),
   setDraftInput: (v) => set({ draftInput: v }),
+  setViewMode: (v) => set({ viewMode: v }),
 
   loadConfig: async () => {
     try {

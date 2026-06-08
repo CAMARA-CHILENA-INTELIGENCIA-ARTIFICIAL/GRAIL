@@ -1,5 +1,5 @@
 """
-Convert GRAIL parquet artefacts into a Sigma.js / Graphology graph payload.
+Convert GRAIL parquet artefacts into a D3 force-graph payload.
 
 Provided by Nirvai (Nirvana). Author: Benjamin González Guerrero.
 
@@ -12,18 +12,21 @@ Edge kinds (one of ``PART_OF, HAS_ENTITY, RELATED, IN_COMMUNITY, HAS_FINDING,
 MENTIONS``) live on the edge's ``_kind`` attribute and drive the same
 visibility logic on the edge reducer.
 
+Layout is computed **client-side** by D3's force simulation — this module no
+longer emits ``x, y`` for nodes. The ``meta.force_settings`` block ships the
+tuning knobs the renderer reads on first start.
+
 Node attributes shared by every kind
 ------------------------------------
 * ``label``         — display name.
-* ``x, y``          — precomputed layout coordinates.
-* ``size``          — radius in Sigma units; per-kind scaling.
+* ``size``          — radius in renderer units; per-kind scaling.
 * ``color``         — current color (depends on color-mode toggle).
 * ``_kind``         — ``document | chunk | entity | community | finding``.
 
 Kind-specific attributes
 ------------------------
-* document:    ``_title, _path, _n_text_units, _n_entities``
-* chunk:       ``_text, _n_tokens, _document_ids``
+* document:    ``_title, _path, _n_text_units, _doc_id``
+* chunk:       ``_text, _n_tokens, _document_ids, _chunk_id``
 * entity:      ``_type, _community, _degree, _description, _documents``,
                  ``typeColor, communityColor``
 * community:   ``_community_id, _level, _size, _rank, _title, _summary, _n_findings``
@@ -44,7 +47,6 @@ from grail.viz.colors import (
     build_type_palette,
     hash_color,
 )
-from grail.viz.layout import compute_hierarchical_layout
 
 log = logging.getLogger(__name__)
 
@@ -75,6 +77,20 @@ EDGE_LABEL_MAX_CHARS = 80
 DEFAULT_VISIBLE_KINDS = ["entity"]
 DEFAULT_VISIBLE_EDGE_KINDS = ["RELATED"]
 
+# Default force-simulation tunables piped through to the client renderer.
+# CLI flags override these per-run via the ``force_settings`` keyword.
+DEFAULT_FORCE_SETTINGS: dict[str, float | int] = {
+    "seed": 42,
+    "linkDistance": 200,
+    "linkStrength": 0.2,
+    "chargeStrength": -3000,
+    "collideRadius": 50,
+    "centerStrength": 0.05,
+    "isolatedRadius": 100,
+    "isolatedStrength": 0.15,
+    "alphaDecay": 0.05,
+}
+
 
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -103,12 +119,30 @@ def build_sigma_graph(
     communities_df: Optional[pd.DataFrame] = None,
     reports_df: Optional[pd.DataFrame] = None,
     *,
+    force_settings: Optional[dict[str, float | int]] = None,
+    truncation: Optional[dict[str, Any]] = None,
+    # Legacy kwargs kept for back-compat with older callers; ignored.
     layout_seed: int = 42,
     layout_iterations: int = 120,
 ) -> SigmaGraph:
-    """Build the multi-kind Sigma payload from the indexed parquet tables."""
+    """Build the multi-kind force-graph payload from the indexed parquet tables.
+
+    ``force_settings`` overrides individual entries of
+    :data:`DEFAULT_FORCE_SETTINGS` for this run. The renderer reads them on
+    first start; passing ``{"seed": 7}`` is enough to change the seed without
+    rewriting the other knobs.
+    """
     if entities_df.empty:
-        return SigmaGraph(nodes=[], edges=[], meta=_empty_meta())
+        return SigmaGraph(nodes=[], edges=[], meta=_empty_meta(force_settings))
+
+    # Reconcile force settings — the legacy seed is honoured if a CLI caller
+    # passed `layout_seed=N` but didn't pass `force_settings`.
+    resolved_force = dict(DEFAULT_FORCE_SETTINGS)
+    if layout_seed != 42 and (force_settings is None or "seed" not in force_settings):
+        resolved_force["seed"] = layout_seed
+    if force_settings:
+        resolved_force.update(force_settings)
+    del layout_iterations  # only kept for signature compatibility
 
     # ── Identifiers + indexes ─────────────────────────────────────────────
     # Entity-name → entity-id and community-id → entity-name set.
@@ -144,37 +178,6 @@ def build_sigma_graph(
         for tu_id in _as_list(row.get("text_unit_ids")):
             chunk_to_entities.setdefault(str(tu_id), []).append(str(row["name"]))
 
-    # ── Build the entity-only NX graph (drives community layout) ──────────
-    nxg = _build_entity_networkx(entities_df, relationships_df)
-
-    # ── Hierarchical layout: entities by community, communities at centroids,
-    #     documents on an outer ring, chunks/findings nested.
-    chunk_to_doc_ids: dict[str, list[str]] = {}
-    if text_units_df is not None and not text_units_df.empty:
-        for _, row in text_units_df.iterrows():
-            chunk_to_doc_ids[str(row["id"])] = [
-                str(d) for d in _as_list(row.get("document_ids"))
-                if d is not None and str(d) != "nan"
-            ]
-
-    positions = compute_hierarchical_layout(
-        entity_graph=nxg,
-        node_communities=name_to_community,
-        document_ids=list(doc_rows.keys()),
-        chunk_ids=list(chunk_to_entities.keys()),
-        chunk_to_entities=chunk_to_entities,
-        chunk_to_documents=chunk_to_doc_ids,
-        community_ids=(
-            set(name_to_community.values())
-            | set(struct_by_cid.keys())
-            | set(report_by_cid.keys())
-        ),
-        members_by_community=members_by_community,
-        report_by_cid=report_by_cid,
-        seed=layout_seed,
-        iterations=layout_iterations,
-    )
-
     # ── Palettes ──────────────────────────────────────────────────────────
     type_palette = build_type_palette(entities_df["type"].dropna().astype(str).unique())
     all_cids = set(name_to_community.values()) | set(struct_by_cid.keys()) | set(report_by_cid.keys())
@@ -196,14 +199,12 @@ def build_sigma_graph(
         type_color = type_palette.get(ent_type) or hash_color(ent_type)
         community = name_to_community.get(name, "")
         community_color = community_palette.get(community, "#666c79") if community else "#666c79"
-        x, y = positions.get(("entity", node_id), positions.get(("entity", name), (0.0, 0.0)))
         degree = float(row.get("degree") or 0)
         docs = _resolve_documents(row.get("document_ids"), doc_rows)
         nodes.append({
             "key": node_id,
             "attributes": {
                 "label": name,
-                "x": x, "y": y,
                 "size": ent_size_fn(degree),
                 "color": community_color,         # community is the default color
                 "typeColor": type_color,
@@ -221,14 +222,12 @@ def build_sigma_graph(
     # Documents ----------
     for doc_id, row in doc_rows.items():
         node_key = f"doc:{doc_id}"
-        x, y = positions.get(("document", doc_id), (0.0, 0.0))
         n_tus = len(_as_list(row.get("text_unit_ids")))
         title = str(row.get("title") or doc_id)
         nodes.append({
             "key": node_key,
             "attributes": {
                 "label": title,
-                "x": x, "y": y,
                 "size": KIND_SIZE["document"],
                 "color": KIND_PALETTE["document"],
                 "typeColor": KIND_PALETTE["document"],
@@ -247,14 +246,12 @@ def build_sigma_graph(
         for _, row in text_units_df.iterrows():
             chunk_id = str(row["id"])
             node_key = f"chunk:{chunk_id}"
-            x, y = positions.get(("chunk", chunk_id), (0.0, 0.0))
             text = str(row.get("text") or "")
             preview = text[:140] + ("…" if len(text) > 140 else "")
             nodes.append({
                 "key": node_key,
                 "attributes": {
                     "label": f"Chunk {chunk_id[:8]}",
-                    "x": x, "y": y,
                     "size": KIND_SIZE["chunk"],
                     "color": KIND_PALETTE["chunk"],
                     "typeColor": KIND_PALETTE["chunk"],
@@ -275,7 +272,6 @@ def build_sigma_graph(
             continue
         node_key = f"comm:{cid}"
         community_node_keys[cid] = node_key
-        x, y = positions.get(("community", cid), (0.0, 0.0))
         report = report_by_cid.get(cid, {})
         struct = struct_by_cid.get(cid, {})
         n_members = int(struct.get("size") or len(members_by_community.get(cid, [])))
@@ -290,7 +286,6 @@ def build_sigma_graph(
             "key": node_key,
             "attributes": {
                 "label": title,
-                "x": x, "y": y,
                 "size": size,
                 "color": community_color,
                 "typeColor": community_color,
@@ -318,13 +313,11 @@ def build_sigma_graph(
                 if not isinstance(finding, dict):
                     continue
                 node_key = f"find:{cid}:{idx}"
-                x, y = positions.get(("finding", node_key), (0.0, 0.0))
                 summary = str(finding.get("summary") or "")
                 nodes.append({
                     "key": node_key,
                     "attributes": {
                         "label": summary[:60] + ("…" if len(summary) > 60 else ""),
-                        "x": x, "y": y,
                         "size": KIND_SIZE["finding"],
                         "color": community_color,
                         "typeColor": KIND_PALETTE["finding"],
@@ -459,7 +452,10 @@ def build_sigma_graph(
         "community_counts": community_counts,
         "default_visible_kinds": list(DEFAULT_VISIBLE_KINDS),
         "default_visible_edge_kinds": list(DEFAULT_VISIBLE_EDGE_KINDS),
+        "force_settings": resolved_force,
     }
+    if truncation is not None:
+        meta["truncation"] = truncation
     return SigmaGraph(nodes=nodes, edges=edges, meta=meta)
 
 
@@ -532,7 +528,12 @@ def _make_log_scaler(values: pd.Series, lo: float, hi: float):
     return scale
 
 
-def _empty_meta() -> dict[str, Any]:
+def _empty_meta(
+    force_settings: Optional[dict[str, float | int]] = None,
+) -> dict[str, Any]:
+    resolved = dict(DEFAULT_FORCE_SETTINGS)
+    if force_settings:
+        resolved.update(force_settings)
     return {
         "n_entities": 0,
         "n_relationships": 0,
@@ -549,4 +550,5 @@ def _empty_meta() -> dict[str, Any]:
         "community_counts": {},
         "default_visible_kinds": list(DEFAULT_VISIBLE_KINDS),
         "default_visible_edge_kinds": list(DEFAULT_VISIBLE_EDGE_KINDS),
+        "force_settings": resolved,
     }

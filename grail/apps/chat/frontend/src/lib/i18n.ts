@@ -16,6 +16,7 @@ const STRINGS = {
   en: {
     // ---- Sidebar ----
     "sb.newChat": "New chat",
+    "sb.kbLabel": "Knowledge base",
     "sb.collapse": "Collapse sidebar",
     "sb.expand": "Expand sidebar",
     "sb.signOut": "Sign out",
@@ -31,10 +32,27 @@ const STRINGS = {
     "sb.groupWeek": "Previous 7 days",
     "sb.groupOlder": "Older",
     "sb.untitled": "New chat",
+    "sb.viewSwitch": "View",
+    "sb.viewChat": "Chat",
+    "sb.viewGraph": "Graph",
+
+    // ---- Knowledge graph view ----
+    "graph.title": "Knowledge graph",
+    "graph.loading": "Loading graph…",
+    "graph.refresh": "Refresh",
+    "graph.errLoad": "Could not load the graph.",
+    "graph.errEmpty": "No entities indexed yet. Run `grail index` first.",
+    "graph.truncated": "Showing top {kept} of {total} entities by degree.",
+    "graph.loadMore": "Load {n}",
+    "graph.loadAll": "Load all",
+
+    // ---- Tool calls ----
+    "toolCall.running": "Running…",
 
     // ---- Welcome ----
     "welcome.lede1": "Ask your",
     "welcome.lede2": "knowledge graph.",
+    "welcome.connectedTo": "Connected to",
     "welcome.sub":
       "GRAIL turns your documents into a graph of entities and relationships — then answers from it, with sources you can trace.",
     "welcome.cardAgentTitle": "Agent",
@@ -132,6 +150,7 @@ const STRINGS = {
   es: {
     // ---- Sidebar ----
     "sb.newChat": "Nuevo chat",
+    "sb.kbLabel": "Base de conocimiento",
     "sb.collapse": "Contraer panel",
     "sb.expand": "Expandir panel",
     "sb.signOut": "Cerrar sesión",
@@ -147,10 +166,27 @@ const STRINGS = {
     "sb.groupWeek": "Últimos 7 días",
     "sb.groupOlder": "Más antiguos",
     "sb.untitled": "Nuevo chat",
+    "sb.viewSwitch": "Vista",
+    "sb.viewChat": "Chat",
+    "sb.viewGraph": "Grafo",
+
+    // ---- Vista de grafo de conocimiento ----
+    "graph.title": "Grafo de conocimiento",
+    "graph.loading": "Cargando el grafo…",
+    "graph.refresh": "Refrescar",
+    "graph.errLoad": "No se pudo cargar el grafo.",
+    "graph.errEmpty": "Aún no hay entidades. Ejecuta `grail index` primero.",
+    "graph.truncated": "Mostrando las {kept} entidades más conectadas de {total}.",
+    "graph.loadMore": "Cargar {n}",
+    "graph.loadAll": "Cargar todo",
+
+    // ---- Llamadas a herramientas ----
+    "toolCall.running": "Ejecutando…",
 
     // ---- Welcome ----
     "welcome.lede1": "Pregúntale a tu",
     "welcome.lede2": "grafo de conocimiento.",
+    "welcome.connectedTo": "Conectado a",
     "welcome.sub":
       "GRAIL convierte tus documentos en un grafo de entidades y relaciones — y luego responde a partir de él, con fuentes que puedes rastrear.",
     "welcome.cardAgentTitle": "Agente",

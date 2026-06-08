@@ -218,17 +218,26 @@ def create_app(
             yield {"event": "status", "data": json.dumps({"status": "searching", "mode": mode})}
 
             chunk_queue: asyncio.Queue[str | None] = asyncio.Queue()
+            # Buffer the full streamed payload (final answer text + any
+            # <tool_call> XML the agent emits) so we can persist exactly
+            # what the user saw.
+            streamed_buffer: list[str] = []
             result_holder: list[Any] = [None]
             error_holder: list[Exception | None] = [None]
 
             async def on_chunk(text: str) -> None:
+                streamed_buffer.append(text)
                 await chunk_queue.put(text)
 
             async def run_search() -> None:
                 from grail.llm.wrapper import set_debug_mode, set_stream_callback
                 try:
-                    if mode != "agent":
-                        set_stream_callback(on_chunk)
+                    # Stream for every mode. In agent mode the LLM wrapper
+                    # already separates content from tool-call fragments, so
+                    # only assistant text reaches the callback — tool-call
+                    # arguments are accumulated and surfaced via the agent's
+                    # own <tool_call> emissions.
+                    set_stream_callback(on_chunk)
                     if app.state.debug:
                         set_debug_mode(True)
                     recent = await get_recent_messages(body.session_id, limit=40)
@@ -279,7 +288,18 @@ def create_app(
                 yield {"event": "error", "data": json.dumps({"detail": str(error_holder[0])})}
             else:
                 result = result_holder[0]
-                response_text = result.response if isinstance(result.response, str) else json.dumps(result.response)
+                # Prefer what we actually streamed (text + tool_call tags)
+                # so reloads show the same content the user saw. Fall back
+                # to result.response if the stream was empty (e.g. a mode
+                # that doesn't stream yet).
+                streamed_text = "".join(streamed_buffer).strip()
+                if streamed_text:
+                    response_text = streamed_text
+                else:
+                    response_text = (
+                        result.response if isinstance(result.response, str)
+                        else json.dumps(result.response)
+                    )
 
                 source_refs: list[dict[str, str]] = []
                 if isinstance(result.context_data, dict):
@@ -389,6 +409,78 @@ def create_app(
                 filename=Path(storage_key).name,
                 media_type="application/octet-stream",
             )
+
+    # ================================================================ Knowledge graph viz
+
+    # Soft cap on how many entities the chat UI loads by default. Past this
+    # the SVG renderer slows down noticeably and memory climbs into the
+    # hundreds of MB. The user can lift the cap explicitly.
+    DEFAULT_VIZ_ENTITY_CAP = 5000
+
+    @app.get("/api/viz/graph")
+    async def viz_graph(
+        max_entities: int = DEFAULT_VIZ_ENTITY_CAP,
+        current_user: dict = Depends(get_current_user),
+    ) -> dict:
+        """Return the D3 force-graph payload for the current project.
+
+        ``max_entities`` enforces a soft cap (default 5000): when the indexed
+        corpus exceeds it, the response carries only the top-N highest-degree
+        entities and the relationships induced over them, with a
+        ``meta.truncation`` block explaining what was dropped.
+
+        Pass ``max_entities=0`` (or any non-positive value) to disable the
+        cap and load everything.
+        """
+        grail = _get_grail()
+        from grail.query.retrieval import load_artifacts_for_search
+        from grail.viz.exporter import build_sigma_graph
+        from grail.viz.sampling import top_n_by_degree
+
+        artifacts = load_artifacts_for_search(grail.storage, grail._output_folder())
+        if artifacts.entities.empty:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No entities indexed yet — run `grail index` first.",
+            )
+
+        cap = max_entities if max_entities > 0 else None
+        sampled = top_n_by_degree(
+            entities=artifacts.entities,
+            relationships=artifacts.relationships,
+            text_units=artifacts.text_units,
+            nodes=artifacts.nodes,
+            communities=artifacts.communities,
+            community_reports=artifacts.community_reports,
+            documents=artifacts.documents,
+            max_entities=cap,
+        )
+
+        truncation_meta: Optional[dict] = (
+            {
+                "truncated": True,
+                "total_entities": sampled.total_entities,
+                "total_relationships": sampled.total_relationships,
+                "kept_entities": sampled.kept_entities,
+                "kept_relationships": sampled.kept_relationships,
+                "policy": sampled.policy,
+                "cap": cap or 0,
+            }
+            if sampled.truncated
+            else None
+        )
+
+        sigma = build_sigma_graph(
+            entities_df=sampled.entities,
+            relationships_df=sampled.relationships,
+            nodes_df=sampled.nodes,
+            documents_df=sampled.documents,
+            text_units_df=sampled.text_units,
+            communities_df=sampled.communities,
+            reports_df=sampled.community_reports,
+            truncation=truncation_meta,
+        )
+        return sigma.to_dict()
 
     # ================================================================ Static files / SPA
 
