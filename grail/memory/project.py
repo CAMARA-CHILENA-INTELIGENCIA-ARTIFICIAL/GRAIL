@@ -70,6 +70,12 @@ _OUTPUT_FOLDER = "output"
 _MEMORIES_FOLDER = "memories"
 _HISTORY_FILE = "_history.jsonl"
 
+# Memory-mode quality gate: observations are atomic facts, not documents. Past this soft
+# character limit ``add_observation`` warns (never rejects) so the caller splits a long note
+# into several observations — the entity/relationship graph, not the chunk, is the unit of
+# recall, so a big note is equivalent to the N entities it yields.
+OBSERVATION_SOFT_CHAR_LIMIT = 2000
+
 
 class MemoryProject:
     """Open or create a memory-mode GRAIL project.
@@ -246,6 +252,35 @@ class MemoryProject:
         tags = list(tags or [])
         entities = list(entities or [])
         relationships = list(relationships or [])
+
+        # 0. Quality gates (checked BEFORE writing anything so a rejected observation
+        #    leaves no half-written markdown/parquet state).
+        # (a) HARD: every entity must carry a non-empty description. Entities are embedded
+        #     as ``"NAME: description retrieval_queries"`` — a description-less entity embeds
+        #     as name-only and cripples local/cascade recall. Reject so the caller supplies
+        #     one rather than silently degrading the store.
+        missing_desc = [
+            str(e.get("name", "")).strip() or "<unnamed>"
+            for e in entities
+            if isinstance(e, dict) and not str(e.get("description", "") or "").strip()
+        ]
+        if missing_desc:
+            return Reply(
+                ok=False,
+                error=(
+                    "Every entity must have a non-empty description — it is the semantic "
+                    "signal recall matches on. Missing for: " + ", ".join(missing_desc)
+                    + ". Add a one-line description to each entity and retry."
+                ),
+            )
+        # (b) SOFT: warn (never reject) when the observation is long, nudging the caller to
+        #     split it into atomic facts or move long source material to the appendix.
+        if len(content or "") > OBSERVATION_SOFT_CHAR_LIMIT:
+            warnings.append(
+                f"Observation is long ({len(content)} chars > {OBSERVATION_SOFT_CHAR_LIMIT} soft "
+                "limit). Observations are atomic facts — prefer several smaller observations, or "
+                "keep long source material in the appendix and store only the distilled fact."
+            )
 
         # 1. Write the markdown file under memories/<category>/.
         file_path, slug = write_observation_file(

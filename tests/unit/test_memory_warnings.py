@@ -80,7 +80,9 @@ async def test_small_community_warns(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_entity_empty_description_warns(tmp_path: Path):
+async def test_entity_empty_description_rejects(tmp_path: Path):
+    # Entity descriptions are the semantic signal recall matches on, so a description-less
+    # entity is now a HARD rejection (was a warning) — the observation writes nothing.
     mp = MemoryProject(tmp_path / "p", registry_home=tmp_path / "home")
     reply = await mp.add_observation(
         title="t",
@@ -90,5 +92,8 @@ async def test_entity_empty_description_warns(tmp_path: Path):
             {"name": "GHOST", "type": "PERSON", "description": ""},
         ],
     )
-    assert reply.ok
-    assert any("empty description" in w for w in reply.warnings)
+    assert reply.ok is False
+    assert "description" in (reply.error or "").lower()
+    assert "GHOST" in (reply.error or "")
+    # Nothing should have been persisted.
+    assert not list((mp.path / "memories").rglob("*.md"))
