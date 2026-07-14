@@ -371,6 +371,30 @@ class PromptsConfig(BaseModel):
     strict: bool = False
 
 
+class HandlersConfig(BaseModel):
+    """Pluggable file handlers for custom / "multimodal" ingestion.
+
+    ``custom_paths`` point at directories of ``.py`` modules, each exposing
+    ``HANDLER`` or ``HANDLERS`` (see :mod:`grail.indexing.handlers`). Each handler
+    claims one or more file extensions and either *describes* the file to text or
+    *emits* entities/relationships directly.
+
+    ``on_unhandled`` governs what happens when ``input/`` holds a file whose
+    extension no built-in reader and no handler claims:
+
+    * ``error`` (default) — fail the run with an actionable message. Guards
+      against silently dropping data you meant to index.
+    * ``warn`` — log a warning and skip the file.
+    * ``skip`` — silently ignore (legacy behaviour).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    custom_paths: list[str] = Field(default_factory=list)
+    on_unhandled: Literal["error", "warn", "skip"] = "error"
+    enabled: bool = True
+
+
 class VectorStoreConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -424,6 +448,7 @@ class Config(BaseModel):
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
+    handlers: HandlersConfig = Field(default_factory=HandlersConfig)
     vectorstore: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
 

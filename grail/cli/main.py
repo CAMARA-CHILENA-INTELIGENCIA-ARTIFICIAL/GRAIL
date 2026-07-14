@@ -600,7 +600,17 @@ def index(
 
     reporter = _StyledReporter(console)
     grail = GRAIL.from_config(config, reporter=reporter, vectorstore=vectorstore)
-    result = asyncio.run(grail.index())
+    from grail.indexing.handlers import UnhandledFileError
+
+    try:
+        result = asyncio.run(grail.index())
+    except UnhandledFileError as exc:
+        rprint(f"[red]Unhandled input files:[/red] {exc}")
+        rprint(
+            "  [dim]Run[/dim] [cyan]grail handlers check <project>[/cyan] "
+            "[dim]to see how each input file is classified.[/dim]"
+        )
+        raise typer.Exit(1)
 
     print_summary(console, result, root_dir=config.resolved_root())
 
@@ -1105,6 +1115,93 @@ def _build_sample_params(
         },
     }
     return defaults.get(name, {})
+
+
+# ----------------------------------------------------------------------- handlers
+
+
+handlers_app = typer.Typer(help="Inspect custom file handlers and ingestion coverage.")
+app.add_typer(handlers_app, name="handlers")
+
+
+def _handler_registry_for(config: Config):
+    from grail.indexing.handlers import HandlerRegistry
+
+    if not config.handlers.enabled or not config.handlers.custom_paths:
+        return HandlerRegistry()
+    root = config.resolved_root()
+    paths = [
+        p if (p := Path(raw)).is_absolute() else root / p
+        for raw in config.handlers.custom_paths
+    ]
+    return HandlerRegistry(custom_paths=paths)
+
+
+@handlers_app.command("list")
+def handlers_list(project_dir: Path = typer.Argument(...)) -> None:
+    """List custom file handlers (extension → handler → mode) for a project."""
+    from rich.table import Table
+
+    console = Console()
+    print_banner(console)
+    config = _load(project_dir)
+    registry = _handler_registry_for(config)
+
+    rows = registry.list_handlers()
+    if not rows:
+        console.print(
+            "  [dim]No custom handlers registered.[/dim] "
+            "Built-in formats (text, code, data, PDF, DOCX) are always available.\n"
+            "  Add handlers via [cyan]handlers.custom_paths[/cyan] in grail.yaml."
+        )
+        return
+    table = Table(title="Custom file handlers")
+    table.add_column("Handler", style="bold cyan")
+    table.add_column("Extensions")
+    table.add_column("Mode")
+    for r in rows:
+        table.add_row(r["name"], ", ".join(r["extensions"]), r["mode"])
+    console.print(table)
+    console.print(f"\n  [dim]on_unhandled policy:[/dim] [bold]{config.handlers.on_unhandled}[/bold]")
+
+
+@handlers_app.command("check")
+def handlers_check(project_dir: Path = typer.Argument(...)) -> None:
+    """Dry-run input discovery: show how each file in input/ will be ingested."""
+    console = Console()
+    print_banner(console)
+    config = _load(project_dir)
+
+    reporter = _StyledReporter(console)
+    grail = GRAIL.from_config(config, reporter=reporter)
+    loader = grail._make_loader()
+    classified = loader.classify_inputs()
+
+    for label, color in (
+        ("builtin", "green"),
+        ("describe", "cyan"),
+        ("emit", "magenta"),
+        ("unhandled", "red"),
+    ):
+        keys = classified[label]
+        if not keys:
+            continue
+        console.print(f"\n  [bold {color}]{label}[/bold {color}] ({len(keys)})")
+        for key in keys:
+            console.print(f"    [dim]·[/dim] {key}")
+
+    if classified["unhandled"]:
+        console.print(
+            f"\n  [yellow]⚠ {len(classified['unhandled'])} unhandled file(s).[/yellow] "
+            f"Policy is [bold]{config.handlers.on_unhandled}[/bold] — "
+            "indexing will "
+            + (
+                "[red]fail[/red]"
+                if config.handlers.on_unhandled == "error"
+                else "skip them"
+            )
+            + "."
+        )
 
 
 # ----------------------------------------------------------------------- explore

@@ -41,16 +41,17 @@
 6. [Quickstart](#quickstart)
 7. [Python SDK](#python-sdk)
 8. [Agent skill](#agent-skill)
-9. [CLI reference](#cli-reference)
-10. [Search modes](#search-modes)
-11. [Prompt tuning — the biggest quality lever](#prompt-tuning--the-biggest-quality-lever)
-12. [Storage & vector backends](#storage--vector-backends)
-13. [Benchmarks](#benchmarks)
-14. [Documentation](#documentation)
-15. [Contributing](#contributing)
-16. [Acknowledgements](#acknowledgements)
-17. [Author](#author)
-18. [License](#license)
+9. [MCP server](#mcp-server)
+10. [CLI reference](#cli-reference)
+11. [Search modes](#search-modes)
+12. [Prompt tuning — the biggest quality lever](#prompt-tuning--the-biggest-quality-lever)
+13. [Storage & vector backends](#storage--vector-backends)
+14. [Benchmarks](#benchmarks)
+15. [Documentation](#documentation)
+16. [Contributing](#contributing)
+17. [Acknowledgements](#acknowledgements)
+18. [Author](#author)
+19. [License](#license)
 
 ---
 
@@ -453,6 +454,17 @@ skills/grail/
 
 ### Install
 
+The skill is published in the [`cchia-skills`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills) catalog. Install it with one command using the [`skills`](https://github.com/vercel-labs/skills) CLI:
+
+```bash
+npx skills add CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills --skill grail
+```
+
+This drops the skill into `~/.claude/skills/grail/` and makes it available to Claude Code automatically. For other agent frameworks, point the installer (or the symlink below) at the framework's skills directory.
+
+<details>
+<summary>Manual install (symlink from a GRAIL checkout — best for skill development)</summary>
+
 ```bash
 # Claude Code — user scope (symlink so `git pull` updates the skill)
 mkdir -p ~/.claude/skills
@@ -466,6 +478,8 @@ ln -s "$(pwd)/skills/grail" ~/.agents/skills/grail
 mkdir -p .claude/skills
 ln -s "$(realpath skills/grail)" .claude/skills/grail
 ```
+
+</details>
 
 | Framework | User-scope install | Project-scope install |
 |---|---|---|
@@ -505,6 +519,46 @@ python scripts/memory/apply_proposal.py  --project my-mem --accept <proposal_id>
 ```
 
 The skill body (the `SKILL.md` description, references, and scripts) is fully portable across frameworks; only the discovery path differs per framework. See [`skills/grail/SKILL.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/skills/grail/SKILL.md) for the agent-facing trigger language and routing logic.
+
+---
+
+## MCP server
+
+For MCP clients that can't run the skill — **Claude Desktop**, **Cursor**, **Cline**, hosted/remote setups, and other frameworks — GRAIL also ships as a **Model Context Protocol server** under [`grail/mcp/`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/tree/master/grail/mcp). The skill stays the primary surface for shell-capable coding agents (it carries GRAIL's routing guidance as on-demand instructions); the MCP server is the **reach** layer. Both wrap the same core and return the same `Reply` envelope.
+
+It's one package with a **profile** flag, so the per-session tool surface stays lean:
+
+```bash
+pip install "graphgrail[mcp]"   # adds the MCP SDK + the `grail-mcp` binary
+
+grail-mcp --profile memory      # agentic-memory tools
+grail-mcp --profile kb           # knowledge-base tools
+grail-mcp --profile all          # everything (default)
+```
+
+### Install
+
+Zero-install via `uvx` — the same one-line story as the skill, for any MCP client:
+
+```bash
+# Claude Code
+claude mcp add grail-memory -- uvx --from "graphgrail[mcp]" grail-mcp --profile memory
+claude mcp add grail-kb     -- uvx --from "graphgrail[mcp]" grail-mcp --profile kb
+```
+
+```jsonc
+// Generic mcpServers config — Claude Desktop, Cursor, Cline, Windsurf, …
+{
+  "mcpServers": {
+    "grail-memory": {
+      "command": "uvx",
+      "args": ["--from", "graphgrail[mcp]", "grail-mcp", "--profile", "memory"]
+    }
+  }
+}
+```
+
+Add `--project <name>` to bind the server to one project (tools default to it, and the profile auto-selects from its mode). Full reference: [`grail/mcp/README.md`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL/blob/master/grail/mcp/README.md). The server is distributed through the [`cchia-mcp`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL) catalog alongside the skill.
 
 ---
 
@@ -789,6 +843,7 @@ See the [Benchmarks roadmap](https://grail-docs.vercel.app/).
 | KB quickstart | [/start/kb-quickstart](https://grail-docs.vercel.app/start/kb-quickstart) |
 | Memory quickstart | [/start/memory-quickstart](https://grail-docs.vercel.app/start/memory-quickstart) |
 | Skill quickstart | [/start/skill-quickstart](https://grail-docs.vercel.app/start/skill-quickstart) |
+| MCP quickstart | [/start/mcp-quickstart](https://grail-docs.vercel.app/start/mcp-quickstart) |
 
 ### Guides
 

@@ -136,6 +136,35 @@ from PyPI or build the bundle with `npm install && npm run build`). Don't
 improvise around a missing-bundle error; ask the user to install what the
 `next_steps` name, then retry.
 
+### When the user wants to index an unsupported file type
+
+GRAIL reads text, code, data, PDF, and DOCX out of the box. For anything else
+(spreadsheets, parquet, images, a domain-specific log), or when `grail index`
+fails with "input file(s) have no handler", the user needs a **custom file
+handler**. Don't tell them it's impossible — scaffold one.
+
+A handler is a small `.py` module that claims one or more extensions and either:
+
+- **describes** the file to markdown (`async def describe(self, source, ctx)`) —
+  the text then flows through the normal graph pipeline; or
+- **emits** entities/relationships directly (`async def emit(self, source, ctx)`) —
+  deterministic, no LLM.
+
+Steps:
+1. Copy `examples/custom_handlers/csv_handler.py` as a starting point.
+2. Drop it in a folder (e.g. `<project>/handlers/`) and point the config at it:
+   ```yaml
+   handlers:
+     custom_paths: ["handlers"]
+   ```
+3. Run `grail handlers check <project>` to confirm the file is now classified
+   as `describe`/`emit` rather than `unhandled`, then `grail index`.
+
+`handlers.on_unhandled` defaults to `error` (fail rather than silently drop a
+file). The user can set it to `warn` or `skip` if they want stray files ignored.
+Agentic handlers can use `ctx.llm` to summarise/describe their input — see
+`docs/custom_handlers.md`.
+
 ## First-time install — venv strongly recommended
 
 `setup.sh` will pip-install `graphgrail` on first use. Run it against a

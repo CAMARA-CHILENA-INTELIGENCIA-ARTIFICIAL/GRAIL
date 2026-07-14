@@ -34,6 +34,7 @@ const sidebars: SidebarsConfig = {
         "start/kb-quickstart",
         "start/memory-quickstart",
         "start/skill-quickstart",
+        "start/mcp-quickstart",
       ],
     },
     {

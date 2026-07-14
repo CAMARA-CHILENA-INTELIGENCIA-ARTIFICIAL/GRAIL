@@ -3,6 +3,21 @@
 The skill is one folder — `skills/grail/` in the GRAIL repo — that lives at
 different paths depending on which agent framework is running it.
 
+## Quick install (recommended)
+
+The skill is published in the [`cchia-skills`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills)
+catalog. Install it with one command using the
+[`skills`](https://github.com/vercel-labs/skills) CLI:
+
+```bash
+npx skills add CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills --skill grail
+```
+
+This installs the skill into `~/.claude/skills/grail/` and makes it
+available to Claude Code automatically. For other agent frameworks, point
+the installer (or the manual symlink below) at the framework's skills
+directory.
+
 ## Per-framework install paths
 
 | Framework | User-scope install | Project-scope install |
@@ -11,7 +26,9 @@ different paths depending on which agent framework is running it.
 | OpenAI Codex | `~/.agents/skills/grail/` | `<repo>/.agents/skills/grail/` |
 | Hermes (Nous) | local Skills Hub directory | n/a |
 
-## Quick install (manual)
+## Manual install (from a GRAIL checkout)
+
+Best for skill development — edits in your checkout are picked up directly.
 
 Symlink (preferred — fast updates when you `git pull` the GRAIL repo):
 

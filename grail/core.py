@@ -34,6 +34,18 @@ import pandas as pd
 
 from grail._version import __version__ as _GRAIL_VERSION
 from grail.config import Config, load_config
+from grail.indexing.emit_merge import (
+    EmitFrames,
+    build_emit_frames,
+    entity_embedding_text,
+    recompute_degrees,
+    renumber_human_readable_ids,
+)
+from grail.indexing.handlers import (
+    FileHandler,
+    HandlerContext,
+    HandlerRegistry,
+)
 from grail.indexing import (
     CommunityExtractor,
     CommunityReportGenerator,
@@ -76,6 +88,7 @@ class GRAIL:
     llm: LLMClient
     embeddings: EmbeddingClient
     prompts: PromptRegistry
+    handlers: HandlerRegistry = field(default_factory=HandlerRegistry)
     cost_tracker: CostTracker = field(default_factory=CostTracker)
     reporter: Reporter = field(default_factory=NullReporter)
     reranker: Optional[RerankerClient] = None
@@ -172,6 +185,15 @@ class GRAIL:
             custom_paths=[Path(p) for p in config.prompts.custom_paths],
             strict=config.prompts.strict,
         )
+        if config.handlers.enabled and config.handlers.custom_paths:
+            root = config.resolved_root()
+            handler_paths = [
+                p if (p := Path(raw)).is_absolute() else root / p
+                for raw in config.handlers.custom_paths
+            ]
+            handlers = HandlerRegistry(custom_paths=handler_paths)
+        else:
+            handlers = HandlerRegistry()
 
         reranker: Optional[RerankerClient] = None
         if config.reranker.enabled:
@@ -191,6 +213,7 @@ class GRAIL:
             llm=llm,
             embeddings=embeddings,
             prompts=prompts,
+            handlers=handlers,
             cost_tracker=cost,
             reporter=rep,
             reranker=reranker,
@@ -305,9 +328,26 @@ class GRAIL:
 
         loader = self._make_loader()
 
+        # Custom-handler pre-pass: classify inputs, enforce the unhandled policy,
+        # describe-handlers → cached markdown, emit-handlers → entity/rel frames.
+        classified = loader.classify_inputs()
+        loader._apply_unhandled_policy(classified["unhandled"])
+        await self._run_describe_prepass(loader, classified["describe"])
+        emit_frames = await self._run_emit_handlers(loader, classified["emit"])
+        has_emit = emit_frames is not None and not emit_frames.entities.empty
+
         self.reporter.info("Step 1/4 — chunking source files")
-        docs_df, text_units_df, mapping = loader.build_text_units()
-        if docs_df.empty:
+        chunk_keys = sorted(classified["builtin"] + classified["describe"])
+        docs_df, text_units_df, mapping = loader.build_text_units(keys=chunk_keys)
+        # Fold emitted documents in so final_docs + citations cover those files.
+        if emit_frames is not None and not emit_frames.docs.empty:
+            docs_df = (
+                pd.concat([docs_df, emit_frames.docs], ignore_index=True)
+                if not docs_df.empty
+                else emit_frames.docs
+            )
+            mapping = {**mapping, **emit_frames.mapping}
+        if docs_df.empty and not has_emit:
             ctx.finish_operation(op, ok=False, reason="no input files")
             self._persist_run(ctx, operation="index")
             self.reporter.warning("No input files found; aborting.")
@@ -320,12 +360,44 @@ class GRAIL:
 
         self.reporter.info("Step 2/4 — extracting entities & relationships")
         extractor = self._make_extractor()
-        entities_df, relationships_df, text_units_df, graph = await extractor.process_text_units()
-        if entities_df.empty:
+        if not text_units_df.empty:
+            entities_df, relationships_df, text_units_df, graph = await extractor.process_text_units()
+        else:
+            # Emit-only project: nothing to chunk, no LLM extraction.
+            entities_df = pd.DataFrame()
+            relationships_df = pd.DataFrame()
+            graph = nx.Graph()
+        if entities_df.empty and not has_emit:
             ctx.finish_operation(op, ok=False, reason="no entities")
             self._persist_run(ctx, operation="index")
             self.reporter.warning("Extraction produced no entities; aborting.")
             return {"ok": False, "reason": "no entities", "run_id": ctx.run_id, "run_dir": ctx.run_dir}
+
+        # Merge emit-handler entities/relationships (deterministic, no LLM) and
+        # re-persist before community detection so they get communities + search.
+        if has_emit:
+            entities_df = (
+                pd.concat([entities_df, emit_frames.entities], ignore_index=True)
+                if not entities_df.empty
+                else emit_frames.entities
+            )
+            relationships_df = (
+                pd.concat([relationships_df, emit_frames.relationships], ignore_index=True)
+                if not relationships_df.empty
+                else emit_frames.relationships
+            )
+            text_units_df = (
+                pd.concat([text_units_df, emit_frames.text_units], ignore_index=True)
+                if not text_units_df.empty
+                else emit_frames.text_units
+            )
+            entities_df, relationships_df = recompute_degrees(entities_df, relationships_df)
+            entities_df = renumber_human_readable_ids(entities_df)
+            relationships_df = renumber_human_readable_ids(relationships_df)
+            graph = extractor._build_graph(entities_df, relationships_df)
+            self._persist_emit_artifacts(
+                extractor, entities_df, relationships_df, text_units_df, graph
+            )
 
         await self._update_vector_store(entities_df)
 
@@ -683,6 +755,132 @@ class GRAIL:
         )
         return merged
 
+    # ------------------------------------------------------------------ handlers
+
+    def register_handler(self, handler: FileHandler) -> None:
+        """Register a custom file handler in-process (no config file needed).
+
+        SDK convenience equivalent to dropping a handler module in a
+        ``handlers.custom_paths`` directory::
+
+            g = GRAIL.from_config("grail.yaml")
+            g.register_handler(MyXlsxHandler())
+            await g.index()
+        """
+        self.handlers.register(handler)
+
+    def _handler_context(self) -> HandlerContext:
+        return HandlerContext(
+            llm=self.llm,
+            embeddings=self.embeddings,
+            config=self.config,
+            prompts=self.prompts,
+            reporter=self.reporter,
+        )
+
+    def _require_local_for_handlers(self) -> None:
+        if not isinstance(self.storage, LocalStorage):
+            raise RuntimeError(
+                "Custom file handlers currently require the LocalStorage backend "
+                "(handlers receive a real on-disk path). S3/remote support is a "
+                "follow-up."
+            )
+
+    async def _run_describe_prepass(
+        self, loader: FileLoader, describe_keys: list[str]
+    ) -> None:
+        """Materialise describe-handler output to ``input/_processed/<stem>.md``.
+
+        Mtime-cached, exactly like PDF/DOCX preprocessing, so re-runs are cheap.
+        Must run before chunking — the loader reads these markdown files.
+        """
+        if not describe_keys:
+            return
+        self._require_local_for_handlers()
+        ctx = self._handler_context()
+        out_dir = self.storage.path_for(self.config.indexing.input_folder) / "_processed"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for key in describe_keys:
+            handler = self.handlers.resolve(Path(key).suffix.lower())
+            assert handler is not None
+            source = self.storage.path_for(key)
+            dest = out_dir / f"{Path(key).stem}.md"
+            if dest.exists():
+                try:
+                    if dest.stat().st_mtime >= source.stat().st_mtime:
+                        self.reporter.info(
+                            f"Handler {handler.NAME}: {Path(key).name} (cached)"
+                        )
+                        continue
+                except OSError:
+                    pass
+            self.reporter.info(f"Handler {handler.NAME}: describing {Path(key).name}")
+            text = await handler.describe(Path(source), ctx)
+            if not isinstance(text, str):
+                raise TypeError(
+                    f"Handler {handler.NAME}.describe must return str, got "
+                    f"{type(text).__name__}."
+                )
+            dest.write_text(text, encoding="utf-8")
+
+    async def _run_emit_handlers(
+        self, loader: FileLoader, emit_keys: list[str]
+    ) -> Optional[EmitFrames]:
+        """Run emit handlers and build synthetic doc/TU/entity/relationship frames.
+
+        Embeds entity descriptions here (required for the vector store) and
+        returns frames the caller merges into the pipeline before community
+        detection. Returns ``None`` when there are no emit files.
+        """
+        if not emit_keys:
+            return None
+        self._require_local_for_handlers()
+        ctx = self._handler_context()
+        results: list[tuple[str, Any]] = []
+        for key in emit_keys:
+            handler = self.handlers.resolve(Path(key).suffix.lower())
+            assert handler is not None
+            source = self.storage.path_for(key)
+            self.reporter.info(f"Handler {handler.NAME}: emitting from {Path(key).name}")
+            result = await handler.emit(Path(source), ctx)
+            results.append((key, result))
+
+        # Embed every emitted entity's description in one batch.
+        names: list[str] = []
+        texts: list[str] = []
+        for _, result in results:
+            for ent in result.entities:
+                names.append(ent.name)
+                texts.append(
+                    entity_embedding_text(ent.name, ent.description, ent.retrieval_queries)
+                )
+        embeddings = (
+            await self.embeddings.embed_safe(texts, tag="entity_embedding")
+            if texts
+            else []
+        )
+        embeddings_by_name: dict[str, Any] = {}
+        for name, vec in zip(names, embeddings):
+            embeddings_by_name[name] = vec
+
+        return build_emit_frames(
+            results=results,
+            embeddings_by_name=embeddings_by_name,
+            n_tokens=loader._splitter.count_tokens,
+        )
+
+    def _persist_emit_artifacts(
+        self,
+        extractor: EntityRelationshipExtractor,
+        entities_df: pd.DataFrame,
+        relationships_df: pd.DataFrame,
+        text_units_df: pd.DataFrame,
+        graph: nx.Graph,
+    ) -> None:
+        """Re-write the entity/relationship/text-unit parquets + graph after an
+        emit merge, so community detection and search see the combined set."""
+        extractor._write_artifacts(entities_df, relationships_df, text_units_df, graph)
+
     # ------------------------------------------------------------------ helpers (shared)
 
     def _make_loader(self) -> FileLoader:
@@ -695,6 +893,8 @@ class GRAIL:
             encoding_name=self.config.indexing.encoding_name,
             document_boundary=self.config.indexing.document_boundary,
             reporter=self.reporter,
+            handler_registry=self.handlers,
+            on_unhandled=self.config.handlers.on_unhandled,
         )
 
     def _make_extractor(self) -> EntityRelationshipExtractor:
@@ -827,20 +1027,64 @@ class GRAIL:
             self.storage.copy_in(path, dest)
             new_keys.append(dest)
 
-        # Layer 1: chunk new files, merge with existing.
+        # Custom-handler pre-pass over the new files only.
+        classified = loader.classify_inputs(new_keys)
+        loader._apply_unhandled_policy(classified["unhandled"])
+        await self._run_describe_prepass(loader, classified["describe"])
+        emit_frames = await self._run_emit_handlers(loader, classified["emit"])
+        has_emit = emit_frames is not None and not emit_frames.entities.empty
+
+        # Layer 1: chunk new files (describe-handler output included), merge.
         self.reporter.info("Step 1/4 — chunking new files")
-        docs_df, text_units_df, mapping, new_tu_ids = loader.append_files(new_keys)
-        if not new_tu_ids:
+        chunk_keys = sorted(classified["builtin"] + classified["describe"])
+        docs_df, text_units_df, mapping, new_tu_ids = loader.append_files(chunk_keys)
+        if not new_tu_ids and not has_emit:
             return {"ok": False, "reason": "no new text units from appended files"}
+        if emit_frames is not None and not emit_frames.docs.empty:
+            docs_df = pd.concat([docs_df, emit_frames.docs], ignore_index=True)
+            mapping = {**mapping, **emit_frames.mapping}
         loader.write_artifacts(docs_df, text_units_df, mapping)
 
         # Layer 2: extract entities/relationships from new TUs only, merge.
         self.reporter.info("Step 2/4 — extracting entities from new text units")
         extractor = self._make_extractor()
-        (entities_df, rels_df, text_units_df, graph,
-         new_entity_names, updated_entity_names) = await extractor.append_extract(
-            text_units_df, new_tu_ids
-        )
+        if new_tu_ids:
+            (entities_df, rels_df, text_units_df, graph,
+             new_entity_names, updated_entity_names) = await extractor.append_extract(
+                text_units_df, new_tu_ids
+            )
+        else:
+            # Emit-only append: load current state, no LLM extraction.
+            entities_df = extractor._read_parquet("final_entities.parquet")
+            rels_df = extractor._read_parquet("final_relationships.parquet")
+            text_units_df = extractor._read_parquet("final_text_units.parquet")
+            graph = extractor._build_graph(entities_df, rels_df) if not entities_df.empty else nx.Graph()
+            new_entity_names = []
+            updated_entity_names = []
+
+        # Merge emit-handler output and re-persist before community update.
+        if has_emit:
+            entities_df = (
+                pd.concat([entities_df, emit_frames.entities], ignore_index=True)
+                if not entities_df.empty
+                else emit_frames.entities
+            )
+            rels_df = (
+                pd.concat([rels_df, emit_frames.relationships], ignore_index=True)
+                if not rels_df.empty
+                else emit_frames.relationships
+            )
+            text_units_df = (
+                pd.concat([text_units_df, emit_frames.text_units], ignore_index=True)
+                if not text_units_df.empty
+                else emit_frames.text_units
+            )
+            entities_df, rels_df = recompute_degrees(entities_df, rels_df)
+            entities_df = renumber_human_readable_ids(entities_df)
+            rels_df = renumber_human_readable_ids(rels_df)
+            graph = extractor._build_graph(entities_df, rels_df)
+            self._persist_emit_artifacts(extractor, entities_df, rels_df, text_units_df, graph)
+            new_entity_names = list(new_entity_names) + emit_frames.entities["name"].tolist()
 
         await self._update_vector_store(entities_df)
 

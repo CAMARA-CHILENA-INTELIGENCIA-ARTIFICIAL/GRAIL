@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 # and the CLI binary stays ``grail`` — only the ``pip install`` /
 # ``uv add`` line uses the distribution name.
 name = "graphgrail"
-version = "0.1.5"
+version = "0.1.6"
 description = "Graph RAG with Advanced Integration and Learning — an open-source GraphRAG library with incremental updates, file-level provenance, and pluggable LLM/storage backends."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -57,6 +57,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# MCP server — exposes GRAIL as Model Context Protocol tools (grail-mcp).
+# The reach layer that complements the agent skill; see grail/mcp/.
+mcp = ["mcp>=1.2"]
 faiss = ["faiss-cpu>=1.7"]
 chroma = ["chromadb>=0.5"]
 s3 = ["boto3>=1.34", "aioboto3>=12"]
@@ -86,6 +89,7 @@ dev = [
 
 [project.scripts]
 grail = "grail.cli.main:app"
+grail-mcp = "grail.mcp.server:main"
 
 [project.urls]
 Homepage = "https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL"

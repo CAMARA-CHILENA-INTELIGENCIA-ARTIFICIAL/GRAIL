@@ -20,36 +20,35 @@ GRAIL incluye un **skill portable** en `skills/grail/` que tu agente de programa
 | **OpenAI Codex** | `~/.agents/skills/grail/` | `<repo>/.agents/skills/grail/` |
 | **OpenCode** y otros con `SKILL.md` | directorio de skills del framework | igual |
 
-## 1. Clonar GRAIL
+## 1. Instalar el skill
 
-Si todavía no lo hiciste:
+### Opción rápida (recomendada)
+
+El skill está publicado en el catálogo [`cchia-skills`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills). Instalalo con un solo comando usando el CLI de [`skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills --skill grail
+```
+
+Esto deja el skill en `~/.claude/skills/grail/` y lo deja disponible para Claude Code automáticamente. Para Codex u otros frameworks, apuntá el instalador (o el symlink de abajo) al directorio de skills correspondiente.
+
+### Opción manual (clonar + symlink)
+
+Ideal para desarrollar el skill: clonás GRAIL y enlazás la carpeta, así cuando hacés `git pull` el skill se actualiza solo.
 
 ```bash
 git clone git@github.com:CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/GRAIL.git
 cd GRAIL
-```
 
-## 2. Instalar el skill
-
-Recomendado: **symlink**, así cuando hagas `git pull` el skill se actualiza solo.
-
-### Claude Code
-
-```bash
+# Claude Code
 mkdir -p ~/.claude/skills
 ln -s "$(pwd)/skills/grail" ~/.claude/skills/grail
-```
 
-### Codex
-
-```bash
+# Codex
 mkdir -p ~/.agents/skills
 ln -s "$(pwd)/skills/grail" ~/.agents/skills/grail
-```
 
-### Scope de proyecto (skill compartido con tu repo)
-
-```bash
+# Scope de proyecto (skill compartido con tu repo)
 cd /ruta/a/tu/repo
 mkdir -p .claude/skills
 ln -s "$(realpath /ruta/a/GRAIL/skills/grail)" .claude/skills/grail
@@ -57,7 +56,7 @@ ln -s "$(realpath /ruta/a/GRAIL/skills/grail)" .claude/skills/grail
 
 Si tu sistema no soporta symlinks (algunos Windows), reemplaza `ln -s` por `cp -R`.
 
-## 3. Setup en la primera sesión
+## 2. Setup en la primera sesión
 
 La primera vez que tu agente use el skill, `scripts/setup.sh` instala GRAIL vía pip. Es idempotente — seguro de llamar siempre.
 
@@ -72,7 +71,7 @@ Verifica con:
 python ~/.claude/skills/grail/scripts/env_check.py
 ```
 
-## 4. Qué hace el skill por ti
+## 3. Qué hace el skill por ti
 
 El skill expone primitivas como scripts CLI que devuelven JSON. Tu agente las invoca según el contexto de la conversación.
 
@@ -130,13 +129,13 @@ Cuando algo falla:
 }
 ```
 
-## 5. Variables de entorno
+## 4. Variables de entorno
 
 El skill necesita las API keys que use tu `grail.yaml`. Si vas a usar **modo memoria sin embeddings**, no necesitas ninguna llave — `recall` funciona offline.
 
 Si vas a usar cascade / local / global / agent / document, sí necesitas la key del proveedor LLM de tu config (común: `OPENAI_API_KEY`, `DEEPINFRA_API_KEY`, `ANTHROPIC_API_KEY`).
 
-## 6. Probarlo en el agente
+## 5. Probarlo en el agente
 
 Una vez instalado, tu agente debería poder responder a frases como:
 
@@ -148,6 +147,12 @@ Una vez instalado, tu agente debería poder responder a frases como:
 El skill ya trae el lenguaje de activación pre-cargado en `SKILL.md` para que el agente reconozca cuándo usarlo.
 
 ## Cómo se actualiza
+
+Si instalaste con `npx skills add`, volvé a correr el mismo comando para traer la última versión:
+
+```bash
+npx skills add CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL/cchia-skills --skill grail
+```
 
 Si instalaste por symlink:
 

@@ -35,6 +35,7 @@ from typing import Any, Optional
 import pandas as pd
 import yaml
 
+from grail.indexing.handlers import HandlerRegistry, UnhandledFileError
 from grail.indexing.preprocess import (
     PREPROCESS_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
@@ -113,6 +114,12 @@ class FileLoader:
     exclude_patterns: list[str] = field(default_factory=list)
     parse_frontmatter: bool = True
     reporter: Reporter = field(default_factory=NullReporter)
+    # Pluggable custom-format handlers. ``on_unhandled`` mirrors
+    # ``HandlersConfig.on_unhandled`` and only applies when a handler registry is
+    # present; the loader's own default stays ``skip`` so direct/standalone use
+    # never fails on a stray file.
+    handler_registry: Optional[HandlerRegistry] = None
+    on_unhandled: str = "skip"
 
     def __post_init__(self) -> None:
         self._splitter = TokenTextSplitter(
@@ -123,12 +130,11 @@ class FileLoader:
 
     # ------------------------------------------------------------------ discovery
 
-    def find(self) -> list[str]:
-        """Return keys (relative to storage root) for every supported input file.
+    def _candidate_keys(self) -> list[str]:
+        """Input keys after dropping hidden / processed / excluded files.
 
-        Files whose extension is in :data:`SUPPORTED_EXTENSIONS` qualify. PDFs
-        and DOCX files are listed by their **original** path here — preprocessing
-        happens lazily during :meth:`_read_one`.
+        Extension filtering happens later in :meth:`classify_inputs` so unknown
+        extensions can be reported rather than silently dropped.
         """
         keys = self.storage.list(self.input_folder)
         out: list[str] = []
@@ -141,11 +147,69 @@ class FileLoader:
                 continue
             if any(pat in key for pat in self.exclude_patterns):
                 continue
-            if Path(key).suffix.lower() not in SUPPORTED_EXTENSIONS:
-                log.debug("Skipping %s (unsupported extension)", key)
-                continue
             out.append(key)
         return sorted(out)
+
+    def classify_inputs(self, keys: Optional[list[str]] = None) -> dict[str, list[str]]:
+        """Partition input files by how they enter the pipeline.
+
+        Returns a dict with four lists of keys:
+
+        * ``builtin`` — text/code/data/PDF/DOCX read by the core pipeline.
+        * ``describe`` — claimed by a describe-mode handler (converted to
+          markdown in the pre-pass, then chunked like any other text).
+        * ``emit`` — claimed by an emit-mode handler (turned into entities /
+          relationships directly; **not** chunked here).
+        * ``unhandled`` — no reader and no handler; subject to ``on_unhandled``.
+        """
+        raw = keys if keys is not None else self._candidate_keys()
+        builtin: list[str] = []
+        describe: list[str] = []
+        emit: list[str] = []
+        unhandled: list[str] = []
+        for key in raw:
+            ext = Path(key).suffix.lower()
+            if ext in SUPPORTED_EXTENSIONS:
+                builtin.append(key)
+                continue
+            handler = self.handler_registry.resolve(ext) if self.handler_registry else None
+            if handler is None:
+                unhandled.append(key)
+            elif handler.mode == "emit":
+                emit.append(key)
+            else:
+                describe.append(key)
+        return {
+            "builtin": sorted(builtin),
+            "describe": sorted(describe),
+            "emit": sorted(emit),
+            "unhandled": sorted(unhandled),
+        }
+
+    def _apply_unhandled_policy(self, unhandled: list[str]) -> None:
+        if not unhandled:
+            return
+        if self.on_unhandled == "error":
+            raise UnhandledFileError(unhandled)
+        if self.on_unhandled == "warn":
+            for key in unhandled:
+                self.reporter.warning(
+                    f"Skipping {key} — no handler for extension "
+                    f"{Path(key).suffix.lower()!r}."
+                )
+        # "skip": silent (legacy behaviour).
+
+    def find(self) -> list[str]:
+        """Return keys for every file that feeds the **chunking** pipeline.
+
+        That means built-in formats plus describe-handler files (read from their
+        cached ``_processed/`` markdown). Emit-handler files are excluded — they
+        are merged as entities/relationships, not chunked. Unhandled files are
+        routed through :attr:`on_unhandled`.
+        """
+        c = self.classify_inputs()
+        self._apply_unhandled_policy(c["unhandled"])
+        return sorted(c["builtin"] + c["describe"])
 
     def _processed_path_for(self, key: str) -> Path:
         """Where the processed version of ``key`` lives on disk.
@@ -176,6 +240,24 @@ class FileLoader:
         chunking doesn't index YAML as content.
         """
         ext = Path(key).suffix.lower()
+        handler = self.handler_registry.resolve(ext) if self.handler_registry else None
+        if handler is not None and handler.mode == "describe":
+            # The async pre-pass has already materialised the handler's output to
+            # ``_processed/<stem>.md``; we just read it like any other markdown.
+            processed_key = self.storage.join(
+                self.input_folder, PROCESSED_SUBDIR, f"{Path(key).stem}.md"
+            )
+            try:
+                text = self.storage.read_text(processed_key)
+            except (FileNotFoundError, KeyError, OSError) as exc:
+                raise ValueError(
+                    f"Handler output for {Path(key).name} not found at "
+                    f"{processed_key}. The handler pre-pass must run before "
+                    f"chunking (this is wired in GRAIL.index/append)."
+                ) from exc
+            fm, body = self._maybe_parse_frontmatter(text, ext=".md")
+            return body, processed_key, fm
+
         if ext in PREPROCESS_EXTENSIONS:
             source = self.storage.path_for(key) if isinstance(self.storage, LocalStorage) else None
             if source is None:

@@ -1,0 +1,103 @@
+---
+title: Quickstart — MCP server
+description: Connect GRAIL as an MCP server in Claude Desktop, Cursor, Cline, or any MCP client.
+sidebar_position: 5
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="both" />
+
+# Quickstart — MCP server
+
+GRAIL also ships as an **[MCP](https://modelcontextprotocol.io/) server** (Model Context Protocol), so any compatible client — **Claude Desktop**, **Cursor**, **Cline**, **Windsurf**, remote setups — can drive GRAIL through tool calls, with no Python harness on the client side.
+
+:::tip Skill vs MCP
+The [skill](/start/skill-quickstart) is the primary surface for shell-capable coding agents (Claude Code, Codex): cheaper on context and it carries GRAIL's routing logic as instructions. The **MCP server is the reach layer** for clients that can't run skills. Both wrap the same core and return the same `Reply` envelope.
+:::
+
+## Profiles
+
+It's one package with a **profile** flag, so the per-session tool surface stays lean:
+
+| Profile | Tools |
+|---|---|
+| `memory` | Agentic memory: observations, entities, relationships, recall, consolidation. |
+| `kb` | Knowledge base: index, append, edit, delete, query. |
+| `all` | Everything (default). |
+
+## 1. Install
+
+The server lives in the `graphgrail` package (`[mcp]` extra). `uvx` downloads and runs it — zero-install, no clone.
+
+### Claude Code
+
+```bash
+claude mcp add grail-memory -- uvx --from "graphgrail[mcp]" grail-mcp --profile memory
+claude mcp add grail-kb     -- uvx --from "graphgrail[mcp]" grail-mcp --profile kb
+```
+
+Use `--scope project` to save it in a version-controlled `.mcp.json`, or `--scope user` to have it across all your projects.
+
+### Generic `mcpServers` config (Claude Desktop, Cursor, Cline, Windsurf, …)
+
+```jsonc
+{
+  "mcpServers": {
+    "grail-memory": {
+      "command": "uvx",
+      "args": ["--from", "graphgrail[mcp]", "grail-mcp", "--profile", "memory"]
+    }
+  }
+}
+```
+
+### Installed locally
+
+```bash
+pip install "graphgrail[mcp]"
+# then point your client at the `grail-mcp` binary
+```
+
+## 2. Bind a project (optional)
+
+Add `--project <name>` so the server targets one project: tools default to it and the profile auto-selects from its mode.
+
+```bash
+claude mcp add grail -- uvx --from "graphgrail[mcp]" grail-mcp --project my-memory
+```
+
+## 3. Try it
+
+Once connected, ask your agent something like *"remember that Acme chose Postgres"* or *"what did I decide last week"*. The model calls the `memory_add_observation` / `memory_recall` tools. Every tool returns `{ok, data, warnings, next_steps, error}`.
+
+To inspect the server interactively before connecting it:
+
+```bash
+npx @modelcontextprotocol/inspector uvx --from "graphgrail[mcp]" grail-mcp --profile memory
+```
+
+## Tools
+
+- **Shared:** `grail_list_projects`, `grail_status`.
+- **memory:** `memory_create_project`, `memory_add_observation`, `memory_add_entity`, `memory_add_relationship`, `memory_add_community`, `memory_find_similar_entity`, `memory_recall`, `memory_list_{observations,entities,categories,communities}`, `memory_consolidate`, `memory_list_proposals`, `memory_apply_proposal`.
+- **kb:** `kb_create_project`, `kb_index`, `kb_append`, `kb_edit`, `kb_delete`, `kb_query`.
+
+## Flags
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--profile {kb,memory,all}` | auto from `--project`, else `all` | Which toolset to expose. |
+| `--project <ref>` | — | Bind the server to one project (path / name / ULID). |
+| `--transport {stdio,streamable-http}` | `stdio` | Local (stdio) or remote (HTTP). |
+| `--port <n>` | `8000` | Port for `streamable-http`. |
+
+## How it updates
+
+Because `uvx` resolves from PyPI, each new session uses the latest published `graphgrail`. To pin a version, use `graphgrail[mcp]==X.Y.Z` in the `--from`.
+
+## Next step
+
+- [Create your first memory project](/start/memory-quickstart) and connect it to the server.
+- [Agent skill](/start/skill-quickstart) if your client can run skills.
+- The server is distributed via the [`cchia-mcp`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL) catalog.

@@ -38,8 +38,9 @@
 ## 3. Architecture
 
 ```
-INPUT FILES (.txt, .md, .pdf, .docx, code, ...)
+INPUT FILES (.txt, .md, .pdf, .docx, code, ...) + custom formats via handlers.py
     ↓  preprocess.py (PDF/DOCX → markdown, cached by mtime)
+    ↓  handlers.py (pluggable: custom ext → describe()=md OR emit()=entities; emit_merge.py folds emitted entities in)
 FILELOADER (chunk with provenance, document_boundary markers)
     ↓  entities_relationships.py (concurrent LLM extraction)
 ENTITIES + RELATIONSHIPS (parquet + GraphML)
@@ -115,7 +116,7 @@ GRAIL/
 │   ├── config.py                   # Pydantic config models
 │   ├── schemas.py                  # Entity, Relationship, TextUnit, SearchResult
 │   ├── llm/                        # wrapper.py, embeddings.py, reranker.py, cost.py, cache.py, providers.py
-│   ├── indexing/                   # loader.py, entities_relationships.py, communities.py, leiden.py, incremental_community.py, community_reports.py, summarize_descriptions.py, entity_dedup.py, preprocess.py, run_manifest.py
+│   ├── indexing/                   # loader.py, entities_relationships.py, communities.py, leiden.py, incremental_community.py, community_reports.py, summarize_descriptions.py, entity_dedup.py, preprocess.py, handlers.py, emit_merge.py, run_manifest.py
 │   ├── query/                      # local_search.py, cascade_search.py, global_search.py, document_search.py, agent.py, retrieval.py, trace.py
 │   ├── prompts/                    # loader.py + builtin/ (11 prompt modules)
 │   ├── vectorstores/               # base.py, faiss.py, lancedb.py, chroma.py
@@ -253,6 +254,7 @@ Each run includes: `manifest.json`, `llm_calls.jsonl`, `summary.json`
 | `dev_prompts/prompt_graphrag_bench.md` | GraphRAG-Bench + LongMemEval integration plans, cost estimates, model requirements |
 | `dev_prompts/prompt_grail_agentic_memory_design.md` | Memory mode architecture, SDK design, implementation phases |
 | `dev_prompts/prompt_grail_ui_dev.md` | Chat UI development context |
+| `dev_prompts/prompt_grail_mcp.md` | GRAIL MCP server (`grail/mcp/`), profiles, friendly install, cchia-mcp sync |
 
 ---
 

@@ -1635,17 +1635,71 @@ class MemoryProject:
         }
 
     def _apply_merge_aliases(self, proposal) -> dict[str, Any]:
-        canonical = str(proposal.payload.get("canonical") or "").upper().strip()
-        aliases = [str(a).upper().strip() for a in proposal.payload.get("aliases") or []]
+        canonical = str(proposal.payload.get("canonical") or "")
+        aliases = [str(a) for a in proposal.payload.get("aliases") or []]
         if not canonical or not aliases:
             raise ValueError("merge_aliases proposal missing canonical or aliases")
+        outcome = self._merge_entity_frames(canonical, aliases)
+        return {"status": "accepted", "outcome": outcome}
+
+    def merge_entities(
+        self,
+        canonical: str,
+        aliases: list[str],
+        *,
+        description: Optional[str] = None,
+    ) -> Reply:
+        """Fuse one or more ``aliases`` entities INTO ``canonical`` (targeted, user-directed).
+
+        The direct sibling of the ``merge_aliases`` consolidation proposal — same entity +
+        relationship rewrite, but merged on command instead of from a discovered proposal. Each
+        mode carries the appropriate extra work:
+
+        * ``memory`` — rewrite ``final_entities`` (union refs, drop aliases, stale the merged
+          embedding) + ``final_relationships`` (reassign endpoints, drop self-loops, dedup). Memory
+          communities are declared/sparse, so unioning the entity row's ``community_ids`` suffices.
+        * ``knowledge_base`` — the same, PLUS rewrite the Leiden artefacts that key entities by name
+          (``final_nodes.title`` and ``final_communities.entity_ids``) so community membership stays
+          consistent after the merge.
+
+        ``description`` optionally overrides the survivor's description (re-staling its embedding).
+        Returns a ``Reply`` — ``ok=False`` with a message when the inputs don't resolve.
+        """
+        if not canonical or not aliases:
+            return Reply(ok=False, error="merge_entities requires a canonical name and >=1 alias")
+        try:
+            outcome = self._merge_entity_frames(canonical, aliases, description=description)
+        except ValueError as exc:
+            return Reply(ok=False, error=str(exc))
+        if not outcome.get("merged_aliases"):
+            return Reply(ok=False, error="none of the given aliases were found to merge")
+        # KB mode keys entities by name in the Leiden community artefacts too — keep them in sync.
+        if getattr(self.config, "mode", "memory") != "memory":
+            self._merge_entity_community_refs(outcome["canonical"], outcome["merged_aliases"])
+        return Reply(ok=True, data=outcome)
+
+    def _merge_entity_frames(
+        self,
+        canonical: str,
+        aliases: list[str],
+        *,
+        description: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Core entity+relationship fusion shared by the ``merge_aliases`` proposal and the public
+        :meth:`merge_entities`. Mutates ``final_entities`` / ``final_relationships`` and returns
+        ``{"canonical", "merged_aliases"}``. Raises ``ValueError`` when nothing resolves."""
+        canonical = str(canonical).upper().strip()
+        aliases = [str(a).upper().strip() for a in aliases]
+        aliases = [a for a in aliases if a and a != canonical]
+        if not canonical or not aliases:
+            raise ValueError("merge_entities requires a canonical name and >=1 distinct alias")
 
         ents = self._read_parquet("final_entities.parquet")
         rels = self._read_parquet("final_relationships.parquet")
         if ents.empty:
             raise ValueError("no entities to merge")
         ents = ents.copy()
-        # Find canonical row; if absent, pick the first alias and rename it.
+        # Find canonical row; if absent, promote the first present alias to canonical.
         if canonical not in set(ents["name"].astype(str)):
             for alias in aliases:
                 if alias in set(ents["name"].astype(str)):
@@ -1657,35 +1711,49 @@ class MemoryProject:
             raise ValueError(f"canonical {canonical!r} not found")
         canon_idx = ents.index[canonical_mask][0]
 
-        merged_tus = set(_aslist(ents.at[canon_idx, "text_unit_ids"]))
-        merged_docs = set(_aslist(ents.at[canon_idx, "document_ids"]))
-        merged_rq = list(_aslist(ents.at[canon_idx, "retrieval_queries"]))
-        merged_cids = list(_aslist(ents.at[canon_idx, "community_ids"]))
+        # Which list-columns this project actually has: memory mode adds ``retrieval_queries`` /
+        # ``community_ids``; a knowledge_base index does not carry them. Merge only what's present
+        # (this is the difference that makes the same primitive safe in both modes).
+        cols = set(ents.columns)
+        merged_tus = set(_aslist(ents.at[canon_idx, "text_unit_ids"])) if "text_unit_ids" in cols else set()
+        merged_docs = set(_aslist(ents.at[canon_idx, "document_ids"])) if "document_ids" in cols else set()
+        merged_rq = list(_aslist(ents.at[canon_idx, "retrieval_queries"])) if "retrieval_queries" in cols else []
+        merged_cids = list(_aslist(ents.at[canon_idx, "community_ids"])) if "community_ids" in cols else []
         merged_alias_names: list[str] = []
         for alias in aliases:
             if alias not in set(ents["name"].astype(str)):
                 continue
-            alias_mask = ents["name"] == alias
-            alias_idx = ents.index[alias_mask][0]
-            merged_tus |= set(_aslist(ents.at[alias_idx, "text_unit_ids"]))
-            merged_docs |= set(_aslist(ents.at[alias_idx, "document_ids"]))
-            for q in _aslist(ents.at[alias_idx, "retrieval_queries"]):
-                if q not in merged_rq:
-                    merged_rq.append(q)
-            for c in _aslist(ents.at[alias_idx, "community_ids"]):
-                if c not in merged_cids:
-                    merged_cids.append(c)
+            alias_idx = ents.index[ents["name"] == alias][0]
+            if "text_unit_ids" in cols:
+                merged_tus |= set(_aslist(ents.at[alias_idx, "text_unit_ids"]))
+            if "document_ids" in cols:
+                merged_docs |= set(_aslist(ents.at[alias_idx, "document_ids"]))
+            if "retrieval_queries" in cols:
+                for q in _aslist(ents.at[alias_idx, "retrieval_queries"]):
+                    if q not in merged_rq:
+                        merged_rq.append(q)
+            if "community_ids" in cols:
+                for c in _aslist(ents.at[alias_idx, "community_ids"]):
+                    if c not in merged_cids:
+                        merged_cids.append(c)
             merged_alias_names.append(alias)
             ents = ents[ents["name"] != alias].copy()
 
-        # Re-find canonical index (concat may have changed positions).
+        # Re-find canonical index (row removals may have shifted positions).
         canon_idx = ents.index[ents["name"] == canonical][0]
-        ents.at[canon_idx, "text_unit_ids"] = sorted(merged_tus)
-        ents.at[canon_idx, "document_ids"] = sorted(merged_docs)
-        ents.at[canon_idx, "retrieval_queries"] = merged_rq
-        ents.at[canon_idx, "community_ids"] = merged_cids
-        # Stale embedding — the alias may have changed the entity's "voice".
-        ents.at[canon_idx, "description_embedding"] = None
+        if "text_unit_ids" in cols:
+            ents.at[canon_idx, "text_unit_ids"] = sorted(merged_tus)
+        if "document_ids" in cols:
+            ents.at[canon_idx, "document_ids"] = sorted(merged_docs)
+        if "retrieval_queries" in cols:
+            ents.at[canon_idx, "retrieval_queries"] = merged_rq
+        if "community_ids" in cols:
+            ents.at[canon_idx, "community_ids"] = merged_cids
+        if description is not None and str(description).strip():
+            ents.at[canon_idx, "description"] = str(description).strip()
+        # Stale embedding — the merge (and any new description) changed the entity's "voice".
+        if "description_embedding" in cols:
+            ents.at[canon_idx, "description_embedding"] = None
 
         # Rewrite relationships.
         if not rels.empty:
@@ -1707,13 +1775,42 @@ class MemoryProject:
         ents, rels = recompute_degrees(ents, rels)
         self._write_parquet("final_entities.parquet", ents)
         self._write_parquet("final_relationships.parquet", rels)
-        return {
-            "status": "accepted",
-            "outcome": {
-                "canonical": canonical,
-                "merged_aliases": merged_alias_names,
-            },
-        }
+        return {"canonical": canonical, "merged_aliases": merged_alias_names}
+
+    def _merge_entity_community_refs(self, canonical: str, merged_aliases: list[str]) -> None:
+        """Knowledge-mode secondary rewrite: rename merged aliases → canonical in the Leiden
+        artefacts that key entities by name (``final_nodes.title`` + ``final_communities.entity_ids``)
+        so community membership stays consistent. A no-op when those frames are absent/empty (the
+        common memory-mode shape)."""
+        aliases = set(merged_aliases)
+        if not aliases:
+            return
+        # final_nodes: entity name (stored in "title") -> community. Rename + drop dup rows.
+        nodes = self._read_parquet("final_nodes.parquet")
+        if not nodes.empty and "title" in nodes.columns:
+            nodes = nodes.copy()
+            nodes.loc[nodes["title"].isin(aliases), "title"] = canonical
+            subset = [c for c in ("title", "community", "level") if c in nodes.columns]
+            if subset:
+                nodes = nodes.drop_duplicates(subset=subset, keep="first")
+            self._write_parquet("final_nodes.parquet", nodes)
+        # final_communities: entity_ids is a per-community name list — rename, dedup, resize.
+        comms = self._read_parquet("final_communities.parquet")
+        if not comms.empty and "entity_ids" in comms.columns:
+            comms = comms.copy()
+
+            def _rewrite(ids):
+                out: list[str] = []
+                for name in _aslist(ids):
+                    n = canonical if str(name) in aliases else str(name)
+                    if n not in out:
+                        out.append(n)
+                return out
+
+            comms["entity_ids"] = comms["entity_ids"].apply(_rewrite)
+            if "size" in comms.columns:
+                comms["size"] = comms["entity_ids"].apply(len)
+            self._write_parquet("final_communities.parquet", comms)
 
     def _apply_split_folder(self, proposal) -> dict[str, Any]:
         """Generate a shell script the agent reviews and runs to move files.

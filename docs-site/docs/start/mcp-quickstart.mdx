@@ -1,0 +1,103 @@
+---
+title: Quickstart — Servidor MCP
+description: Conecta GRAIL como servidor MCP en Claude Desktop, Cursor, Cline o cualquier cliente MCP.
+sidebar_position: 5
+---
+
+import ModeBadge from "@site/src/components/ModeBadge";
+
+<ModeBadge mode="both" />
+
+# Quickstart — Servidor MCP
+
+GRAIL se distribuye también como **servidor [MCP](https://modelcontextprotocol.io/)** (Model Context Protocol), de modo que cualquier cliente compatible —**Claude Desktop**, **Cursor**, **Cline**, **Windsurf**, setups remotos— puede usar GRAIL a través de tool calls, sin un arnés de Python del lado del cliente.
+
+:::tip Skill vs MCP
+El [skill](/start/skill-quickstart) es la superficie principal para agentes de programación con shell (Claude Code, Codex): más barato en contexto y lleva la lógica de ruteo de GRAIL como instrucciones. El **servidor MCP es la capa de alcance** para clientes que no ejecutan skills. Ambos envuelven el mismo core y devuelven el mismo envoltorio `Reply`.
+:::
+
+## Perfiles
+
+Es un solo paquete con un flag de **perfil**, así la superficie de tools por sesión se mantiene liviana:
+
+| Perfil | Tools |
+|---|---|
+| `memory` | Memoria agéntica: observaciones, entidades, relaciones, recall, consolidación. |
+| `kb` | Base de conocimiento: index, append, edit, delete, query. |
+| `all` | Todo (por defecto). |
+
+## 1. Instalar
+
+El servidor vive en el paquete `graphgrail` (extra `[mcp]`). `uvx` lo descarga y ejecuta — instalación cero, sin clonar nada.
+
+### Claude Code
+
+```bash
+claude mcp add grail-memory -- uvx --from "graphgrail[mcp]" grail-mcp --profile memory
+claude mcp add grail-kb     -- uvx --from "graphgrail[mcp]" grail-mcp --profile kb
+```
+
+Usa `--scope project` para guardarlo en un `.mcp.json` versionable, o `--scope user` para tenerlo en todos tus proyectos.
+
+### Config genérica `mcpServers` (Claude Desktop, Cursor, Cline, Windsurf, …)
+
+```jsonc
+{
+  "mcpServers": {
+    "grail-memory": {
+      "command": "uvx",
+      "args": ["--from", "graphgrail[mcp]", "grail-mcp", "--profile", "memory"]
+    }
+  }
+}
+```
+
+### Instalado localmente
+
+```bash
+pip install "graphgrail[mcp]"
+# luego apunta tu cliente al binario `grail-mcp`
+```
+
+## 2. Fijar un proyecto (opcional)
+
+Agregá `--project <nombre>` para que el servidor apunte a un proyecto: las tools lo toman por defecto y el perfil se autoselecciona según su modo.
+
+```bash
+claude mcp add grail -- uvx --from "graphgrail[mcp]" grail-mcp --project mi-memoria
+```
+
+## 3. Probarlo
+
+Una vez conectado, pedile a tu agente algo como *"recuerda que Acme eligió Postgres"* o *"qué decidí la semana pasada"*. El modelo llamará a las tools `memory_add_observation` / `memory_recall`. Cada tool devuelve `{ok, data, warnings, next_steps, error}`.
+
+Para inspeccionar el servidor de forma interactiva antes de conectarlo:
+
+```bash
+npx @modelcontextprotocol/inspector uvx --from "graphgrail[mcp]" grail-mcp --profile memory
+```
+
+## Tools
+
+- **Compartidas:** `grail_list_projects`, `grail_status`.
+- **memory:** `memory_create_project`, `memory_add_observation`, `memory_add_entity`, `memory_add_relationship`, `memory_add_community`, `memory_find_similar_entity`, `memory_recall`, `memory_list_{observations,entities,categories,communities}`, `memory_consolidate`, `memory_list_proposals`, `memory_apply_proposal`.
+- **kb:** `kb_create_project`, `kb_index`, `kb_append`, `kb_edit`, `kb_delete`, `kb_query`.
+
+## Flags
+
+| Flag | Default | Para qué |
+|---|---|---|
+| `--profile {kb,memory,all}` | auto desde `--project`, si no `all` | Qué conjunto de tools exponer. |
+| `--project <ref>` | — | Fija el servidor a un proyecto (path / nombre / ULID). |
+| `--transport {stdio,streamable-http}` | `stdio` | Local (stdio) o remoto (HTTP). |
+| `--port <n>` | `8000` | Puerto para `streamable-http`. |
+
+## Cómo se actualiza
+
+Como `uvx` resuelve desde PyPI, cada nueva sesión usa la última versión publicada de `graphgrail`. Para fijar una versión, usa `graphgrail[mcp]==X.Y.Z` en el `--from`.
+
+## Siguiente paso
+
+- [Crea tu primer proyecto de memoria](/start/memory-quickstart) y conéctalo al servidor.
+- [Skill para agentes](/start/skill-quickstart) si tu cliente puede ejecutar skills.
+- El servidor se distribuye vía el catálogo [`cchia-mcp`](https://github.com/CAMARA-CHILENA-INTELIGENCIA-ARTIFICIAL).
