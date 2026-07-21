@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Optional
 
@@ -75,6 +76,61 @@ _HISTORY_FILE = "_history.jsonl"
 # into several observations — the entity/relationship graph, not the chunk, is the unit of
 # recall, so a big note is equivalent to the N entities it yields.
 OBSERVATION_SOFT_CHAR_LIMIT = 2000
+
+
+def _union_entities(
+    preserved: list[dict[str, Any]],
+    passed: Optional[list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Union preserved + caller-passed entity specs, keyed by uppercased NAME.
+
+    The caller WINS: an entity present in ``passed`` overrides the preserved one
+    with the same name (case-insensitive, as GRAIL uppercases entity names),
+    supplying the new type/description. Entities only in ``preserved`` are kept
+    verbatim. Order: preserved-then-new-passed, deterministic. Used by
+    ``update_observation(preserve_unlisted=True)`` so a partial correction never
+    drops unlisted entities.
+    """
+    merged: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+    for e in preserved or []:
+        name = str(e.get("name", "") or "").strip()
+        if name:
+            merged[name.upper()] = e
+    for e in passed or []:
+        name = str(e.get("name", "") or "").strip()
+        if name:
+            merged[name.upper()] = e  # caller wins
+    return list(merged.values())
+
+
+def _union_relationships(
+    preserved: list[dict[str, Any]],
+    passed: Optional[list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Union preserved + caller-passed relationship specs, keyed by
+    (sorted uppercased endpoint pair, uppercased relationship_type).
+
+    The caller WINS for a matching key (overriding the preserved description).
+    Relationships only in ``preserved`` are kept. The endpoint pair is sorted so
+    a reversed but same-typed edge collides on the same key (mirroring GRAIL's
+    reversed-edge dedup). Used by ``update_observation(preserve_unlisted=True)``.
+    """
+    def _key(r: dict[str, Any]) -> tuple:
+        src = str(r.get("source", "") or "").strip().upper()
+        tgt = str(r.get("target", "") or "").strip().upper()
+        rtype = str(
+            r.get("relationship_type", "") or r.get("type", "") or "RELATED"
+        ).strip().upper() or "RELATED"
+        return (tuple(sorted((src, tgt))), rtype)
+
+    merged: "OrderedDict[tuple, dict[str, Any]]" = OrderedDict()
+    for r in preserved or []:
+        if str(r.get("source", "") or "").strip() and str(r.get("target", "") or "").strip():
+            merged[_key(r)] = r
+    for r in passed or []:
+        if str(r.get("source", "") or "").strip() and str(r.get("target", "") or "").strip():
+            merged[_key(r)] = r  # caller wins
+    return list(merged.values())
 
 
 class MemoryProject:
@@ -240,11 +296,18 @@ class MemoryProject:
         confidence: float = 1.0,
         source: Optional[str] = None,
         related_to: Optional[list[str]] = None,
+        slug: Optional[str] = None,
     ) -> Reply:
         """Write a markdown observation + merge agent-supplied entities/rels.
 
         Returns ``Reply.data = {observation_id, slug, file_path,
         new_entities, updated_entities, new_relationships}``.
+
+        ``slug`` optionally pins the filename stem (identity) VERBATIM instead
+        of composing it from the timestamp + title. ``update_observation``
+        passes the original slug so an edit that changes the title keeps the
+        observation's identity stable; callers may also pass an explicit
+        caller-chosen key.
         """
         warnings: list[str] = []
         next_steps: list[str] = []
@@ -293,6 +356,7 @@ class MemoryProject:
             confidence=confidence,
             source=source,
             related_to=related_to,
+            slug=slug,
         )
 
         # Steps 2-8 + return Reply run inside try/except so any failure
@@ -924,6 +988,58 @@ class MemoryProject:
 
     # ------------------------------------------------------------------ update_observation
 
+    def _read_doc_graph(
+        self, doc_id: str
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Return (entities, relationships) currently backed by ``doc_id``, as
+        plain add/update-ready dicts.
+
+        Reads the CURRENT ``final_entities`` / ``final_relationships`` parquets
+        and keeps only rows whose ``document_ids`` include ``doc_id`` — mirroring
+        how ``delete_observation`` scopes an observation's graph and how the
+        Nirvai adapter's ``_graph_context_for_slug`` filters. Best-effort:
+        malformed rows are skipped. Used by ``update_observation`` when
+        ``preserve_unlisted=True`` so a partial correction doesn't drop the
+        observation's other entities/relationships.
+        """
+        entities: list[dict[str, Any]] = []
+        relationships: list[dict[str, Any]] = []
+        ents = self._read_parquet("final_entities.parquet")
+        if not ents.empty and "document_ids" in ents.columns:
+            for _, e in ents[
+                ents["document_ids"].apply(lambda x: doc_id in _aslist(x))
+            ].iterrows():
+                name = str(e.get("name", "") or "").strip()
+                if not name:
+                    continue
+                entities.append(
+                    {
+                        "name": name,
+                        "type": str(e.get("type", "") or "CONCEPT") or "CONCEPT",
+                        "description": str(e.get("description", "") or ""),
+                    }
+                )
+        rels = self._read_parquet("final_relationships.parquet")
+        if not rels.empty and "document_ids" in rels.columns:
+            for _, r in rels[
+                rels["document_ids"].apply(lambda x: doc_id in _aslist(x))
+            ].iterrows():
+                src = str(r.get("source", "") or "").strip()
+                tgt = str(r.get("target", "") or "").strip()
+                if not src or not tgt:
+                    continue
+                relationships.append(
+                    {
+                        "source": src,
+                        "target": tgt,
+                        "relationship_type": str(
+                            r.get("relationship_type", "") or r.get("type", "") or "RELATED"
+                        ),
+                        "description": str(r.get("description", "") or ""),
+                    }
+                )
+        return entities, relationships
+
     async def update_observation(
         self,
         slug: str,
@@ -937,13 +1053,31 @@ class MemoryProject:
         observed_at: Optional[str] = None,
         confidence: Optional[float] = None,
         source: Optional[str] = None,
+        preserve_unlisted: bool = False,
     ) -> Reply:
-        """Update by delete + re-add. Preserves the slug when content changes.
+        """Update by delete + re-add. Preserves the slug (observation identity).
 
         Memory-mode semantics: edits are full rewrites. The agent passes the
         new body (and optionally new entities/relationships); the old file +
         its TU references are stripped, the new content is written and
-        merged. The slug stays the same unless the title changes.
+        merged. The slug ALWAYS stays the same — including when the title
+        changes — because the re-add pins the original slug. The title is a
+        display field in frontmatter; the slug is the stable identity callers
+        reference in follow-up ``update``/``delete`` calls.
+
+        ``preserve_unlisted`` (merge-on-update): when True and the caller passes
+        ``entities`` and/or ``relationships``, the observation's CURRENT graph is
+        read first and UNIONed with what the caller passed — an item the caller
+        lists WINS (its type/description overrides the preserved one for the same
+        NAME, case-insensitive as GRAIL uppercases; relationships keyed by
+        ``(sorted endpoint pair, relationship_type)``), and items the caller does
+        NOT list are preserved as-is. This makes removal EXPLICIT rather than a
+        side effect of omission: a partial correction (e.g. re-describing one
+        entity) no longer silently erodes the rest of the graph. Default False
+        keeps the historical delete+re-add-only-what's-passed behavior. When both
+        ``entities`` and ``relationships`` are None the flag is a no-op (the None
+        path already re-adds nothing new and would need the adapter/None-preserve
+        path to recover the graph).
         """
         memories_root = self.path / _MEMORIES_FOLDER
         matches = list(memories_root.rglob(f"{slug}.md"))
@@ -965,21 +1099,44 @@ class MemoryProject:
         new_source = source if source is not None else fm.get("source")
         new_content = content if content is not None else body
 
+        # Merge-on-update: capture the observation's CURRENT graph BEFORE the
+        # delete, then union it with what the caller passed (caller wins per
+        # key). Only runs when the caller actually passed entities/relationships
+        # — the both-None case is left untouched (unchanged behavior).
+        merged_entities = entities
+        merged_relationships = relationships
+        if preserve_unlisted and (entities is not None or relationships is not None):
+            rel_key = str(file_path.relative_to(self.path)).replace("\\", "/")
+            docs = self._read_parquet("final_docs.parquet")
+            doc_id = None
+            if not docs.empty:
+                doc_row = docs[docs["path"] == rel_key]
+                if not doc_row.empty:
+                    doc_id = str(doc_row.iloc[0]["id"])
+            if doc_id is not None:
+                cur_entities, cur_relationships = self._read_doc_graph(doc_id)
+                merged_entities = _union_entities(cur_entities, entities)
+                merged_relationships = _union_relationships(
+                    cur_relationships, relationships
+                )
+
         # Delete the old file/refs first.
         del_reply = self.delete_observation(slug, reason="update_observation")
         if not del_reply.ok:
             return del_reply
-        # Re-add.
+        # Re-add, pinning the ORIGINAL slug so the observation's identity is
+        # preserved even when the title changes (title is display-only).
         return await self.add_observation(
             title=new_title,
             content=new_content,
             category=new_category,
             tags=new_tags,
-            entities=entities,
-            relationships=relationships,
+            entities=merged_entities,
+            relationships=merged_relationships,
             observed_at=new_observed,
             confidence=new_confidence,
             source=new_source,
+            slug=slug,
         )
 
     # ============================================================ reads (B6)

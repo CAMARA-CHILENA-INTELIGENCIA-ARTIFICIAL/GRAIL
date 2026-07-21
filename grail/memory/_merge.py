@@ -217,8 +217,14 @@ def merge_relationships(
             max_hrid += 1
             by_key[key] = {
                 "id": generate_guid(),
-                "source": pair[0],
-                "target": pair[1],
+                # Store the AUTHORED direction (source→target as the caller wrote
+                # it). The dedup ``key`` above is order-insensitive (sorted pair)
+                # so a reversed duplicate of the same type still merges into this
+                # row, but the stored direction stays as first authored — we no
+                # longer alphabetize it, which previously flipped edges like
+                # ``SARAH WORKS_AT ACME`` into ``ACME WORKS_AT SARAH``.
+                "source": rel.source,
+                "target": rel.target,
                 "source_id": None,  # populated after entity ids are known
                 "target_id": None,
                 "relationship_type": rel.relationship_type,

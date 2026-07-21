@@ -114,6 +114,7 @@ def write_observation_file(
     source: Optional[str] = None,
     related_to: Optional[list[str]] = None,
     extra_attributes: Optional[dict[str, Any]] = None,
+    slug: Optional[str] = None,
     memories_subdir: str = "memories",
     overwrite: bool = False,
 ) -> tuple[Path, str]:
@@ -122,6 +123,11 @@ def write_observation_file(
     Filename collisions append ``-2``, ``-3``, ... unless ``overwrite=True``.
     Returns ``(absolute_path, slug)`` where ``slug`` is the filename stem
     callers use as a key for ``update_observation`` / ``delete_observation``.
+
+    ``slug`` pins the filename stem VERBATIM (used to keep an observation's
+    identity stable across an ``update_observation`` that changes the title,
+    and to support an explicit caller-chosen key). When omitted the stem is
+    composed from ``observed_at`` + ``slugify(title)`` as before.
     """
     stamp = observed_at or now_iso()
     root = Path(project_path).expanduser().resolve() / memories_subdir
@@ -131,7 +137,7 @@ def write_observation_file(
         target_dir = root
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    base_name = compose_filename(stamp, title)
+    base_name = f"{slug}.md" if slug else compose_filename(stamp, title)
     candidate = target_dir / base_name
     if candidate.exists() and not overwrite:
         stem = candidate.stem

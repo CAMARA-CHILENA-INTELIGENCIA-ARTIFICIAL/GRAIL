@@ -204,6 +204,207 @@ async def test_update_observation_round_trip(project: MemoryProject):
     assert row["description"] == "second"
 
 
+@pytest.mark.asyncio
+async def test_update_observation_preserve_unlisted_keeps_omitted_graph(
+    project: MemoryProject,
+):
+    """Merge-on-update: a PARTIAL correction (re-describe one entity) with
+    ``preserve_unlisted=True`` must UNION with the observation's current graph —
+    the omitted entities/relationships survive, and the listed entity's
+    description is the new one. (Regression for Problem 3: partial ``entities``
+    on a correction used to silently drop the unlisted entities.)"""
+    reply = await project.add_observation(
+        title="Team roster",
+        content="Diana, Priya and AWS all in the loop.",
+        category="work",
+        entities=[
+            {"name": "DIANA_FORD", "type": "PERSON", "description": "PM."},
+            {"name": "PRIYA_NAIR", "type": "PERSON", "description": "Engineer."},
+            {"name": "AWS", "type": "ORGANIZATION", "description": "Cloud vendor."},
+        ],
+        relationships=[
+            {
+                "source": "DIANA_FORD",
+                "target": "PRIYA_NAIR",
+                "relationship_type": "WORKS_WITH",
+                "description": "Same team.",
+            },
+            {
+                "source": "PRIYA_NAIR",
+                "target": "AWS",
+                "relationship_type": "USES",
+                "description": "Priya deploys on AWS.",
+            },
+        ],
+    )
+    slug = reply.data["slug"]
+
+    # Correction touches ONLY Diana (new description) and passes no relationships.
+    upd = await project.update_observation(
+        slug,
+        entities=[
+            {"name": "DIANA_FORD", "type": "PERSON", "description": "Senior PM."}
+        ],
+        preserve_unlisted=True,
+    )
+    assert upd.ok
+
+    ents = pd.read_parquet(project.path / "output" / "final_entities.parquet")
+    names = set(ents["name"])
+    # The omitted entities survived the correction.
+    assert {"DIANA_FORD", "PRIYA_NAIR", "AWS"} <= names
+    # Diana's description is the new one (caller wins on the listed entity).
+    assert ents[ents["name"] == "DIANA_FORD"].iloc[0]["description"] == "Senior PM."
+
+    # Both relationships survived even though the caller passed none.
+    rels = pd.read_parquet(project.path / "output" / "final_relationships.parquet")
+    assert set(rels["relationship_type"]) == {"WORKS_WITH", "USES"}
+
+
+@pytest.mark.asyncio
+async def test_update_observation_default_drops_unlisted_graph(
+    project: MemoryProject,
+):
+    """Opt-out (default ``preserve_unlisted=False``) documents the historical
+    behavior: a partial ``entities`` list on update re-adds ONLY what's passed,
+    so the omitted entities are dropped. This is exactly the erosion that
+    ``preserve_unlisted=True`` fixes; the default is unchanged for backward
+    compat + the MCP tests."""
+    reply = await project.add_observation(
+        title="Team roster",
+        content="Diana, Priya and AWS all in the loop.",
+        category="work",
+        entities=[
+            {"name": "DIANA_FORD", "type": "PERSON", "description": "PM."},
+            {"name": "PRIYA_NAIR", "type": "PERSON", "description": "Engineer."},
+            {"name": "AWS", "type": "ORGANIZATION", "description": "Cloud vendor."},
+        ],
+    )
+    slug = reply.data["slug"]
+
+    upd = await project.update_observation(
+        slug,
+        entities=[
+            {"name": "DIANA_FORD", "type": "PERSON", "description": "Senior PM."}
+        ],
+    )
+    assert upd.ok
+
+    ents = pd.read_parquet(project.path / "output" / "final_entities.parquet")
+    names = set(ents["name"])
+    # Only the listed entity remains; the omitted two were dropped (old behavior).
+    assert "DIANA_FORD" in names
+    assert "PRIYA_NAIR" not in names
+    assert "AWS" not in names
+
+
+@pytest.mark.asyncio
+async def test_update_observation_preserves_slug_when_title_changes(
+    project: MemoryProject,
+):
+    """Editing the title must NOT change the slug — the slug is the stable
+    identity callers reference in follow-up update/delete. (Regression: title
+    changes used to re-derive the filename, orphaning the old slug.)"""
+    from grail.indexing.loader import parse_frontmatter
+
+    reply = await project.add_observation(
+        title="Biggest client",
+        content="Acme is the biggest client.",
+        category="clients",
+        entities=[{"name": "ACME", "type": "ORGANIZATION", "description": "client"}],
+    )
+    slug = reply.data["slug"]
+
+    upd = await project.update_observation(
+        slug, title="Departing client", content="Acme is leaving."
+    )
+    assert upd.ok
+    # Same slug back, same file stem on disk.
+    assert upd.data["slug"] == slug
+    file_path = Path(upd.data["file_path"])
+    assert file_path.stem == slug
+    # Frontmatter title reflects the NEW display title.
+    fm, _ = parse_frontmatter(file_path.read_text())
+    assert fm["title"] == "Departing client"
+    # A follow-up edit addressed by the ORIGINAL slug still resolves.
+    again = await project.update_observation(slug, content="Acme fully gone.")
+    assert again.ok and again.data["slug"] == slug
+
+
+@pytest.mark.asyncio
+async def test_add_observation_honors_explicit_slug(project: MemoryProject):
+    """An explicit ``slug`` pins the filename stem (caller-chosen key)."""
+    reply = await project.add_observation(
+        title="Whatever the title is",
+        content="body",
+        category="c",
+        slug="acme-account",
+        entities=[{"name": "ACME", "type": "ORGANIZATION", "description": "client"}],
+    )
+    assert reply.ok
+    assert reply.data["slug"] == "acme-account"
+    assert Path(reply.data["file_path"]).stem == "acme-account"
+    # Addressable by that key.
+    upd = await project.update_observation("acme-account", content="new body")
+    assert upd.ok and upd.data["slug"] == "acme-account"
+
+
+@pytest.mark.asyncio
+async def test_relationship_preserves_authored_direction(project: MemoryProject):
+    """Stored source/target must reflect the AUTHORED direction, not an
+    alphabetical sort. (Regression: ``SARAH WORKS_AT ACME`` was stored flipped
+    as ``ACME WORKS_AT SARAH`` because the merge alphabetized endpoints.)"""
+    await project.add_observation(
+        title="t", content="c", category="c",
+        entities=[
+            {"name": "SARAH", "type": "PERSON", "description": "coo"},
+            {"name": "ACME", "type": "ORGANIZATION", "description": "client"},
+        ],
+        relationships=[
+            {"source": "SARAH", "target": "ACME",
+             "relationship_type": "WORKS_AT", "description": "Sarah works at Acme"},
+        ],
+    )
+    rels = pd.read_parquet(project.path / "output" / "final_relationships.parquet")
+    row = rels[rels["relationship_type"] == "WORKS_AT"].iloc[0]
+    # ACME sorts before SARAH; the old code would have stored ACME as source.
+    assert row["source"] == "SARAH" and row["target"] == "ACME"
+
+
+@pytest.mark.asyncio
+async def test_reversed_same_type_edge_dedups_keeping_first_direction(
+    project: MemoryProject,
+):
+    """A reversed duplicate of the same type still merges into one edge, and the
+    stored direction stays as first authored (order-insensitive dedup key)."""
+    await project.add_observation(
+        title="a", content="c1", category="c",
+        entities=[
+            {"name": "SARAH", "type": "PERSON", "description": "x"},
+            {"name": "ACME", "type": "ORGANIZATION", "description": "y"},
+        ],
+        relationships=[
+            {"source": "SARAH", "target": "ACME",
+             "relationship_type": "WORKS_AT", "description": "d1"},
+        ],
+    )
+    await project.add_observation(
+        title="b", content="c2", category="c",
+        entities=[
+            {"name": "SARAH", "type": "PERSON", "description": "x"},
+            {"name": "ACME", "type": "ORGANIZATION", "description": "y"},
+        ],
+        relationships=[
+            {"source": "ACME", "target": "SARAH",
+             "relationship_type": "WORKS_AT", "description": "reversed dup"},
+        ],
+    )
+    rels = pd.read_parquet(project.path / "output" / "final_relationships.parquet")
+    wa = rels[rels["relationship_type"] == "WORKS_AT"]
+    assert len(wa) == 1  # deduped despite reversed direction
+    assert wa.iloc[0]["source"] == "SARAH" and wa.iloc[0]["target"] == "ACME"
+
+
 def test_list_categories_includes_folders_on_disk(tmp_path: Path):
     proj = MemoryProject(tmp_path / "p", registry_home=tmp_path / "home")
     # Create an empty folder; should be picked up.
